@@ -52,10 +52,9 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            {/* Résumé de Paiement */}
             <div className="card bg-base-200 p-6 shadow-md">
               <h3 className="text-sm text-gray-500 mb-2">Montant à payer</h3>
-              <h1 className="text-4xl font-bold mb-4">FCFA {plan.price}</h1>
+              <h1 className="text-4xl font-bold mb-4">{plan.price} FCFA</h1>
 
               <div className="flex items-center gap-2 text-success mb-4">
                 <svg
@@ -80,7 +79,6 @@ export default function PaymentPage() {
                 pouvez vous concentrer sur votre boutique Buyticle.
               </p>
 
-              {/* Plan d'abonnement */}
               <div className="card bg-base-100 p-4 shadow-sm flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="bg-yellow-400 rounded-full p-2">
@@ -106,7 +104,7 @@ export default function PaymentPage() {
             </div>
           </div>
 
-          {/* Partie Droite - Formulaire de Paiement */}
+
           <div className="card bg-base-200 p-6 shadow-md space-y-6">
             <h2 className="text-2xl font-bold">Paiement</h2>
             <p className="text-sm text-gray-500">
@@ -114,7 +112,6 @@ export default function PaymentPage() {
               les informations ci-dessous.
             </p>
 
-            {/* Infos Mobile Money */}
             <div className="form-control">
               <label className="label">
                 <span className="label-text">Numéro Mobile Money</span>
@@ -138,8 +135,6 @@ export default function PaymentPage() {
                 className="input input-bordered"
               />
             </div>
-
-            {/* Coupon de réduction */}
             <div className="flex gap-2">
               <input
                 type="text"
@@ -149,7 +144,7 @@ export default function PaymentPage() {
               <button className="btn btn-neutral">Appliquer</button>
             </div>
 
-            {/* Dropdown Infos Vendeur */}
+      
             <div className="collapse collapse-arrow bg-base-100 border border-base-300">
               <input type="checkbox" />
               <div className="collapse-title text-lg font-medium">

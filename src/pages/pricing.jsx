@@ -1,301 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getAllPlans } from "../models/PlanModel";
 import { motion } from "framer-motion";
 import Navigation from "../nav";
 import Footer from "../footer";
 import { Link, useNavigate } from "react-router-dom";
+import CardSkeleton from "../components/CardSkeleton";
 
 export default function PricingPage() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState("standard"); // "standard" ou "personnalisable"
-  const [emplacements, setEmplacements] = useState(10); // nombre d'emplacements dans formule personnalisable
+  const [tab, setTab] = useState("standard");
+  const [emplacements, setEmplacements] = useState(10);
+  const [duree, setDuree] = useState(1); // 👈 durée en mois
+  const [abonnements, setAbonnements] = useState([]);
 
-  const abonnements = [
-    // LIGHT
-    {
-      title: "Light - 2 semaines",
-      description: "Idéal pour commencer la vente en ligne.",
-      price: "0 FCFA / 2 semaines",
-      duration: "2 semaines",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Light 2 semaines",
-      highlight: false,
-    },
-    {
-      title: "Light - 1 mois",
-      description: "Idéal pour commencer la vente en ligne.",
-      price: "6 000 FCFA / mois",
-      duration: "1 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Light 1 mois",
-      highlight: true,
-    },
-    {
-      title: "Light - 3 mois",
-      description: "Idéal pour commencer la vente en ligne.",
-      price: "18 000 FCFA / 3 mois",
-      duration: "3 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Light 3 mois",
-      highlight: false,
-    },
-    {
-      title: "Light - 1 an",
-      description: "Idéal pour commencer la vente en ligne.",
-      price: "72 000 FCFA / an",
-      duration: "1 an",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Light 1 an",
-      highlight: false,
-    },
+  useEffect(() => {
+    async function fetchPlans() {
+      try {
+        const plansFromDb = await getAllPlans();
+        console.log("Plans récupérés:", plansFromDb);
+        const normalizedPlans = plansFromDb.map((plan) => ({
+          id: plan.id,
+          highlight: plan.Highlight || false,
+          title: plan.Title || "",
+          description: plan.Description || "",
+          price: plan.Price || "",
+          button: plan.Button || "",
+          features: plan.Features || [],
+        }));
 
-    // STARTER
-    {
-      title: "Starter - 2 semaines",
-      description: "Pour débuter sérieusement.",
-      price: "3 000 FCFA / 2 semaines",
-      duration: "2 semaines",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Starter 2 semaines",
-      highlight: false,
-    },
-    {
-      title: "Starter - 1 mois",
-      description: "Pour débuter sérieusement.",
-      price: "6 000 FCFA / mois",
-      duration: "1 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Starter 1 mois",
-      highlight: false,
-    },
-    {
-      title: "Starter - 3 mois",
-      description: "Pour débuter sérieusement.",
-      price: "18 000 FCFA / 3 mois",
-      duration: "3 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Starter 3 mois",
-      highlight: true,
-    },
-    {
-      title: "Starter - 1 an",
-      description: "Pour débuter sérieusement.",
-      price: "72 000 FCFA / an",
-      duration: "1 an",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "2 Comptes équipe",
-        "2% de frais transactionnels",
-      ],
-      button: "Choisir Starter 1 an",
-      highlight: false,
-    },
+        setAbonnements(normalizedPlans);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des plans :", error);
+      }
+    }
 
-    // PRO
-    {
-      title: "Pro - 2 semaines",
-      description: "Parfait pour scaler.",
-      price: "6 000 FCFA / 2 semaines",
-      duration: "2 semaines",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "5 Comptes équipe",
-        "1% de frais transactionnels",
-        "Support prioritaire",
-      ],
-      button: "Choisir Pro 2 semaines",
-      highlight: false,
-    },
-    {
-      title: "Pro - 1 mois",
-      description: "Parfait pour scaler.",
-      price: "12 000 FCFA / mois",
-      duration: "1 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "5 Comptes équipe",
-        "1% de frais transactionnels",
-        "Support prioritaire",
-      ],
-      button: "Choisir Pro 1 mois",
-      highlight: true,
-    },
-    {
-      title: "Pro - 3 mois",
-      description: "Parfait pour scaler.",
-      price: "36 000 FCFA / 3 mois",
-      duration: "3 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "5 Comptes équipe",
-        "1% de frais transactionnels",
-        "Support prioritaire",
-      ],
-      button: "Choisir Pro 3 mois",
-      highlight: false,
-    },
-    {
-      title: "Pro - 1 an",
-      description: "Parfait pour scaler.",
-      price: "144 000 FCFA / an",
-      duration: "1 an",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "5 Comptes équipe",
-        "1% de frais transactionnels",
-        "Support prioritaire",
-      ],
-      button: "Choisir Pro 1 an",
-      highlight: false,
-    },
+    fetchPlans();
+  }, []);
 
-    // ENTREPRISE
-    {
-      title: "Entreprise - 2 semaines",
-      description: "Solutions sur mesure.",
-      price: "Sur devis",
-      duration: "2 semaines",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "15 Comptes équipe",
-        "0,5% de frais transactionnels",
-        "Support prioritaire",
-        "Migration checkout offerte",
-      ],
-      button: "Contactez-nous",
-      highlight: false,
-    },
-    {
-      title: "Entreprise - 1 mois",
-      description: "Solutions sur mesure.",
-      price: "Sur devis",
-      duration: "1 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "15 Comptes équipe",
-        "0,5% de frais transactionnels",
-        "Support prioritaire",
-        "Migration checkout offerte",
-      ],
-      button: "Contactez-nous",
-      highlight: false,
-    },
-    {
-      title: "Entreprise - 3 mois",
-      description: "Solutions sur mesure.",
-      price: "Sur devis",
-      duration: "3 mois",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "15 Comptes équipe",
-        "0,5% de frais transactionnels",
-        "Support prioritaire",
-        "Migration checkout offerte",
-      ],
-      button: "Contactez-nous",
-      highlight: false,
-    },
-    {
-      title: "Entreprise - 1 an",
-      description: "Solutions sur mesure.",
-      price: "Sur devis",
-      duration: "1 an",
-      features: [
-        "Paiement sécurisé",
-        "Boutique personnalisable",
-        "1-Click Upsell",
-        "Order Bump",
-        "15 Comptes équipe",
-        "0,5% de frais transactionnels",
-        "Support prioritaire",
-        "Migration checkout offerte",
-      ],
-      button: "Contactez-nous",
-      highlight: true,
-    },
-  ];
-
-  // Prix dynamique pour formule personnalisable
-  const prixParEmplacement = 500; // par exemple 500 FCFA par produit
-  const prixTotal = emplacements * prixParEmplacement;
+  const prixParEmplacement = 500;
+  const prixTotal = emplacements * prixParEmplacement * duree; // 👈 prix en fonction de la durée choisie
 
   return (
     <div className="min-h-screen bg-base-100 text-base-content">
       <Navigation />
 
-      {/* Header */}
       <div className="text-center mb-16 p-4">
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Tarifs simples et transparents
@@ -305,7 +53,6 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Tabs */}
       <div className="flex justify-center mb-12 gap-4">
         <button
           onClick={() => setTab("standard")}
@@ -325,57 +72,70 @@ export default function PricingPage() {
         </button>
       </div>
 
-      {/* Contenu selon Tab */}
       {tab === "standard" ? (
+        // Partie formules standards (identique)
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto p-4 pb-8">
-          {abonnements.map((plan, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * index, duration: 0.5 }}
-              className={`card shadow-xl border ${
-                plan.highlight ? "border-primary scale-105" : "border-gray-200"
-              }`}
-            >
-              <div className="card-body">
-                {plan.highlight && (
-                  <div className="badge text-white bg-gradient-to-r from-blue-500 to-fuchsia-600 absolute top-4 right-4">
-                    Plus Populaire
+          {abonnements.length === 0
+            ? Array.from({ length: 4 }).map((_, index) => (
+                <CardSkeleton key={index} />
+              ))
+            : abonnements.map((plan, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index, duration: 0.5 }}
+                  className={`card shadow-xl border ${
+                    plan.highlight
+                      ? "border-primary scale-105"
+                      : "border-gray-200"
+                  }`}
+                >
+                  <div className="card-body flex flex-col">
+                    {plan.highlight && (
+                      <div className="badge text-white bg-gradient-to-r from-blue-500 to-fuchsia-600 absolute top-4 right-4">
+                        Plus Populaire
+                      </div>
+                    )}
+
+                    <div>
+                      <h2 className="card-title">{plan.title}</h2>
+                      <p className="text-gray-500">{plan.description}</p>
+                      <div className="text-3xl font-bold my-4">
+                        {plan.price} FCFA
+                      </div>
+                    </div>
+
+                    <div className="flex-1 flex flex-col justify-between">
+                      <ul className="space-y-2 text-sm mb-6">
+                        {plan.features?.map((feature, i) => (
+                          <li key={i} className="flex items-center gap-2">
+                            <span className="text-success">✔</span>
+                            {feature}
+                          </li>
+                        ))}
+                      </ul>
+
+                      <div className="pt-4">
+                        <button
+                          onClick={() =>
+                            navigate("/payment", { state: { plan } })
+                          }
+                          className={`btn w-full ${
+                            plan.highlight ? "btn-primary" : "btn-outline"
+                          }`}
+                        >
+                          {plan.button}
+                        </button>
+                      </div>
+                    </div>
                   </div>
-                )}
-                <h2 className="card-title">{plan.title}</h2>
-                <p className="text-gray-500">{plan.description}</p>
-                <div className="text-3xl font-bold my-4">{plan.price}</div>
-
-                <ul className="space-y-2 text-sm">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className="text-success">✔</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="mt-auto pt-4">
-                  <button
-                    onClick={
-                      () => navigate("/payment", { state: { plan } }) // on envoie tout l'objet 'plan'
-                    }
-                    className={`btn w-full ${
-                      plan.highlight ? "btn-primary" : "btn-outline"
-                    }`}
-                  >
-                    {plan.button}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                </motion.div>
+              ))}
         </div>
       ) : (
+        // Partie Formule Personnalisable améliorée
         <div className="max-w-6xl mx-auto p-4 grid md:grid-cols-3 gap-8">
-          {/* Formule Personnalisable */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -387,6 +147,7 @@ export default function PricingPage() {
                 Formule Personnalisable
               </h2>
 
+              {/* Nombre d'emplacements */}
               <div className="flex flex-col items-center mb-8">
                 <label htmlFor="emplacements" className="text-sm mb-2">
                   Nombre d'emplacements produits :
@@ -405,26 +166,48 @@ export default function PricingPage() {
                 </div>
               </div>
 
+              {/* Sélection de durée */}
+              <div className="flex flex-col items-center mb-8">
+                <label htmlFor="duree" className="text-sm mb-2">
+                  Durée d'abonnement :
+                </label>
+                <select
+                  id="duree"
+                  value={duree}
+                  onChange={(e) => setDuree(parseInt(e.target.value))}
+                  className="select select-primary w-full max-w-xs"
+                >
+                  <option value={1}>1 mois</option>
+                  <option value={3}>3 mois</option>
+                  <option value={6}>6 mois</option>
+                  <option value={12}>12 mois</option>
+                </select>
+              </div>
+
+              {/* Prix total */}
               <div className="text-center mb-10">
                 <div className="text-5xl font-bold text-primary">
                   {prixTotal.toLocaleString()} FCFA
                 </div>
-                <div className="text-gray-500 mt-2 text-sm">/ mois</div>
+                <div className="text-gray-500 mt-2 text-sm">
+                  pour {duree} {duree > 1 ? "mois" : "mois"}
+                </div>
               </div>
 
-              <ul className="space-y-2 text-sm">
+              {/* Liste d'avantages */}
+              <ul className="space-y-2 text-sm mb-6">
                 <li className="flex items-center gap-2">
                   <span className="text-success">✔</span> Paiement sécurisé
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-success">✔</span> Boutique 100%
-                  personnalisable
+                  <span className="text-success">✔</span> Boutique 100% personnalisable
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-success">✔</span> Support prioritaire
                 </li>
               </ul>
 
+              {/* Bouton */}
               <Link to={"/payment"}>
                 <button className="btn btn-primary w-full mt-6">
                   Choisir cette formule
@@ -433,7 +216,7 @@ export default function PricingPage() {
             </div>
           </motion.div>
 
-          {/* Encadré Contact */}
+          {/* Bloc Contact */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
