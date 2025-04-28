@@ -1,9 +1,10 @@
 import Navigation from "../nav";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function PaymentPage() {
   const location = useLocation();
-  const plan = location.state?.plan; // <- récupère le plan
+  const plan = location.state?.plan; 
+  const navigate = useNavigate()
   return (
     <div>
         <Navigation/>
@@ -94,12 +95,11 @@ export default function PaymentPage() {
                   <div>
                     <h4 className="font-semibold">{plan.title}</h4>
                     <p className="text-xs text-gray-500">
-                      Accès garanti à toutes les fonctionnalités de gestion de
-                      votre boutique.
+                      {plan.description}
                     </p>
                   </div>
                 </div>
-                <button className="btn btn-sm btn-neutral">Modifier</button>
+                <button onClick={()=> navigate('/pricing')} className="btn btn-sm btn-neutral">Modifier</button>
               </div>
             </div>
           </div>

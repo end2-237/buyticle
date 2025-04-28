@@ -200,7 +200,8 @@ export default function PricingPage() {
                   <span className="text-success">✔</span> Paiement sécurisé
                 </li>
                 <li className="flex items-center gap-2">
-                  <span className="text-success">✔</span> Boutique 100% personnalisable
+                  <span className="text-success">✔</span> Boutique 100%
+                  personnalisable
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="text-success">✔</span> Support prioritaire
@@ -208,11 +209,30 @@ export default function PricingPage() {
               </ul>
 
               {/* Bouton */}
-              <Link to={"/payment"}>
-                <button className="btn btn-primary w-full mt-6">
-                  Choisir cette formule
-                </button>
-              </Link>
+              <button
+                onClick={() =>
+                  navigate("/payment", {
+                    state: {
+                      plan: {
+                        title: "Formule Personnalisable",
+                        description: `${emplacements} produits - ${duree} mois`,
+                        price: prixTotal,
+                        features: [
+                          "Paiement sécurisé",
+                          "Boutique 100% personnalisable",
+                          "Support prioritaire",
+                        ],
+                        custom: true, // (optionnel pour différencier un plan perso)
+                        emplacements,
+                        duree,
+                      },
+                    },
+                  })
+                }
+                className="btn btn-primary w-full mt-6"
+              >
+                Choisir cette formule
+              </button>
             </div>
           </motion.div>
 
