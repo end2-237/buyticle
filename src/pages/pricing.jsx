@@ -53,7 +53,7 @@ export default function PricingPage() {
         </p>
       </div>
 
-      <div className="flex justify-center mb-12 gap-4">
+      <div className=" justify-center mb-12 flex flex-col md:flex-row gap-4 p-2">
         <button
           onClick={() => setTab("standard")}
           className={`btn btn-lg rounded-full ${
@@ -253,7 +253,7 @@ export default function PricingPage() {
                   et à votre volume.
                 </p>
               </div>
-              <button className="btn btn-outline w-full bg-base-100 text-primary hover:bg-base-200">
+              <button onClick={()=> navigate('/contact')} className="btn btn-outline w-full bg-base-100 text-primary hover:bg-base-200">
                 Contactez-nous
               </button>
             </div>

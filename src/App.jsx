@@ -1,11 +1,26 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./index.css";
 import Navigation from "./nav";
 import Footer from "./footer";
+import { getThreeUsers, getUsersCount } from "./models/UserModel";
 
 export default function App() {
+  const [trustedUsers, setTrustedUsers] = useState([]);
+  const [usersCount, setUsersCount] = useState(0);
+  const  navigate = useNavigate();
+
+  useEffect(() => {
+    async function fetchData() {
+      const users = await getThreeUsers();
+      const count = await getUsersCount();
+      setTrustedUsers(users);
+      setUsersCount(count);
+    }
+    fetchData();
+  }, []);
+
   return (
     <div className="relative min-h-screen bg-base-100 text-base-content overflow-hidden">
       {/* Background grille discrète */}
@@ -23,21 +38,18 @@ export default function App() {
           className="flex items-center bg-base-200 backdrop-blur-md px-5 py-2 rounded-full mb-6 space-x-3 shadow-md"
         >
           <div className="flex -space-x-2">
-            <img
-              src="https://randomuser.me/api/portraits/men/32.jpg"
-              className="w-8 h-8 rounded-full ring-2 ring-base-100"
-            />
-            <img
-              src="https://randomuser.me/api/portraits/women/44.jpg"
-              className="w-8 h-8 rounded-full ring-2 ring-base-100"
-            />
-            <img
-              src="https://randomuser.me/api/portraits/men/54.jpg"
-              className="w-8 h-8 rounded-full ring-2 ring-base-100"
-            />
+            {trustedUsers.map((user) => (
+              <img
+                key={user.id}
+                src={user.photoURL || "/default-avatar.png"} // Utilise la photo ou un avatar par défaut
+                alt={user.name || "Utilisateur"}
+                className="w-8 h-8 rounded-full ring-2 ring-base-100"
+              />
+            ))}
           </div>
           <span className="text-sm text-gray-600">
-            Fait confiance par 35 000+ utilisateurs
+            Fait confiance par{" "}
+            {usersCount > 0 ? `${usersCount}+` : "de nombreux"} utilisateurs
           </span>
         </motion.div>
 
@@ -315,16 +327,14 @@ export default function App() {
           transition={{ delay: 0.6, duration: 0.8 }}
           className="flex flex-col md:flex-row gap-4 justify-center"
         >
-          <button className="btn btn-primary rounded-full px-8 py-3">
+          <button onClick={()=> navigate('/pricing')} className="btn btn-primary rounded-full px-8 py-3">
             S'inscrire comme vendeur
           </button>
-          <button className="btn btn-outline rounded-full px-8 py-3">
+          <button onClick={()=> navigate('/pricing')} className="btn btn-outline rounded-full px-8 py-3">
             Voir les abonnements
           </button>
         </motion.div>
       </section>
-
-      
 
       {/* Footer */}
       <Footer />
