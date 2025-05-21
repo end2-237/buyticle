@@ -5,6 +5,7 @@ import Navigation from "../nav";
 import Footer from "../footer";
 import { Link, useNavigate } from "react-router-dom";
 import CardSkeleton from "../components/CardSkeleton";
+import { FaApple } from "react-icons/fa";
 
 export default function PricingPage() {
   const navigate = useNavigate();
@@ -45,6 +46,14 @@ export default function PricingPage() {
       <Navigation />
 
       <div className="text-center mb-16 p-4">
+        <div className="flex justify-center">
+          <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
+            <FaApple className="text-xl md:text-3xl" />
+            <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
+              Votre marketplace bientot disponible sur les systemes IOS.
+            </p>
+          </div>
+        </div>
         <h1 className="text-4xl md:text-6xl font-bold mb-4">
           Tarifs simples et transparents
         </h1>
@@ -56,16 +65,16 @@ export default function PricingPage() {
       <div className=" justify-center mb-12 flex flex-col md:flex-row gap-4 p-2">
         <button
           onClick={() => setTab("standard")}
-          className={`btn btn-lg rounded-full ${
-            tab === "standard" ? "btn-primary" : "btn-outline"
+          className={`btn btn-md mx-4 md:btn-lg rounded-full ${
+            tab === "standard" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
           }`}
         >
           Formules Standard
         </button>
         <button
           onClick={() => setTab("personnalisable")}
-          className={`btn btn-lg rounded-full ${
-            tab === "personnalisable" ? "btn-primary" : "btn-outline"
+          className={`btn btn-md mx-4 md:btn-lg rounded-full ${
+            tab === "personnalisable" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
           }`}
         >
           Formule Personnalisable
@@ -93,7 +102,7 @@ export default function PricingPage() {
                 >
                   <div className="card-body flex flex-col">
                     {plan.highlight && (
-                      <div className="badge text-white bg-gradient-to-r from-blue-500 to-fuchsia-600 absolute top-4 right-4">
+                      <div className="badge text-white bg-gradient-to-r from-green-500 to-fuchsia-600 absolute top-4 right-4">
                         Plus Populaire
                       </div>
                     )}
@@ -241,7 +250,7 @@ export default function PricingPage() {
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
-            className="card bg-primary text-primary-content p-8 shadow-xl"
+            className="card bg-gradient-to-r from-green-900 to-green-700 text-primary-content p-8 shadow-xl"
           >
             <div className="card-body flex flex-col justify-between">
               <div>
@@ -253,7 +262,10 @@ export default function PricingPage() {
                   et à votre volume.
                 </p>
               </div>
-              <button onClick={()=> navigate('/contact')} className="btn btn-outline w-full bg-base-100 text-primary hover:bg-base-200">
+              <button
+                onClick={() => navigate("/contact")}
+                className="btn btn-outline w-full bg-base-100 text-primary hover:bg-base-200"
+              >
                 Contactez-nous
               </button>
             </div>

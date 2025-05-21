@@ -1,20 +1,36 @@
+import logo from "./assets/logobuy.png";
+
 export default function Footer() {
   return (
     <footer className="relative z-10 bg-gray-100 px-8 py-16 text-gray-600">
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Logo & description */}
         <div className="flex flex-col space-y-4">
-          <h3 className="text-gray-900 text-2xl font-bold">Buyticle</h3>
+          <h3 className="text-gray-900 text-2xl font-bold flex gap-1"><img src={logo} alt="logo" className="size-8" />Buyticle</h3>
           <p className="text-sm">
-            La marketplace mobile nouvelle génération pour acheter et vendre
-            en toute simplicité. Disponible sur iOS et Android.
+            La marketplace mobile nouvelle génération pour acheter et vendre en
+            toute simplicité. Disponible sur iOS et Android.
           </p>
           <div className="flex space-x-4 mt-4">
-            <a href="#" className="bg-white hover:bg-gray-200 p-2 rounded-full transition">
-              <img src="/icons/apple.svg" alt="Apple Store" className="h-6 w-6" />
+            <a
+              href="#"
+              className="bg-white hover:bg-gray-200 p-2 rounded-full transition"
+            >
+              <img
+                src="/icons/apple.svg"
+                alt="Apple Store"
+                className="h-6 w-6"
+              />
             </a>
-            <a href="#" className="bg-white hover:bg-gray-200 p-2 rounded-full transition">
-              <img src="/icons/playstore.svg" alt="Google Play" className="h-6 w-6" />
+            <a
+              href="#"
+              className="bg-white hover:bg-gray-200 p-2 rounded-full transition"
+            >
+              <img
+                src="/icons/playstore.svg"
+                alt="Google Play"
+                className="h-6 w-6"
+              />
             </a>
           </div>
         </div>

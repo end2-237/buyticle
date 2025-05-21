@@ -18,6 +18,11 @@ import Layout from "./components/Layout.jsx";
 import AddProductPage from "./pages/dashboard/vendeurs/add/add.jsx";
 import ModifPage from "./pages/dashboard/vendeurs/add/modifierPage.jsx";
 import StatsPage from "./pages/dashboard/vendeurs/stats/statsPage.jsx";
+import OnboardingPage from "./pages/onbording/onboarding.jsx";
+import AdsPage from "./pages/dashboard/vendeurs/buyticleads.jsx";
+import OfferPage from "./pages/dashboard/vendeurs/offer/offer_page.jsx";
+import DashboardPage from "./pages/dashboard/vendeurs/home.jsx";
+import ParametresPage from "./pages/dashboard/vendeurs/Parametres.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -32,12 +37,16 @@ root.render(
         <Route path="/contact" element={<ContactForm />} />
         <Route path="/payment" element={<PaymentForm />} />
         <Route path="/notfound" element={<NotFoundPage />} />
+        <Route path="/onboarding" element={<OnboardingPage />} />
 
         <Route path="/dashboard/vendeur" element={<Accueil />} />
-        <Route path="/dashboard/vendeur/home" element={<Layout />} />
+        <Route path="/dashboard/vendeur/home" element={<DashboardPage />} />
       <Route path="/dashboard/vendeur/produits" element={<Produits />} />
+      <Route path="/dashboard/vendeur/parametres" element={<ParametresPage />} />
       <Route path="/dashboard/vendeur/produits/ajouter" element={<AddProductPage />} />
       <Route path="/dashboard/vendeur/produits/modifier" element={<ModifPage />} />
+      <Route path="/dashboard/vendeur/espacepub" element={<AdsPage />} />
+      <Route path="/dashboard/vendeur/espacepub/offres" element={<OfferPage />} />
       <Route path="/dashboard/vendeur/statistiques" element={<StatsPage />} />
       <Route path="/dashboard/vendeur/commandes" element={<Commandes />} />
       <Route path="/dashboard/vendeur/abonnement" element={<Abonnement />} />

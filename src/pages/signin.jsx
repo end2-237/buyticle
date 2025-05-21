@@ -1,30 +1,38 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import GridShape from "../components/gridShape";
+import logo from "../assets/logobuy.png"
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase"; // adapte le chemin si nécessaire
+
 
 export default function SignInForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError(false);
     setIsLoading(true);
-
-    // Simulation d'un appel API
-    setTimeout(() => {
-      const email = e.target.email.value;
-      const password = e.target.password.value;
-
-      if (email === "" || password === "") {
-        setError(true);
-        setIsLoading(false);
-      } else {
-        console.log("Connexion réussie !");
-        setIsLoading(false);
-      }
-    }, 1500);
+  
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+  
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log("Connexion réussie !");
+      setIsLoading(false);
+      navigate("/dashboard/vendeur/home");
+    } catch (err) {
+      console.error("Erreur de connexion :", err.message);
+      setError(true);
+      setIsLoading(false);
+    }
   };
+  
 
   return (
     <div className="flex min-h-screen w-full">
@@ -179,20 +187,22 @@ export default function SignInForm() {
 
       {/* Partie droite - Illustration */}
       <motion.div
-        className="hidden md:flex flex-col items-center justify-center w-1/2 bg-blue-900 text-white p-10 relative overflow-hidden"
+        className="hidden md:flex flex-col items-center justify-center w-1/2 bg-green-900 text-white p-10 relative overflow-hidden"
+
         
       >
         {/* Ajout de l'image en fond */}
-        <div
+        {/* <div
           className="absolute inset-0 bg-center bg-cover opacity-20"
           style={{ backgroundImage: "url('src/assets/image1.webp')" }}
-        />
+        /> */}
+        <GridShape/>
 
         {/* Contenu au-dessus du fond */}
         <div className="relative z-10 flex flex-col items-center">
           <div className="mb-6">
             <img
-              src="https://tailwindui.com/img/logos/workflow-mark-indigo-500.svg"
+              src={logo}
               alt="Logo"
               className="h-12"
             />

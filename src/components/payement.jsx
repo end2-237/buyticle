@@ -5,6 +5,12 @@ export default function PaymentPage() {
   const location = useLocation();
   const plan = location.state?.plan; 
   const navigate = useNavigate()
+
+  const payement = () => {
+    alert('Payement effectuer avec succes');
+    navigate('/signin');
+  }
+
   return (
     <div>
         <Navigation/>
@@ -175,7 +181,7 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            <button className="btn btn-primary w-full mt-4">
+            <button onClick={()=> payement()} className="btn bg-green-900 text-white hover:bg-green-700  w-full mt-4">
               Payer Maintenant
             </button>
           </div>

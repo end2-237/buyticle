@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import logo from "./assets/logobuy.png"
+import { FaAndroid } from "react-icons/fa";
 
 export default function Navigation() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <nav className="relative z-20 flex justify-between items-center p-6 bg-white">
-      <div className="text-xl font-bold">Buyticle</div>
+    <nav className="relative z-20 flex justify-between items-center p-6 bg-transparent">
+      <div className="text-xl font-bold flex items-center gap-1"><img src={logo} alt="logo" className="size-6"/>Buyticle</div>
 
       {/* Menu desktop */}
       <div className="hidden md:flex space-x-8 items-center">
@@ -17,13 +19,14 @@ export default function Navigation() {
         <a href="/notfound" className="text-gray-700 hover:text-black transition">
           Découvrir
         </a>
-        <a href="/pricing" className="text-gray-700 hover:text-black transition">
+        <a href="/onboarding" className="text-gray-700 hover:text-black transition">
           Vendre
         </a>
         <a href="/contact" className="text-gray-700 hover:text-black transition">
           Contactez-nous
         </a>
-        <button className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 hover:opacity-90 transition">
+        <button className="flex gap-1 items-center rounded-full bg-gradient-to-r from-green-900 to-green-400  text-white px-6 py-2 hover:opacity-90 transition">
+        <FaAndroid/>
           Télécharger l'application
         </button>
         <button
@@ -76,13 +79,14 @@ export default function Navigation() {
           <a href="/notfound" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Découvrir
           </a>
-          <a href="/pricing" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
+          <a href="/onboarding" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Vendre
           </a>
           <a href="/contact" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Contactez-nous
           </a>
-          <button className="rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-white px-6 py-2 w-full hover:opacity-90 transition">
+          <button className="flex gap-1 items-center rounded-full bg-gradient-to-r from-green-900 to-green-400 text-white px-6 py-2 w-full hover:opacity-90 transition">
+            <FaAndroid/>
             Télécharger l'application
           </button>
           <button

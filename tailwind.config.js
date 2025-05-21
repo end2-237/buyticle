@@ -12,7 +12,7 @@ module.exports = {
   plugins: [daisyui],
   daisyui: {
     themes: [
-      "light",
+      "emerald",
       {
         black:{
           ...daisyUIThemes["black"],
