@@ -4,6 +4,7 @@ import { FaLock, FaPerson, FaShop } from "react-icons/fa6";
 import { FaArrowRight, FaShoppingBag } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { FiInfo } from "react-icons/fi";
+import { createUserAndStore } from "../../services/userService";
 
 export default function OnboardingPage() {
   const [active, setActive] = useState(1);
@@ -11,6 +12,8 @@ export default function OnboardingPage() {
   const [shopName, setShopName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [sellerType, setSellerType] = useState("vendeur");
   const navigate = useNavigate();
 
   const categories = [
@@ -43,7 +46,8 @@ export default function OnboardingPage() {
   };
 
   const handleNextStep2 = () => {
-    if (selectedList.length === 0) return alert("Veuillez choisir au moins une catégorie.");
+    if (selectedList.length === 0)
+      return alert("Veuillez choisir au moins une catégorie.");
     setActive(3);
   };
 
@@ -89,7 +93,9 @@ export default function OnboardingPage() {
       <Navigation />
       <div className="flex flex-col items-center px-4 md:px-8">
         <div className="flex flex-col items-center text-center">
-          <h1 className="text-3xl md:text-5xl font-bold mt-5">Enregistrer votre boutique</h1>
+          <h1 className="text-3xl md:text-5xl font-bold mt-5">
+            Enregistrer votre boutique
+          </h1>
           <p className="text-gray-500 text-sm mt-4">
             Enregistrer votre boutique en quelques étapes
           </p>
@@ -105,7 +111,9 @@ export default function OnboardingPage() {
         {active === 1 && (
           <div className="w-full flex flex-col items-center mt-10 text-gray-500 px-4">
             <div className="text-center">
-              <h1 className="text-gray-700 font-semibold text-xl">Qui êtes-vous?</h1>
+              <h1 className="text-gray-700 font-semibold text-xl">
+                Qui êtes-vous?
+              </h1>
               <p>
                 Quel est le nom de votre boutique.
                 <span className="text-xs text-gray-400 block">
@@ -122,17 +130,19 @@ export default function OnboardingPage() {
                 <div className="h-5 w-[1px] bg-gray-300 mx-2"></div>
                 <input
                   type="text"
-                  value={shopName}
-                  onChange={(e) => setShopName(e.target.value)}
                   placeholder="SaraShop"
                   className="flex-grow outline-none"
                   id="shop"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
                 />
               </div>
             </div>
 
             <div className="text-center mt-8">
-              <h1 className="text-gray-700 font-semibold text-xl">Que voulez-vous vendre?</h1>
+              <h1 className="text-gray-700 font-semibold text-xl">
+                Que voulez-vous vendre?
+              </h1>
               <p>
                 Quel est votre type d'activité.
                 <span className="text-xs text-gray-400 block">
@@ -144,11 +154,23 @@ export default function OnboardingPage() {
             <div className="flex flex-col items-center mt-5">
               <div className="flex flex-col gap-2 w-60">
                 <label className="flex items-center gap-3">
-                  <input type="radio" name="type" className="radio checked:bg-green-900" defaultChecked />
+                  <input
+                    type="radio"
+                    name="type"
+                    className="radio checked:bg-green-900"
+                    checked={sellerType === "vendeur"}
+                    onChange={() => setSellerType("vendeur")}
+                  />
                   Je vend mes produits
                 </label>
                 <label className="flex items-center gap-3">
-                  <input type="radio" name="type" className="radio checked:bg-green-900" />
+                  <input
+                    type="radio"
+                    name="type"
+                    className="radio checked:bg-green-900"
+                    checked={sellerType === "revendeur"}
+                    onChange={() => setSellerType("revendeur")}
+                  />
                   Je suis revendeur
                 </label>
               </div>
@@ -166,7 +188,9 @@ export default function OnboardingPage() {
         {active === 2 && (
           <div className="w-full flex flex-col items-center mt-10 text-gray-500 px-4">
             <div className="text-center">
-              <h1 className="text-gray-700 font-semibold text-xl">Choisissez votre catégorie</h1>
+              <h1 className="text-gray-700 font-semibold text-xl">
+                Choisissez votre catégorie
+              </h1>
               <p>
                 Vous pouvez en choisir plusieurs (3 max).
                 <span className="text-xs text-gray-400 block">
@@ -219,7 +243,9 @@ export default function OnboardingPage() {
               </h1>
               <p>
                 Vous vous en servirez pour vous connecter.
-                <span className="text-xs text-gray-400 block">Ne les partagez surtout pas!</span>
+                <span className="text-xs text-gray-400 block">
+                  Ne les partagez surtout pas!
+                </span>
               </p>
             </div>
 
@@ -229,10 +255,11 @@ export default function OnboardingPage() {
                 <div className="h-5 w-[1px] bg-gray-300 mx-2"></div>
                 <input
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="buyticle@gmail.com"
                   className="flex-grow outline-none"
+                  id="login"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
               <div className="flex gap-2 items-center p-4 border rounded-lg w-full">
@@ -240,10 +267,11 @@ export default function OnboardingPage() {
                 <div className="h-5 w-[1px] bg-gray-300 mx-2"></div>
                 <input
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="**************"
                   className="flex-grow outline-none"
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
@@ -260,11 +288,45 @@ export default function OnboardingPage() {
 
             <div className="flex flex-col items-center mt-5">
               <button
-                onClick={handleFinish}
-                className="btn rounded-full w-40 bg-green-900 text-white hover:bg-green-700 flex gap-2 justify-center"
+                onClick={async () => {
+                  try {
+                    if (
+                      !email ||
+                      !password ||
+                      !shopName ||
+                      selectedList.length === 0
+                    ) {
+                      alert("Tous les champs sont requis.");
+                      return;
+                    }
+
+                    await createUserAndStore({
+                      email,
+                      password,
+                      firstName: "", // à remplir si tu ajoutes ce champ plus tard
+                      lastName: "", // idem
+                      userName: "", // idem
+                      profilePicture: "", // idem
+                      phoneNumber: "", // idem
+                      userType: "seller",
+                      shopName,
+                      sellerType,
+                      categories: selectedList,
+                    });
+
+                    navigate("/pricing");
+                  } catch (err) {
+                    console.error("Erreur création utilisateur :", err);
+                    alert(
+                      "Une erreur s'est produite lors de l'enregistrement."
+                    );
+                  }
+                }}
+                className="btn rounded-full w-40 bg-green-900 text-white hover:bg-green-700"
               >
                 Terminé <FaArrowRight />
               </button>
+
               <span className="text-xs text-gray-400 mt-2">
                 Profitez de l'expérience buyticle
               </span>
@@ -306,4 +368,3 @@ export function CustomBadge({ name, close = false, onClick, onClose }) {
     </button>
   );
 }
-gti 

@@ -52,6 +52,8 @@ const CatalogueProduits = () => {
   const [filtreCreateur, setFiltreCreateur] = useState("all"); // all, oui, non
   const [tri, setTri] = useState({ champ: "date", ordre: "desc" });
   const [limiteProduits] = useState(50); // limite d'abonnement fictive
+  const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   // Calculs filtrage et tri
   const produitsFiltres = useMemo(() => {
@@ -83,29 +85,29 @@ const CatalogueProduits = () => {
     // Tri
     filtered.sort((a, b) => {
       let valA, valB;
+
       switch (tri.champ) {
         case "prix":
-          valA = a.prix;
-          valB = b.prix;
-          break;
         case "stock":
-          valA = a.stock;
-          valB = b.stock;
-          break;
         case "vendu":
-          valA = a.vendu;
-          valB = b.vendu;
-          break;
         case "revenu":
-          valA = a.revenu;
-          valB = b.revenu;
+          valA = a[tri.champ];
+          valB = b[tri.champ];
           break;
+        case "nom":
+        case "categorie":
+          valA = a[tri.champ].toLowerCase();
+          valB = b[tri.champ].toLowerCase();
+          return tri.ordre === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
         case "date":
         default:
           valA = new Date(a.date);
           valB = new Date(b.date);
           break;
       }
+
       if (valA < valB) return tri.ordre === "asc" ? -1 : 1;
       if (valA > valB) return tri.ordre === "asc" ? 1 : -1;
       return 0;
@@ -114,12 +116,17 @@ const CatalogueProduits = () => {
     return filtered;
   }, [produits, recherche, filtreStock, filtreCreateur, tri]);
 
+  // Pagination calculée
+  const totalPages = Math.ceil(produitsFiltres.length / itemsPerPage);
+  const produitsPage = produitsFiltres.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
+
   // Statistiques
   const totalRevenu = produits.reduce((acc, p) => acc + p.revenu, 0);
   const produitsActifs = produits.filter((p) => p.actif).length;
-  const stockFaible = produits.filter(
-    (p) => p.stock > 0 && p.stock < 10
-  ).length;
+  const stockFaible = produits.filter((p) => p.stock > 0 && p.stock < 10).length;
 
   // Handlers
   const toggleTri = (champ) => {
@@ -128,6 +135,7 @@ const CatalogueProduits = () => {
     } else {
       setTri({ champ, ordre: "asc" });
     }
+    setPage(1);
   };
 
   const toggleActifProduit = (id) => {
@@ -141,6 +149,28 @@ const CatalogueProduits = () => {
       setProduits((prods) => prods.filter((p) => p.id !== id));
     }
   };
+
+  const dupliquerProduit = (id) => {
+    const produitToCopy = produits.find((p) => p.id === id);
+    if (!produitToCopy) return;
+    if (produits.length >= limiteProduits) {
+      alert(
+        "Vous avez atteint la limite de produits autorisés, passez à Premium pour en ajouter plus."
+      );
+      return;
+    }
+    const nouvelId =
+      produits.reduce((maxId, p) => (p.id > maxId ? p.id : maxId), 0) + 1;
+    const copie = {
+      ...produitToCopy,
+      id: nouvelId,
+      nom: `Copie de ${produitToCopy.nom}`,
+      actif: false, // on démarre désactivé la copie
+    };
+    setProduits((prods) => [...prods, copie]);
+    alert(`Produit dupliqué : ${copie.nom}`);
+  };
+
   const produitsUtilises = produits.length;
   const produitsRestants = limiteProduits - produitsUtilises;
 
@@ -181,7 +211,7 @@ const CatalogueProduits = () => {
       <header className="flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold text-gray-800">Mes Produits</h1>
-          {/* Badge créateur de marque - on suppose que le vendeur est créateur s'il a au moins 1 produit createurMarque */}
+          {/* Badge créateur de marque */}
           {produits.some((p) => p.createurMarque) && (
             <div className="flex items-center gap-1 bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full font-semibold text-sm select-none">
               <FaCrown /> Créateur de marque
@@ -190,7 +220,15 @@ const CatalogueProduits = () => {
         </div>
         <button
           onClick={() => navigate("/dashboard/vendeur/produits/ajouter")}
-          className="btn flex items-center gap-2 px-5 py-2 rounded-md hover:scale-105 transition-transform"
+          className={`btn flex items-center gap-2 px-5 py-2 rounded-md hover:scale-105 transition-transform ${
+            produits.length >= limiteProduits ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+          title={
+            produits.length >= limiteProduits
+              ? "Limite atteinte, passez à Premium pour ajouter"
+              : "Ajouter un produit"
+          }
+          disabled={produits.length >= limiteProduits}
         >
           <FiPlusCircle size={20} /> Ajouter un produit
         </button>
@@ -225,14 +263,19 @@ const CatalogueProduits = () => {
       {/* Filtres & recherche */}
       <section className="flex flex-wrap justify-between items-center gap-4  p-5 rounded-lg ">
         <div className="border rounded rounded-md flex items-center px-3">
-          <label htmlFor="zone"><FiSearch className="text-gray-500"/></label>
+          <label htmlFor="zone">
+            <FiSearch className="text-gray-500" />
+          </label>
           <input
             type="text"
             id="zone"
             placeholder="Rechercher par nom ou catégorie..."
             className="outline-none input-md bg-transparent rounded-md flex-grow w-[250px]"
             value={recherche}
-            onChange={(e) => setRecherche(e.target.value)}
+            onChange={(e) => {
+              setRecherche(e.target.value);
+              setPage(1);
+            }}
             aria-label="Recherche produit"
           />
         </div>
@@ -242,7 +285,10 @@ const CatalogueProduits = () => {
           <select
             className="select select-bordered select-md rounded-md"
             value={filtreStock}
-            onChange={(e) => setFiltreStock(e.target.value)}
+            onChange={(e) => {
+              setFiltreStock(e.target.value);
+              setPage(1);
+            }}
             aria-label="Filtre stock"
           >
             <option value="all">Tous stocks</option>
@@ -254,7 +300,10 @@ const CatalogueProduits = () => {
           <select
             className="select select-bordered select-md rounded-md"
             value={filtreCreateur}
-            onChange={(e) => setFiltreCreateur(e.target.value)}
+            onChange={(e) => {
+              setFiltreCreateur(e.target.value);
+              setPage(1);
+            }}
             aria-label="Filtre créateur de marque"
           >
             <option value="all">Tous types</option>
@@ -265,179 +314,299 @@ const CatalogueProduits = () => {
       </section>
 
       {/* Tableau des produits */}
-      <div className="overflow-x-auto rounded-lg shadow bg-white">
-        <table className="table w-full text-sm">
-          <thead className="bg-gray-50 text-gray-800">
+      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white shadow">
+        <table className="table w-full border-separate border-spacing-y-2 border-spacing-x-1">
+          <thead className="bg-gray-100 text-gray-700 font-semibold text-sm">
             <tr>
-              <th className="cursor-pointer" onClick={() => toggleTri("nom")}>
-                Produit
-              </th>
               <th
-                className="cursor-pointer"
-                onClick={() => toggleTri("categorie")}
+                className="text-left cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("nom")}
+                aria-sort={
+                  tri.champ === "nom"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
               >
-                Catégorie
-              </th>
-              <th className="cursor-pointer" onClick={() => toggleTri("prix")}>
-                Prix
-              </th>
-              <th className="cursor-pointer" onClick={() => toggleTri("stock")}>
-                Stock
-              </th>
-              <th className="cursor-pointer" onClick={() => toggleTri("vendu")}>
-                Vendus
+                Nom{" "}
+                {tri.champ === "nom" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
               </th>
               <th
-                className="cursor-pointer"
+                className="text-left cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("categorie")}
+                aria-sort={
+                  tri.champ === "categorie"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
+              >
+                Catégorie{" "}
+                {tri.champ === "categorie" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </th>
+              <th
+                className="text-center cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("prix")}
+                aria-sort={
+                  tri.champ === "prix"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
+              >
+                Prix
+                {tri.champ === "prix" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </th>
+              <th
+                className="text-center cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("stock")}
+                aria-sort={
+                  tri.champ === "stock"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
+              >
+                Stock
+                {tri.champ === "stock" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </th>
+              <th
+                className="text-center cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("vendu")}
+                aria-sort={
+                  tri.champ === "vendu"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
+              >
+                Vendu
+                {tri.champ === "vendu" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
+              </th>
+              <th
+                className="text-center cursor-pointer px-3 py-2"
                 onClick={() => toggleTri("revenu")}
+                aria-sort={
+                  tri.champ === "revenu"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
               >
                 Revenu
+                {tri.champ === "revenu" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
               </th>
-              <th className="cursor-pointer" onClick={() => toggleTri("date")}>
-                Date ajout
+              <th
+                className="text-center cursor-pointer px-3 py-2"
+                onClick={() => toggleTri("date")}
+                aria-sort={
+                  tri.champ === "date"
+                    ? tri.ordre === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : "none"
+                }
+                scope="col"
+              >
+                Date
+                {tri.champ === "date" && (
+                  <FiChevronDown
+                    className={`inline-block transform ${
+                      tri.ordre === "asc" ? "rotate-180" : ""
+                    }`}
+                  />
+                )}
               </th>
-              <th>Statut</th>
-              <th>Actions</th>
+              <th className="text-center px-3 py-2" scope="col">
+                Actif
+              </th>
+              <th className="text-center px-3 py-2" scope="col">
+                Actions
+              </th>
             </tr>
           </thead>
+
           <tbody>
-            {produitsFiltres.length === 0 && (
+            {produitsPage.length === 0 ? (
               <tr>
-                <td colSpan={9} className="text-center py-8 text-gray-500">
-                  Aucun produit trouvé.
+                <td colSpan="10" className="text-center py-10 text-gray-400">
+                  Aucun produit ne correspond à vos critères.
                 </td>
               </tr>
-            )}
-            {produitsFiltres.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 transition">
-                <td className="flex items-center gap-3 py-3 min-w-[220px]">
-                  <img
-                    src={p.image}
-                    alt={p.nom}
-                    className="w-12 h-12 rounded-lg object-cover"
-                  />
-                  <div>
-                    <p className="font-semibold text-gray-800">{p.nom}</p>
-                    {p.createurMarque && (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full mt-1 select-none">
-                        <FaCrown size={12} /> Créateur de marque
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td>{p.categorie}</td>
-                <td className="text-green-600 font-semibold">
-                  ${p.prix.toFixed(2)}
-                </td>
-                <td
-                  className={`${p.stock === 0 ? "text-red-600 font-bold" : ""}`}
+            ) : (
+              produitsPage.map((p) => (
+                <tr
+                  key={p.id}
+                  className={`border border-gray-100 hover:bg-gray-50 ${
+                    !p.actif ? "opacity-60" : ""
+                  }`}
                 >
-                  {p.stock}
-                </td>
-                <td>{p.vendu}</td>
-                <td className="text-blue-600 font-semibold">
-                  ${p.revenu.toLocaleString()}
-                </td>
-                <td>{new Date(p.date).toLocaleDateString()}</td>
-                <td>
-                  {p.actif ? (
-                    <span className="text-green-600 font-semibold">Actif</span>
-                  ) : (
-                    <span className="text-red-500 font-semibold">
-                      Désactivé
-                    </span>
-                  )}
-                </td>
-                <td className="flex gap-1 justify-center">
-                  <button
-                    onClick={() =>
-                      navigate(`/dashboard/vendeur/produits/${p.id}`)
-                    }
-                    className="btn btn-xs btn-outline"
-                    title="Voir détails"
-                  >
-                    <FiEye />
-                  </button>
-                  <button
-                    onClick={() =>
-                      navigate(`/dashboard/vendeur/produits/modifier/${p.id}`)
-                    }
-                    className="btn btn-xs btn-outline"
-                    title="Modifier"
-                  >
-                    <FiEdit />
-                  </button>
-                  <button
-                    onClick={() => toggleActifProduit(p.id)}
-                    className={`btn btn-xs ${
-                      p.actif ? "btn-warning" : "btn-success"
+                  <td className="flex items-center gap-3 px-3 py-2">
+                    <img
+                      src={p.image}
+                      alt={`Image de ${p.nom}`}
+                      className="w-12 h-12 rounded object-cover border border-gray-300"
+                      loading="lazy"
+                    />
+                    <span className="font-semibold text-gray-800">{p.nom}</span>
+                    {p.createurMarque && (
+                      <FaCrown
+                        title="Créateur de marque"
+                        className="text-yellow-500 ml-1"
+                      />
+                    )}
+                  </td>
+                  <td className="text-gray-700 px-3 py-2">{p.categorie}</td>
+                  <td className="text-center px-3 py-2 font-semibold text-gray-900">
+                    {p.prix.toLocaleString()} $
+                  </td>
+                  <td
+                    className={`text-center px-3 py-2 font-semibold ${
+                      p.stock === 0 ? "text-red-500" : "text-green-600"
                     }`}
-                    title={p.actif ? "Désactiver" : "Réactiver"}
                   >
-                    {p.actif ? <FiPause /> : <FiPlay />}
-                  </button>
-                  <button
-                    onClick={() => supprimerProduit(p.id)}
-                    className="btn btn-xs btn-error"
-                    title="Supprimer"
-                  >
-                    <FiTrash2 />
-                  </button>
-                  <button
-                    onClick={() =>
-                      alert("Fonction de duplication non encore implémentée")
-                    }
-                    className="btn btn-xs btn-outline"
-                    title="Dupliquer"
-                  >
-                    <FiCopy />
-                  </button>
-                </td>
-              </tr>
-            ))}
+                    {p.stock}
+                  </td>
+                  <td className="text-center px-3 py-2">{p.vendu}</td>
+                  <td className="text-center px-3 py-2 font-semibold text-blue-700">
+                    {p.revenu.toLocaleString()} $
+                  </td>
+                  <td className="text-center px-3 py-2">
+                    {new Date(p.date).toLocaleDateString()}
+                  </td>
+                  <td className="text-center px-3 py-2">
+                    <button
+                      className={`btn btn-xs ${
+                        p.actif ? "btn-success" : "btn-error"
+                      }`}
+                      onClick={() => toggleActifProduit(p.id)}
+                      title={p.actif ? "Désactiver" : "Activer"}
+                      aria-pressed={p.actif}
+                      aria-label={`Produit ${p.nom} ${
+                        p.actif ? "activé" : "désactivé"
+                      }`}
+                    >
+                      {p.actif ? <FiPlay /> : <FiPause />}
+                    </button>
+                  </td>
+                  <td className="text-center px-3 py-2 flex justify-center gap-2">
+                    <button
+                      onClick={() => navigate(`/dashboard/vendeur/produits/${p.id}`)}
+                      className="btn btn-xs btn-primary"
+                      title="Voir / Modifier"
+                      aria-label={`Voir ou modifier ${p.nom}`}
+                    >
+                      <FiEye />
+                    </button>
+                    <button
+                      onClick={() => dupliquerProduit(p.id)}
+                      className="btn btn-xs btn-secondary"
+                      title="Dupliquer produit"
+                      aria-label={`Dupliquer ${p.nom}`}
+                    >
+                      <FiCopy />
+                    </button>
+                    <button
+                      onClick={() => supprimerProduit(p.id)}
+                      className="btn btn-xs btn-error"
+                      title="Supprimer"
+                      aria-label={`Supprimer ${p.nom}`}
+                    >
+                      <FiTrash2 />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      <section className="flex justify-between items-center mt-6">
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="itemsParPage"
-            className="text-sm font-medium text-gray-700"
-          >
-            Afficher :
-          </label>
-          <select
-            id="itemsParPage"
-            className="select select-bordered select-sm rounded-md"
-          >
-            <option>10</option>
-            <option>20</option>
-            <option>50</option>
-          </select>
-        </div>
-        <div className="join">
-          <button className="join-item btn btn-sm">«</button>
-          <button className="join-item btn btn-sm btn-active">1</button>
-          <button className="join-item btn btn-sm">2</button>
-          <button className="join-item btn btn-sm">3</button>
-          <button className="join-item btn btn-sm">»</button>
-        </div>
-      </section>
-
-      {/* Limite d'abonnement */}
-      {produits.length >= limiteProduits && (
-        <section className="mt-10 bg-yellow-50 border border-yellow-300 p-4 rounded-md text-yellow-900 max-w-3xl mx-auto text-center font-semibold">
-          Vous avez atteint la limite de votre abonnement gratuit (
-          {limiteProduits} produits).{" "}
+      {totalPages > 1 && (
+        <nav
+          aria-label="Pagination produits"
+          className="flex justify-center mt-5 gap-2"
+        >
           <button
-            onClick={() => alert("Redirection vers la page abonnement Premium")}
-            className="underline font-bold hover:text-yellow-700"
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="btn btn-sm"
+            aria-label="Page précédente"
           >
-            Passez au plan Premium pour ajouter plus de produits !
+            Précédent
           </button>
-        </section>
+
+          {[...Array(totalPages).keys()].map((num) => (
+            <button
+              key={num + 1}
+              onClick={() => setPage(num + 1)}
+              aria-current={page === num + 1 ? "page" : undefined}
+              className={`btn btn-sm ${
+                page === num + 1 ? "btn-active" : ""
+              }`}
+            >
+              {num + 1}
+            </button>
+          ))}
+
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            className="btn btn-sm"
+            aria-label="Page suivante"
+          >
+            Suivant
+          </button>
+        </nav>
       )}
     </div>
   );

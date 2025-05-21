@@ -1,38 +1,59 @@
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { collection, addDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore"; // setDoc pour ID contrôlé
 import { db } from "../firebase";
 
-export async function createUserAndStore({ email, password, firstName, lastName, userName, profilePicture, phoneNumber, userType, shopName, sellerType, categories }) {
-  const auth = getAuth();
+export async function createUserAndStore({
+  email,
+  password,
+  firstName,
+  lastName,
+  userName,
+  profilePicture,
+  phoneNumber,
+  userType,
+  shopName,
+  sellerType,
+  categories,
+}) {
+  try {
+    const auth = getAuth();
 
-  // 1. Créer l’utilisateur Auth
-  const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  const user = userCredential.user;
+    // 1. Créer l’utilisateur Auth
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    const userId = user.uid;
 
-  // 2. Créer doc user dans Firestore
-  await addDoc(collection(db, "users"), {
-    Email: email,
-    FirstName: firstName,
-    LastName: lastName,
-    PhoneNumber: phoneNumber,
-    ProfilePicture: profilePicture,
-    UserName: userName,
-    UserType: userType,
-    IdUser: user.uid,
-  });
+    // 2. Créer doc utilisateur avec ID connu
+    await setDoc(doc(db, "Users", userId), {
+      Email: email,
+      FirstName: firstName,
+      LastName: lastName,
+      PhoneNumber: phoneNumber,
+      ProfilePicture: profilePicture,
+      UserName: userName,
+      UserType: userType,
+      IdUser: userId,
+      CreatedAt: new Date(),
+    });
 
-  // 3. Créer doc boutique store dans Firestore
-  await addDoc(collection(db, "store"), {
-    ActivityType: sellerType,
-    AnnualBalance: 120000,
-    IdUser: user.uid,
-    IsFeatured: true,
-    MountBalance: 20000,
-    Name: shopName,
-    Products: [], // si t’as une liste produits, tu peux la mettre ici
-    Subscription: "none",
-    Categories: categories, // Ajout catégorie si tu veux stocker ça
-  });
+    // 3. Créer doc boutique avec ID généré auto
+    await setDoc(doc(db, "Store", userId), {
+      ActivityType: sellerType,
+      AnnualBalance: 0,
+      IdUser: userId,
+      IsFeatured: true,
+      MountBalance: 0,
+      Name: shopName,
+      Products: [],
+      Subscription: "none",
+      Categories: categories,
+      CreatedAt: new Date(),
+    });
 
-  return user;
+    console.log("✅ Utilisateur et boutique créés avec succès");
+    return user;
+  } catch (error) {
+    console.error("❌ Erreur lors de la création de l'utilisateur :", error);
+    throw error;
+  }
 }

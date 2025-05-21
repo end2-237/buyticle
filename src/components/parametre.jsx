@@ -1,4 +1,3 @@
-import { button } from "framer-motion/client";
 import { useState } from "react";
 import { AiFillShop } from "react-icons/ai";
 import { CgFileDocument } from "react-icons/cg";
@@ -14,6 +13,7 @@ export default function Parametres() {
 
   const activedTab = (name) => {
     setActiveTab(name);
+    setEditMode([false, false, false, false]);
   };
 
   const plans = [
@@ -22,289 +22,245 @@ export default function Parametres() {
       prix: "6000",
       delai: "1 Mois",
       description:
-        "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consectetur id ducimus sint. Tempore illum corporis cum voluptas deleniti maxime itaque.",
+        "Lorem ipsum dolor sit, amet consectetur adipisicing elit.",
       action: "Choisir maitenant",
       active: true,
+      features: {
+        "Support client": "Email uniquement",
+        "Produits maximum": "50",
+        "Stockage": "5 Go",
+      },
     },
     {
       name: "Pro",
       prix: "12000",
       delai: "3 Mois",
       description:
-        "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consectetur id ducimus sint. Tempore illum corporis cum voluptas deleniti maxime itaque.",
+        "Lorem ipsum dolor sit, amet consectetur adipisicing elit.",
       action: "Choisir maitenant",
       active: false,
+      features: {
+        "Support client": "Email + Téléphone",
+        "Produits maximum": "200",
+        "Stockage": "20 Go",
+      },
     },
     {
       name: "Premium",
       prix: "50000",
       delai: "6 Mois",
       description:
-        "Lorem ipsum dolor sit, amet consectetur adipisicing elit. Consectetur id ducimus sint. Tempore illum corporis cum voluptas deleniti maxime itaque.",
+        "Lorem ipsum dolor sit, amet consectetur adipisicing elit.",
       action: "Choisir maitenant",
       active: false,
+      features: {
+        "Support client": "Prioritaire 24/7",
+        "Produits maximum": "Illimité",
+        "Stockage": "100 Go",
+      },
     },
   ];
-  const [hiddenTools, setHiddenTools] = useState(["hidden", "hidden"]);
 
-  const toggleToolVisibility = (index) => {
-    setHiddenTools((prev) =>
-      prev.map((v, i) => (i === index ? (v === "hidden" ? "" : "hidden") : v))
-    );
+  const [editMode, setEditMode] = useState([false, false, false, false]);
+
+  const [shopInfo, setShopInfo] = useState({
+    nom: "ForeverShop",
+    categorie: "Vetement & Accessoires",
+    contact: "+237696995879",
+    adresse: "Makepe",
+    description:
+      "Lorem ipsum dolor sit amet consectetur adipisicing elit.",
+  });
+
+  const toggleEdit = (index) => {
+    setEditMode((prev) => prev.map((v, i) => (i === index ? !v : v)));
   };
-  
+
+  const handleChange = (field, value) => {
+    setShopInfo((prev) => ({ ...prev, [field]: value }));
+  };
 
   const renderTab = () => {
     switch (activeTab) {
       case "Generale":
         return (
           <div className="flex flex-col">
-            {/* header */}
-            <div className=" flex justify-between">
-              {/* text */}
-              <div className="">
+            <div className="flex justify-between">
+              <div>
                 <h1 className="text-gray-600 font-semibold text-2xl">
                   Informations de votre boutique
                 </h1>
-                <span className="flex items-center  gap-2 text-gray-400 text-sm">
+                <span className="flex items-center gap-2 text-gray-400 text-sm">
                   <FaBagShopping />
                   <p>
-                    Toutes vos informations serons necessaires pour une
-                    meilleure experience
+                    Toutes vos informations seront nécessaires pour une meilleure
+                    expérience
                   </p>
                 </span>
               </div>
-              {/* box complet*/}
-
               <div className="card border rounded rounded-md p-3 w-60 flex flex-col">
                 <div className="flex gap-2 items-center">
                   <span className="font-semibold">Progression</span>
                   <FiInfo />
                 </div>
+                {/* Progression bar simple */}
+                <div className="w-full bg-gray-200 rounded mt-2 h-3">
+                  <div
+                    className="bg-primary h-3 rounded"
+                    style={{ width: "70%" }}
+                  ></div>
+                </div>
+                <span className="text-xs text-gray-500 mt-1">70% complété</span>
               </div>
             </div>
 
-            {/* body */}
             <div className="flex mt-4 gap-6">
-              <div className="w-3/5  grid grid-cols-2 gap-4">
+              <div className="w-3/5 grid grid-cols-2 gap-4">
+                {/* Informations basiques */}
                 <div className="card border p-4 rounded-md col-span-2">
                   <div className="flex gap-3 items-center justify-between">
                     <div className="flex gap-3 items-center">
                       <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
                         <FaInfo className="text-primary" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold">
-                          Informations basic
-                        </span>
+                        <span className="font-semibold">Informations basiques</span>
                         <p className="text-xs text-gray-400">
                           Configurer le nom de votre boutique etc
                         </p>
                       </div>
                     </div>
-                    {hiddenTools[0] === "hidden" ? (
-                      <button
-                        onClick={() => toggleToolVisibility(0)}
-                      >
+                    {!editMode[0] ? (
+                      <button onClick={() => toggleEdit(0)}>
                         <FiArrowRight />
                       </button>
                     ) : (
-                      <button className="text-xs py-1 border rounded rounded-md p-3">
-                        Edit
+                      <button
+                        className="text-xs py-1 border rounded rounded-md p-3"
+                        onClick={() => toggleEdit(0)}
+                      >
+                        Sauvegarder
                       </button>
                     )}
                   </div>
 
-                  {/* details */}
-                  <div className={`${hiddenTools[0]}`}>
-                    <div className="divide h-[1px] bg-gray-100 mt-2"></div>
-
-                    <div className="grid grid-cols-4 mt-2">
-                      <div className="flex gap-2 items-center">
-                        <div className="divide h-8 w-[2px] bg-gray-100"></div>
-                        <div className="">
-                          <span className="text-xs text-gray-400 flex flex-col">
-                            Nom de la boutique
-                          </span>
-                          <span className="font-semibold ">ForeverShop</span>
-                        </div>
+                  {editMode[0] ? (
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">
+                          Nom de la boutique
+                        </label>
+                        <input
+                          type="text"
+                          className="border rounded p-2 w-full"
+                          value={shopInfo.nom}
+                          onChange={(e) => handleChange("nom", e.target.value)}
+                        />
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="divide h-8 w-[2px] bg-gray-100"></div>
-                        <div className="">
-                          <span className="text-xs text-gray-400 flex flex-col">
-                            Categorie de la boutique
-                          </span>
-                          <span className="font-semibold ">
-                            Vetement & Accessoires
-                          </span>
-                        </div>
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">
+                          Catégorie de la boutique
+                        </label>
+                        <input
+                          type="text"
+                          className="border rounded p-2 w-full"
+                          value={shopInfo.categorie}
+                          onChange={(e) => handleChange("categorie", e.target.value)}
+                        />
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="divide h-8 w-[2px] bg-gray-100"></div>
-                        <div className="">
-                          <span className="text-xs text-gray-400 flex flex-col">
-                            Numero de contact
-                          </span>
-                          <span className="font-semibold ">+237696995879</span>
-                        </div>
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">
+                          Numéro de contact
+                        </label>
+                        <input
+                          type="text"
+                          className="border rounded p-2 w-full"
+                          value={shopInfo.contact}
+                          onChange={(e) => handleChange("contact", e.target.value)}
+                        />
                       </div>
-                      <div className="flex gap-2 items-center">
-                        <div className="divide h-8 w-[2px] bg-gray-100"></div>
-                        <div className="">
-                          <span className="text-xs text-gray-400 flex flex-col">
-                            Adresse
-                          </span>
-                          <span className="font-semibold ">Makepe</span>
-                        </div>
+                      <div>
+                        <label className="text-xs text-gray-400 block mb-1">
+                          Adresse
+                        </label>
+                        <input
+                          type="text"
+                          className="border rounded p-2 w-full"
+                          value={shopInfo.adresse}
+                          onChange={(e) => handleChange("adresse", e.target.value)}
+                        />
                       </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="divide-y divide-gray-200 mt-4">
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-400 text-xs">Nom de la boutique</span>
+                        <span className="font-semibold">{shopInfo.nom}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-400 text-xs">Catégorie de la boutique</span>
+                        <span className="font-semibold">{shopInfo.categorie}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-400 text-xs">Numéro de contact</span>
+                        <span className="font-semibold">{shopInfo.contact}</span>
+                      </div>
+                      <div className="flex justify-between py-2">
+                        <span className="text-gray-400 text-xs">Adresse</span>
+                        <span className="font-semibold">{shopInfo.adresse}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div
-                  className={`card  ${
-                    hiddenTools[1] === "hidden" ? "" : "row-span-3"
-                  }  border p-4 rounded-md`}
-                >
+                {/* A propos de votre business */}
+                <div className={`card border p-4 rounded-md col-span-2`}>
                   <div className="flex gap-3 items-center justify-between">
                     <div className="flex gap-3 items-center">
                       <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
                         <CgFileDocument className="text-primary" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          A propos de votre business
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
+                        <span className="font-semibold">À propos de votre business</span>
+                        <p className="text-xs text-gray-400">Donner des spécifications</p>
                       </div>
                     </div>
-                    {hiddenTools[1] === "hidden" ? (
-                      <button
-                        onClick={() => toggleToolVisibility(1)}
-                      >
+                    {!editMode[1] ? (
+                      <button onClick={() => toggleEdit(1)}>
                         <FiArrowRight />
                       </button>
                     ) : (
-                      <button className="text-xs py-1 border rounded rounded-md p-3">
-                        Edit
+                      <button
+                        className="text-xs py-1 border rounded rounded-md p-3"
+                        onClick={() => toggleEdit(1)}
+                      >
+                        Sauvegarder
                       </button>
                     )}
                   </div>
 
-                  {/* details */}
-                  <div className={`${hiddenTools[1]}`}>
-                    <div className="divide h-[1px]  bg-gray-200 mt-2 mb-4"></div>
-                    <div className="flex gap-2 items-center">
-                      <div className="divide w-[1px] bg-gray-200 h-full"></div>
-                      <div className="flex flex-col gap-2">
-                        <span className="text-xs text-gray-400">
-                          Description
-                        </span>
-                        <p>
-                          Lorem ipsum dolor sit amet consectetur adipisicing
-                          elit. Aperiam necessitatibus vero unde omnis ducimus
-                          eligendi repudiandae reiciendis facere illo sit.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  {editMode[1] ? (
+                    <textarea
+                      className="w-full mt-4 p-2 border rounded"
+                      rows={5}
+                      value={shopInfo.description}
+                      onChange={(e) => handleChange("description", e.target.value)}
+                    />
+                  ) : (
+                    <p className="mt-4 text-gray-600">{shopInfo.description}</p>
+                  )}
                 </div>
 
+                {/* Adresse de votre boutique */}
                 <div className="card border p-4 rounded-md">
                   <div className="flex gap-3 items-center justify-between">
                     <div className="flex gap-3 items-center">
                       <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
                         <CiLocationOn className="text-primary" />
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          Adresse de votre boutique
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
-                      </div>
-                    </div>
-                    <FiArrowRight />
-                  </div>
-                </div>
-                <div className="card border p-4 rounded-md">
-                  <div className="flex gap-3 items-center justify-between">
-                    <div className="flex gap-3 items-center">
-                      <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
-                        <CgFileDocument className="text-primary" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          A propos de votre business
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
-                      </div>
-                    </div>
-                    <FiArrowRight />
-                  </div>
-                </div>
-                <div className="card border p-4 rounded-md">
-                  <div className="flex gap-3 items-center justify-between">
-                    <div className="flex gap-3 items-center">
-                      <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
-                        <CgFileDocument className="text-primary" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          A propos de votre business
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
-                      </div>
-                    </div>
-                    <FiArrowRight />
-                  </div>
-                </div>
-                <div className="card border p-4 rounded-md">
-                  <div className="flex gap-3 items-center justify-between">
-                    <div className="flex gap-3 items-center">
-                      <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
-                        <CgFileDocument className="text-primary" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          A propos de votre business
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
-                      </div>
-                    </div>
-                    <FiArrowRight />
-                  </div>
-                </div>
-                <div className="card border p-4 rounded-md">
-                  <div className="flex gap-3 items-center justify-between">
-                    <div className="flex gap-3 items-center">
-                      <div className="flex justify-center items-center border size-10 rounded-md">
-                        {" "}
-                        <CgFileDocument className="text-primary" />
-                      </div>
-                      <div className="flex flex-col gap-1">
-                        <span className="font-semibold ">
-                          A propos de votre business
-                        </span>
-                        <p className="text-xs text-gray-400">
-                          Donner des specifications
-                        </p>
+                        <span className="font-semibold">Adresse de votre boutique</span>
+                        <p className="text-xs text-gray-400">Donner des spécifications</p>
                       </div>
                     </div>
                     <FiArrowRight />
@@ -312,131 +268,171 @@ export default function Parametres() {
                 </div>
               </div>
 
+              {/* Section d’à-côté complétée */}
               <div className="w-2/5 border rounded rounded-md p-5">
-              {/* header */}
-                <div className="flex gap-3 items-center justify-between">
-                  <div className="flex gap-3 items-center">
-                    <div className="flex justify-center items-center border size-10 rounded-md">
-                      {" "}
-                      <FaInfo className="text-primary" />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold">Informations basic</span>
-                      <p className="text-xs text-gray-400">
-                        Configurer le nom de votre boutique etc
-                      </p>
-                    </div>
-                  </div>
-                  <button className=" btn border  rounded rounded-md text-sm text-gray-500">
-                    Sauvegarder
-                  </button>
+                <h3 className="font-semibold text-lg mb-4">Résumé de la boutique</h3>
+                <div className="mb-3">
+                  <strong>Nom :</strong> {shopInfo.nom}
                 </div>
-                {/* body */}
-                <div className="mt-3">
-                    <div className="flex flex-col gap-1">
-                        <label htmlFor="" className="text-gray-500 text-sm">Nom de votre boutique</label>
-                        <div className=" border p-1 px-4 rounded rounded-md flex items-center"><AiFillShop className="text-gray-500"/>
-                        <input type="text" className="w-full p-3 outline-none" /></div>
-                    </div>
+                <div className="mb-3">
+                  <strong>Catégorie :</strong> {shopInfo.categorie}
+                </div>
+                <div className="mb-3">
+                  <strong>Contact :</strong> {shopInfo.contact}
+                </div>
+                <div className="mb-3">
+                  <strong>Adresse :</strong> {shopInfo.adresse}
+                </div>
+                <div className="mb-3">
+                  <strong>Description :</strong>{" "}
+                  {shopInfo.description.length > 100
+                    ? shopInfo.description.slice(0, 100) + "..."
+                    : shopInfo.description}
                 </div>
               </div>
             </div>
           </div>
         );
+
       case "Ma formule":
         return (
-          <div className="flex flex-col">
-            {/* header */}
-            <div className="">
-              <h1 className="text-gray-600 font-semibold text-2xl">
-                Ma formule
-              </h1>
-              <span className="flex items-center  gap-2 text-gray-400 text-sm">
-                <FiInfo />
-                <p>
-                  Ameliore votre formule pour bene ficie de meilleure avantages
-                </p>
-              </span>
-            </div>
-            {/* body */}
-
-            {/* plans */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 ">
-              {plans.map((plan, idx) => (
+          <div>
+            <h2 className="mb-4 text-lg font-bold">Choisir votre formule</h2>
+            <div className="grid grid-cols-3 gap-4">
+              {plans.map(({ name, prix, delai, description, action, active }, i) => (
                 <div
-                  className={`card border rounded rounded-md flex flex-col justify-center p-6 text-center gap-4 shadow-sm ${
-                    plan.name === "Pro" ? "border-primary" : ""
+                  key={name}
+                  className={`card p-5 rounded-md border ${
+                    active ? "border-primary bg-primary/10" : "border-gray-300"
                   }`}
                 >
-                  {plan.name === "Pro" && (
-                    <div className="badge text-white bg-gradient-to-r from-green-500 to-fuchsia-600 absolute top-4 right-4">
-                      Plus Populaire
-                    </div>
-                  )}
-                  <div className="flex flex-col">
-                    <span
-                      className={`font-bold text-sm ${
-                        plan.name === "Pro" ? "text-gray-400" : "text-gray-400 "
-                      }`}
-                    >
-                      {plan.name}
-                    </span>
-                    <span className="font-semibold text-xl">
-                      {plan.prix + " FCFA/" + plan.delai}
-                    </span>
-                  </div>
-                  <p
-                    className={`text-sm ${
-                      plan.name === "Pro" ? "text-gray-400" : "text-gray-400 "
-                    }`}
-                  >
-                    {plan.description}
+                  <h3 className="font-bold">{name}</h3>
+                  <p>{description}</p>
+                  <p className="text-xl font-semibold mt-3">
+                    {prix} FCFA / {delai}
                   </p>
                   <button
-                    className={`btn btn-outline border-gray-300 text-gray-400 font-bold text-sm ${
-                      plan.name === "Pro"
-                        ? "text-green-600 bg-white hover:bg-green-100 hover:text-gray-700"
-                        : "text-gray-400 "
+                    className={`mt-4 px-4 py-2 rounded ${
+                      active ? "bg-primary text-white" : "border border-primary text-primary"
                     }`}
+                    onClick={() => alert(`Vous avez choisi la formule ${name}`)}
                   >
-                    {plan.active ? "Plan Actif" : plan.action}
+                    {action}
                   </button>
                 </div>
               ))}
             </div>
-            {/* compare plan details */}
+
+            {/* Tableau de comparaison */}
+            <div className="mt-10 overflow-x-auto">
+              <table className="w-full border border-gray-300 rounded-md">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="p-3 border border-gray-300"></th>
+                    {plans.map(({ name }) => (
+                      <th
+                        key={name}
+                        className="p-3 border border-gray-300 text-center font-semibold"
+                      >
+                        {name}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(plans[0].features).map((feature) => (
+                    <tr key={feature} className="hover:bg-gray-50">
+                      <td className="p-3 border border-gray-300 font-medium">{feature}</td>
+                      {plans.map(({ features, name }) => (
+                        <td key={name + feature} className="p-3 border border-gray-300 text-center">
+                          {features[feature]}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         );
+
       case "Profile":
-        return <div>merci</div>;
+        return (
+          <div>
+            <h2 className="text-lg font-semibold mb-4">Modifier votre profil</h2>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                alert("Profil sauvegardé !");
+              }}
+              className="space-y-4 max-w-md"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Nom complet
+                </label>
+                <input
+                  type="text"
+                  className="mt-1 block w-full rounded border border-gray-300 p-2"
+                  defaultValue="Jean Dupont"
+                  name="fullname"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  className="mt-1 block w-full rounded border border-gray-300 p-2"
+                  defaultValue="jean.dupont@email.com"
+                  name="email"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Téléphone
+                </label>
+                <input
+                  type="tel"
+                  className="mt-1 block w-full rounded border border-gray-300 p-2"
+                  defaultValue="+237696995879"
+                  name="phone"
+                />
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded"
+              >
+                Sauvegarder
+              </button>
+            </form>
+          </div>
+        );
 
       default:
-        break;
+        return null;
     }
   };
 
   return (
-    <div className="flex flex-col p-4">
-      <span className="text-3xl font-semibold text-gray-500">
-        Parametres de compte
-      </span>
-      {/* Tablist */}
-      <div role="tablist" className=" flex gap-2 mt-4">
-        {tabs.map((tab) => (
+    <div className="max-w-7xl mx-auto p-4">
+      <h1 className="mb-4 text-xl font-semibold text-gray-800">Paramètres</h1>
+      <div className="flex gap-6 mb-6">
+        {tabs.map((name) => (
           <button
-            key={tab}
-            role="tab"
-            onClick={() => activedTab(tab)}
-            className={`tab  rounded rounded-md border text-gray-400 ${
-              activeTab === tab ? "bg-gray-100 text-gray-600 font-semibold" : ""
+            key={name}
+            onClick={() => activedTab(name)}
+            className={`border-b-4 pb-2 ${
+              activeTab === name ? "border-primary text-primary" : "border-transparent"
             }`}
           >
-            {tab}
+            {name}
           </button>
         ))}
       </div>
-      {/* content */}
-      <section className="mt-4">{renderTab()}</section>
+
+      <div>{renderTab()}</div>
     </div>
   );
 }
