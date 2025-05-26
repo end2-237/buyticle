@@ -1,10 +1,8 @@
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { getDocs, query, where } from "firebase/firestore";
-
+import { collection, addDoc, serverTimestamp, doc, updateDoc, arrayUnion, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 
 /**
- * Ajoute un produit dans Firestore avec la structure exacte demandée.
+ * Ajoute un produit dans Firestore avec la structure demandée.
  * @param {Object} product - Objet produit à enregistrer.
  * @returns {Promise<string>} - ID du document ajouté.
  */
@@ -13,7 +11,6 @@ export const addProductToFirestore = async (product) => {
     throw new Error('Le titre et le prix du produit sont obligatoires.');
   }
 
-  // Construire l'objet final conforme au modèle
   const newProduct = {
     Title: product.Title,
     Description: product.Description,
@@ -27,11 +24,11 @@ export const addProductToFirestore = async (product) => {
     ProductType: product.ProductType || 'ProductType.variable',
 
     Brand: {
-      Id: product.Brand.Id || '',
-      Name: product.Brand.Name || '',
-      Image: product.Brand.Image || '',
-      IsFeatured: product.Brand.IsFeatured ?? true,
-      ProductsCount: Number(product.Brand.ProductsCount) || 0,
+      Id: product.Brand?.Id || '',
+      Name: product.Brand?.Name || '',
+      Image: product.Brand?.Image || '',
+      IsFeatured: product.Brand?.IsFeatured ?? true,
+      ProductsCount: Number(product.Brand?.ProductsCount) || 0,
     },
 
     Images: product.Images || [],
@@ -39,7 +36,7 @@ export const addProductToFirestore = async (product) => {
 
     ProductAttributes: product.ProductAttributes || [],
 
-    ProductVariations: product.ProductVariations.map((v) => ({
+    ProductVariations: (product.ProductVariations || []).map((v) => ({
       Id: v.Id,
       AttributeValues: v.AttributeValues,
       Description: v.Description,
@@ -57,14 +54,43 @@ export const addProductToFirestore = async (product) => {
   return docRef.id;
 };
 
+/**
+ * Ajoute un produit et met à jour la boutique pour inclure l'ID du produit.
+ * @param {Object} product - Objet produit à enregistrer.
+ * @param {string} shopId - ID de la boutique à mettre à jour.
+ * @returns {Promise<string>} - ID du produit ajouté.
+ */
+export const addProductAndUpdateShop = async (product, shopId) => {
+  if (!shopId) throw new Error("shopId est requis pour mettre à jour la boutique");
 
+  // Ajouter le produit et récupérer son ID
+  const productId = await addProductToFirestore(product);
+
+  // Mettre à jour la boutique pour ajouter l'ID produit dans Products
+  const shopRef = doc(db, "Store", shopId);
+  try {
+    await updateDoc(shopRef, {
+      Products: arrayUnion(productId),
+    });
+  } catch (e) {
+    console.error("Erreur update boutique Products:", e);
+    throw e;
+  }
+
+  return productId;
+};
+
+/**
+ * Récupère les produits correspondant aux IDs donnés.
+ * @param {string[]} Products - Liste d'IDs produits.
+ * @returns {Promise<Array>} - Liste des produits.
+ */
 export const fetchProductsByIds = async (Products) => {
   if (!Products.length) return [];
 
   const productsRef = collection(db, 'Products');
 
-  // Firestore permet where('id', 'in', [...]) max 10 IDs
-  // On prend donc juste max 10
+  // Firestore limite 10 IDs max pour "in" query
   const limitedIds = Products.slice(0, 10);
 
   const q = query(productsRef, where('__name__', 'in', limitedIds));
