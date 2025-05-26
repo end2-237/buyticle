@@ -15,10 +15,10 @@ import {
   FiLogOut,
   FiChevronDown,
   FiChevronUp,
+  FiStar,
 } from "react-icons/fi";
 
-const Sidebar = () => {
-  const [open, setOpen] = useState(false);
+const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("darkMode");
@@ -70,7 +70,6 @@ const Sidebar = () => {
     {
       name: "Buyticle Pub",
       icon: <FiTag />,
-      path: "/dashboard/vendeur/espacepub",
       children: [
         { name: "Créer un CTA", path: "/dashboard/vendeur/espacepub" },
         {
@@ -84,12 +83,16 @@ const Sidebar = () => {
       icon: <FiBarChart2 />,
       path: "/dashboard/vendeur/statistiques",
     },
-    { name: "Solde", icon: <FiCreditCard />, path: "/notfound" },
-    { name: "Settings", icon: <FiSettings />, path: "/dashboard/vendeur/parametres" },
+    { name: "Solde", icon: <FiCreditCard />, path: "/dashboard/vendeur/solde" },
+    {
+      name: "Settings",
+      icon: <FiSettings />,
+      path: "/dashboard/vendeur/parametres",
+    },
   ];
 
-  const renderLinks = (items, level = 0) => {
-    return items.map((item, index) => {
+  const renderLinks = (items, level = 0) =>
+    items.map((item, index) => {
       const isActive = item.path && location.pathname === item.path;
       const isDropdownActive =
         item.children &&
@@ -102,139 +105,107 @@ const Sidebar = () => {
         );
 
       const isOpen = dropdownStates[item.name];
+      const textColor = isActive || isDropdownActive
+        ? "text-green-500 font-semibold"
+        : "text-gray-400";
 
-      const baseTextColor = "text-gray-400";
-      const activeTextColor = "text-green-500 font-semibold";
-      const hoverTextColor = "hover:text-green-400";
-      const focusRing = "focus:ring-2 focus:ring-green-400";
+      const size = level === 0 ? "text-base" : "text-sm";
+      const padding = level > 0 ? "pl-6" : "";
 
-      const textColor =
-        isActive || isDropdownActive ? activeTextColor : baseTextColor;
-
-      const textSize = level === 0 ? "text-base" : "text-sm";
-      // Réduction indentation ici :
-      const iconIndent = level > 0 ? "ml-2" : "";
-      const verticalLine = level > 0 ? "border-l-2 border-gray-700 pl-2 ml-2" : "";
-
-      if (item.children) {
-        return (
-          <div key={index} className="space-y-1">
-            <button
-              onClick={() => handleParentClick(item)}
-              className={`flex items-center w-full gap-3 py-2 px-4 rounded-md transition-colors duration-300 ease-in-out ${textColor} ${hoverTextColor} ${textSize} ${focusRing} focus:outline-none`}
-              aria-expanded={isOpen ? "true" : "false"}
-              aria-controls={`${item.name}-submenu`}
-              type="button"
-            >
-              <span className={`flex items-center gap-3 ${verticalLine}`}>
-                {level === 0 && (
-                  <span className="text-lg text-green-500">{item.icon}</span>
-                )}
-                {open && <span className={`${iconIndent}`}>{item.name}</span>}
-              </span>
-              {open && (
-                <span className="ml-auto text-green-400">
-                  {isOpen ? <FiChevronUp /> : <FiChevronDown />}
-                </span>
-              )}
-            </button>
-            {isOpen && open && (
-              <div
-                id={`${item.name}-submenu`}
-                className="ml-4 border-l border-gray-700 pl-4"
-              >
-                {renderLinks(item.children, level + 1)}
-              </div>
-            )}
-          </div>
-        );
-      } else {
-        return (
-          <Link
-            key={index}
-            to={item.path}
-            className={`flex items-center gap-3 py-2 px-4 rounded-md transition-colors duration-300 ease-in-out ${textColor} ${hoverTextColor} ${textSize} ${focusRing} focus:outline-none`}
+      return item.children ? (
+        <div key={index} className="space-y-1">
+          <button
+            onClick={() => handleParentClick(item)}
+            className={`flex items-center gap-3 py-2 px-4 rounded-md w-full ${textColor} hover:text-green-400 transition-colors duration-200 ${size}`}
           >
-            <span className={`flex items-center gap-3 ${verticalLine}`}>
-              {level === 0 && (
-                <span className="text-lg text-green-500">{item.icon}</span>
-              )}
-              {open && <span className={`${iconIndent}`}>{item.name}</span>}
-            </span>
-          </Link>
-        );
-      }
+            {level === 0 && <span className="text-lg">{item.icon}</span>}
+            {open && <span className={`${padding}`}>{item.name}</span>}
+            {open && (
+              <span className="ml-auto">
+                {isOpen ? <FiChevronUp /> : <FiChevronDown />}
+              </span>
+            )}
+          </button>
+          {isOpen && open && (
+            <div className="ml-4 border-l border-gray-700 pl-4">
+              {renderLinks(item.children, level + 1)}
+            </div>
+          )}
+        </div>
+      ) : (
+        <Link
+          key={index}
+          to={item.path}
+          className={`flex items-center gap-3 py-2 px-4 rounded-md transition-colors duration-200 ${textColor} hover:text-green-400 ${size}`}
+        >
+          {level === 0 && <span className="text-lg">{item.icon}</span>}
+          {open && <span className={`${padding}`}>{item.name}</span>}
+        </Link>
+      );
     });
-  };
 
   return (
     <aside
-      className={`h-screen transition-all duration-500 ease-in-out select-none ${
-        open ? "w-64" : "w-20"
-      } bg-gray-800 flex flex-col shadow-lg`}
-      aria-label="Sidebar Navigation"
-    >
+  className={`fixed md:static z-40 inset-y-0 left-0 transform transition-transform duration-300 ease-in-out
+    ${open ? "w-64" : "w-16"} bg-gray-800 dark:bg-gray-900 flex flex-col shadow-lg
+    ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+  `}
+>
+
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-700">
         {open && (
-          <span className="text-2xl font-extrabold text-green-500 tracking-wide">
+          <span className="text-xl font-bold text-green-500 tracking-wide">
             Buyticle
           </span>
         )}
         <button
           onClick={() => setOpen(!open)}
-          aria-label={open ? "Fermer le menu" : "Ouvrir le menu"}
-          className="btn-circle p-2 bg-gray-700 hover:bg-gray-600 active:bg-gray-500 transition-colors duration-300 rounded-full text-green-500 shadow-md focus:outline-none focus:ring-2 focus:ring-green-400"
-          type="button"
+          className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
+          aria-label={open ? "Réduire" : "Déployer"}
         >
-          {open ? <FiChevronLeft size={24} /> : <FiChevronRight size={24} />}
+          {open ? <FiChevronLeft /> : <FiChevronRight />}
         </button>
       </div>
 
-      {/* Menu */}
-      <nav className="flex-1 overflow-y-auto px-2 py-6 space-y-1">
+      {/* Links */}
+      <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-1">
         {renderLinks(menuItems)}
 
-        {/* Dark Mode Toggle */}
-        <div className="mt-6 px-4">
+        <div className="mt-6 px-2">
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className="w-full flex items-center gap-3 py-2 px-4 rounded-md bg-gray-700 text-gray-300 hover:bg-gray-600 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-green-400"
-            type="button"
+            className="flex items-center gap-3 py-2 px-4 w-full bg-gray-700 text-gray-300 hover:bg-gray-600 rounded-md transition"
           >
-            {darkMode ? (
-              <FiSun className="text-yellow-400" />
-            ) : (
-              <FiMoon className="text-green-400" />
-            )}
-            {open && <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>}
+            {darkMode ? <FiSun className="text-yellow-400" /> : <FiMoon className="text-green-400" />}
+            {open && <span>{darkMode ? "Mode clair" : "Mode sombre"}</span>}
           </button>
         </div>
       </nav>
 
-      {/* Footer */}
-      <div className="px-6 py-4 border-t border-gray-700">
-        <div
-          className={`flex items-center ${
-            open ? "justify-between" : "justify-center"
-          }`}
+      {/* Upgrade CTA */}
+      <div className="px-4 py-3 border-t border-gray-700">
+        <button
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 text-sm bg-gradient-to-r from-green-500 to-lime-400 text-white rounded-lg shadow-md hover:opacity-90 transition"
         >
+          <FiStar className="text-white" />
+          {open && <span>Passer au plan supérieur</span>}
+        </button>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-gray-700">
+        <div className="flex items-center justify-between">
           <img
             src="https://i.pravatar.cc/40"
+            className="rounded-full w-9 h-9 border border-gray-600"
             alt="avatar"
-            className="rounded-full w-9 h-9 border-2 border-gray-700"
-            draggable={false}
           />
           {open && (
-            <div className="flex flex-col ml-3">
-              <p className="text-sm font-semibold text-gray-300 select-none">
-                Ton Nom
-              </p>
-              <button
-                className="text-xs text-red-500 hover:text-red-400 flex items-center gap-1 focus:outline-none"
-                type="button"
-              >
-                <FiLogOut className="inline-block" /> Se déconnecter
+            <div className="ml-3 flex flex-col">
+              <span className="text-sm font-medium text-white">Ton Nom</span>
+              <button className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
+                <FiLogOut /> Déconnexion
               </button>
             </div>
           )}

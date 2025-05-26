@@ -1,4 +1,4 @@
-import { getAuth } from "firebase/auth"; // 👈 AJOUT ICI
+import { getAuth } from "firebase/auth"; 
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
@@ -19,7 +19,7 @@ const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
 // Initialiser Auth et Firestore
-const auth = getAuth(app); // 👈 AJOUT ICI
+const auth = getAuth(app); 
 const db = getFirestore(app);
 
 // Exporter les connexions

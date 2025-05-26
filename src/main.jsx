@@ -23,35 +23,72 @@ import AdsPage from "./pages/dashboard/vendeurs/buyticleads.jsx";
 import OfferPage from "./pages/dashboard/vendeurs/offer/offer_page.jsx";
 import DashboardPage from "./pages/dashboard/vendeurs/home.jsx";
 import ParametresPage from "./pages/dashboard/vendeurs/Parametres.jsx";
+import "leaflet/dist/leaflet.css";
+import SoldePage from "./pages/dashboard/vendeurs/solde.jsx";
+import { ShopProvider } from "./contexts/shopContext.jsx";
+import PrivateRoute from "./routes/PrivateRoute.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
 root.render(
   <StrictMode>
-    <Router>
-      <Routes>
-        <Route path="/" element={<App />} />
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/signin" element={<SignInForm />} />
-        <Route path="/contact" element={<ContactForm />} />
-        <Route path="/payment" element={<PaymentForm />} />
-        <Route path="/notfound" element={<NotFoundPage />} />
-        <Route path="/onboarding" element={<OnboardingPage />} />
+    <ShopProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<App />} />
+          <Route path="/home" element={<HomePage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/signin" element={<SignInForm />} />
+          <Route path="/contact" element={<ContactForm />} />
+          <Route path="/payment" element={<PaymentForm />} />
+          <Route path="/notfound" element={<NotFoundPage />} />
+          <Route path="/onboarding" element={<OnboardingPage />} />
 
-        <Route path="/dashboard/vendeur" element={<Accueil />} />
-        <Route path="/dashboard/vendeur/home" element={<DashboardPage />} />
-      <Route path="/dashboard/vendeur/produits" element={<Produits />} />
-      <Route path="/dashboard/vendeur/parametres" element={<ParametresPage />} />
-      <Route path="/dashboard/vendeur/produits/ajouter" element={<AddProductPage />} />
-      <Route path="/dashboard/vendeur/produits/modifier" element={<ModifPage />} />
-      <Route path="/dashboard/vendeur/espacepub" element={<AdsPage />} />
-      <Route path="/dashboard/vendeur/espacepub/offres" element={<OfferPage />} />
-      <Route path="/dashboard/vendeur/statistiques" element={<StatsPage />} />
-      <Route path="/dashboard/vendeur/commandes" element={<Commandes />} />
-      <Route path="/dashboard/vendeur/abonnement" element={<Abonnement />} />
-      <Route path="/dashboard/vendeur/parametres" element={<Parametres />} />
-      </Routes>
-    </Router>
+          {/* Routes prive pour les vendeurs */}
+
+          <Route
+            path="/dashboard/vendeur"
+            element={
+              <PrivateRoute>
+                <Accueil />
+              </PrivateRoute>
+            }
+          />
+          <Route path="/dashboard/vendeur/home" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+          <Route path="/dashboard/vendeur/produits" element={<PrivateRoute><Produits /></PrivateRoute>} />
+          <Route
+            path="/dashboard/vendeur/parametres"
+            element={<PrivateRoute><ParametresPage /></PrivateRoute>}
+          />
+          <Route path="/dashboard/vendeur/solde" element={<PrivateRoute><SoldePage /></PrivateRoute>} />
+          <Route
+            path="/dashboard/vendeur/produits/ajouter"
+            element={<PrivateRoute><AddProductPage /></PrivateRoute>}
+          />
+          <Route
+            path="/dashboard/vendeur/produits/modifier"
+            element={<PrivateRoute><ModifPage /></PrivateRoute>}
+          />
+          <Route path="/dashboard/vendeur/espacepub" element={<PrivateRoute><AdsPage /></PrivateRoute>} />
+          <Route
+            path="/dashboard/vendeur/espacepub/offres"
+            element={<PrivateRoute><OfferPage /></PrivateRoute>}
+          />
+          <Route
+            path="/dashboard/vendeur/statistiques"
+            element={<PrivateRoute><StatsPage /></PrivateRoute>}
+          />
+          <Route path="/dashboard/vendeur/commandes" element={<PrivateRoute><Commandes /></PrivateRoute>} />
+          <Route
+            path="/dashboard/vendeur/abonnement"
+            element={<PrivateRoute><Abonnement /></PrivateRoute>}
+          />
+          <Route
+            path="/dashboard/vendeur/parametres"
+            element={<PrivateRoute><Parametres /></PrivateRoute>}
+          />
+        </Routes>
+      </Router>
+    </ShopProvider>
   </StrictMode>
 );

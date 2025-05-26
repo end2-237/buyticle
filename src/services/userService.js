@@ -1,5 +1,5 @@
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore"; // setDoc pour ID contrôlé
+import { doc, setDoc } from "firebase/firestore";
 import { db } from "../firebase";
 
 export async function createUserAndStore({

@@ -91,7 +91,7 @@ export default function App() {
           transition={{ delay: 0.3, duration: 0.5 }}
           className="flex justify-center"
         >
-          <div className="border w-86 md:w-96 flex rounded rounded-lg">
+          <div className="border xs:w-[100px] w-86 md:w-96 flex rounded rounded-lg">
             <div className="flex items-center pl-6">
               <div className=" text-xl text-gray-500">
                 <label className="cursor-pointer" htmlFor="email">

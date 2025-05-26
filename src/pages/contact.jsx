@@ -2,6 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import Navigation from "../nav";
 import Footer from "../footer";
+import GridShape from "../components/gridShape";
 
 function ShieldCheckIcon() {
   return (
@@ -54,6 +55,7 @@ export default function ContactForm() {
     <div>
     <Navigation/>
       <section className="relative z-10 py-12 px-6 bg-base-100 text-base-content">
+        <GridShape/>
       <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-center">
         <div>
           <motion.h2
@@ -111,7 +113,7 @@ export default function ContactForm() {
               <p className="text-gray-600">Notre équipe vous répondra dans les plus brefs délais.</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="relative z-1 flex flex-col gap-4">
               <input
                 type="text"
                 name="name"

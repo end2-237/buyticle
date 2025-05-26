@@ -122,7 +122,7 @@ export default function OnboardingPage() {
               </p>
             </div>
 
-            <div className="flex justify-center mt-5 w-full max-w-sm">
+            <div className="inputField flex justify-center mt-5 w-full max-w-sm">
               <div className="flex gap-2 items-center p-4 border rounded-lg w-full">
                 <label htmlFor="shop" className="cursor-pointer">
                   <FaShop />
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
                 <div className="h-5 w-[1px] bg-gray-300 mx-2"></div>
                 <input
                   type="text"
-                  placeholder="SaraShop"
+                  placeholder="MyShop"
                   className="flex-grow outline-none"
                   id="shop"
                   value={shopName}
