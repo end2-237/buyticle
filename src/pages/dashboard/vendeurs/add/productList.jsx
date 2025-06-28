@@ -13,10 +13,12 @@ import {
 import { FaCrown } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import { useShop } from "../../../../contexts/shopContext";
+import { deleteProductAndUpdateShop } from "../../../../services/productService";
 
 const CatalogueProduits = () => {
   const { products, loading, error } = useShop();
   const navigate = useNavigate();
+  const { setProducts, shopId, setLoading } = useShop();
 
   const [recherche, setRecherche] = useState("");
   const [filtreStock, setFiltreStock] = useState("all");
@@ -34,43 +36,108 @@ const CatalogueProduits = () => {
           p.CategoryId.toLowerCase().includes(recherche.toLowerCase())
       );
     }
-    if (filtreStock === "enStock") filtered = filtered.filter((p) => p.Stock > 0);
-    else if (filtreStock === "rupture") filtered = filtered.filter((p) => p.Stock === 0);
+    if (filtreStock === "enStock")
+      filtered = filtered.filter((p) => p.Stock > 0);
+    else if (filtreStock === "rupture")
+      filtered = filtered.filter((p) => p.Stock === 0);
 
-    if (filtreCreateur === "oui") filtered = filtered.filter((p) => p.Brand?.IsFeatured);
-    else if (filtreCreateur === "non") filtered = filtered.filter((p) => !p.Brand?.IsFeatured);
+    if (filtreCreateur === "oui")
+      filtered = filtered.filter((p) => p.Brand?.IsFeatured);
+    else if (filtreCreateur === "non")
+      filtered = filtered.filter((p) => !p.Brand?.IsFeatured);
 
     filtered.sort((a, b) => {
       let valA, valB;
       switch (tri.champ) {
-        case "prix": valA = a.Price; valB = b.Price; break;
-        case "stock": valA = a.Stock; valB = b.Stock; break;
-        case "vendu": valA = a.vendu; valB = b.vendu; break;
-        case "revenu": valA = a.revenu; valB = b.revenu; break;
-        case "nom": valA = a.Title.toLowerCase(); valB = b.Title.toLowerCase(); break;
-        default: valA = new Date(a.CreatedAt?.seconds * 1000); valB = new Date(b.CreatedAt?.seconds * 1000); break;
+        case "prix":
+          valA = a.Price;
+          valB = b.Price;
+          break;
+        case "stock":
+          valA = a.Stock;
+          valB = b.Stock;
+          break;
+        case "vendu":
+          valA = a.vendu;
+          valB = b.vendu;
+          break;
+        case "revenu":
+          valA = a.revenu;
+          valB = b.revenu;
+          break;
+        case "nom":
+          valA = a.Title.toLowerCase();
+          valB = b.Title.toLowerCase();
+          break;
+        default:
+          valA = new Date(a.CreatedAt?.seconds * 1000);
+          valB = new Date(b.CreatedAt?.seconds * 1000);
+          break;
       }
-      return tri.ordre === "asc" ? (valA > valB ? 1 : -1) : (valA < valB ? 1 : -1);
+      return tri.ordre === "asc"
+        ? valA > valB
+          ? 1
+          : -1
+        : valA < valB
+        ? 1
+        : -1;
     });
 
     return filtered;
   }, [products, recherche, filtreStock, filtreCreateur, tri]);
 
   const totalPages = Math.ceil(produitsFiltres.length / itemsPerPage);
-  const produitsPage = produitsFiltres.slice((page - 1) * itemsPerPage, page * itemsPerPage);
+  const produitsPage = produitsFiltres.slice(
+    (page - 1) * itemsPerPage,
+    page * itemsPerPage
+  );
 
   const toggleTri = (champ) => {
-    setTri({ champ, ordre: tri.champ === champ && tri.ordre === "asc" ? "desc" : "asc" });
+    setTri({
+      champ,
+      ordre: tri.champ === champ && tri.ordre === "asc" ? "desc" : "asc",
+    });
     setPage(1);
   };
 
+  const supprimerProduit = async (id) => {
+    if (!window.confirm("Confirmez-vous la suppression de ce produit ?"))
+      return;
+
+    if (!shopId) {
+      alert("Impossible de récupérer l'ID de la boutique.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await deleteProductAndUpdateShop(id, shopId);
+
+      // Mise à jour locale des produits après suppression
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+
+      alert("Produit supprimé avec succès.");
+    } catch (error) {
+      console.error("Erreur lors de la suppression :", error);
+      alert("Une erreur est survenue lors de la suppression.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const toggleActifProduit = (id) => {};
-  const supprimerProduit = (id) => {};
   const dupliquerProduit = (id) => {};
 
-  if (loading) return <p className="text-center text-gray-600 mt-10">Chargement...</p>;
-  if (error) return <p className="text-center text-red-500 mt-10">Erreur : {error.message}</p>;
-  if (!products.length) return <p className="text-center text-gray-500 mt-10">Aucun produit trouvé.</p>;
+  if (loading)
+    return <p className="text-center text-gray-600 mt-10">Chargement...</p>;
+  if (error)
+    return (
+      <p className="text-center text-red-500 mt-10">Erreur : {error.message}</p>
+    );
+  if (!products.length)
+    return (
+      <p className="text-center text-gray-500 mt-10">Aucun produit trouvé.</p>
+    );
 
   return (
     <div className="min-h-screen px-4 md:px-8 py-6 space-y-6">
@@ -128,12 +195,14 @@ const CatalogueProduits = () => {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {produitsPage.length === 0 ? (
-          <p className="text-center col-span-full text-gray-500">Aucun produit ne correspond à vos critères.</p>
+          <p className="text-center col-span-full text-gray-500">
+            Aucun produit ne correspond à vos critères.
+          </p>
         ) : (
           produitsPage.map((p) => (
             <div
               key={p.id}
-              className={`border rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between gap-4 transition hover:shadow-md ${!p.actif ? "opacity-60" : ""}`}
+              className="border rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between gap-4 transition hover:shadow-md"
             >
               <div className="flex items-start gap-3">
                 <img
@@ -143,11 +212,22 @@ const CatalogueProduits = () => {
                 />
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-1">
-                    <h3 className="font-semibold text-gray-800 line-clamp-1">{p.Title}</h3>
-                    {p.Brand?.IsFeatured && <FaCrown className="text-yellow-500" title="Créateur de marque" />}
+                    <h3 className="font-semibold text-gray-800 line-clamp-1">
+                      {p.Title}
+                    </h3>
+                    {p.Brand?.IsFeatured && (
+                      <FaCrown
+                        className="text-yellow-500"
+                        title="Créateur de marque"
+                      />
+                    )}
                   </div>
-                  <p className="text-sm text-gray-500">Catégorie: {p.CategoryId}</p>
-                  <p className="text-sm text-gray-600">{p.Price?.toLocaleString()} FCFA</p>
+                  <p className="text-sm text-gray-500">
+                    Catégorie: {p.CategoryId}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {p.Price?.toLocaleString()} FCFA
+                  </p>
                 </div>
               </div>
 
@@ -155,12 +235,19 @@ const CatalogueProduits = () => {
                 <span>Stock: {p.Stock ?? "N/A"}</span>
                 <span>Vendus: {p.vendu ?? "N/A"}</span>
                 <span>Revenu: {p.revenu?.toLocaleString() ?? "N/A"} FCFA</span>
-                <span>Date: {new Date(p.CreatedAt?.seconds * 1000).toLocaleDateString()}</span>
+                <span>
+                  Date:{" "}
+                  {new Date(p.CreatedAt?.seconds * 1000).toLocaleDateString()}
+                </span>
               </div>
 
               <div className="flex justify-between items-center mt-4">
                 <button
-                  className={`rounded-full p-2 ${p.actif ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"}`}
+                  className={`rounded-full p-2 ${
+                    p.actif
+                      ? "bg-green-100 text-green-600"
+                      : "bg-red-100 text-red-600"
+                  }`}
                   onClick={() => toggleActifProduit(p.id)}
                   title={p.actif ? "Désactiver" : "Activer"}
                 >
@@ -168,7 +255,9 @@ const CatalogueProduits = () => {
                 </button>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => navigate(`/dashboard/vendeur/produits/${p.id}`)}
+                    onClick={() =>
+                      navigate(`/dashboard/vendeur/produits/${p.id}`)
+                    }
                     className="text-blue-600 hover:text-blue-800"
                     title="Voir / Modifier"
                   >
@@ -208,7 +297,11 @@ const CatalogueProduits = () => {
             <button
               key={num + 1}
               onClick={() => setPage(num + 1)}
-              className={`px-3 py-1 rounded border ${page === num + 1 ? "bg-blue-500 text-white" : "bg-white hover:bg-gray-100"}`}
+              className={`px-3 py-1 rounded border ${
+                page === num + 1
+                  ? "bg-blue-500 text-white"
+                  : "bg-white hover:bg-gray-100"
+              }`}
             >
               {num + 1}
             </button>

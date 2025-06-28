@@ -151,12 +151,14 @@ export function ShopProvider({ children }) {
         shop,
         shopId,
         products,
+        setProducts, // Ajouté ici
         setShop,
         orders,
         loading,
         error,
         addProduct,
         getShopId,
+        setLoading, // Ajoute-le aussi si tu veux pouvoir le gérer depuis l'extérieur
       }}
     >
       {children}
