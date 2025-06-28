@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import logo from "../assets/logobuy.png";
+import logo from "../assets/buylogo.png";
 import {
   FiBell,
   FiSearch,

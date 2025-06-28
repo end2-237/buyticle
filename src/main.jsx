@@ -43,6 +43,7 @@ root.render(
           <Route path="/payment" element={<PaymentForm />} />
           <Route path="/notfound" element={<NotFoundPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
+          <Route path="/payment-success" element={<OnboardingPage />} />
 
           {/* Routes prive pour les vendeurs */}
 

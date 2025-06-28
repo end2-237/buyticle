@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { FaInbox, FaRecycle, FaShippingFast } from "react-icons/fa";
-import { FcPositiveDynamic, FcSafe } from "react-icons/fc";
+import {
+  FaInbox,
+  FaRecycle,
+  FaShippingFast,
+  FaCheckCircle,
+} from "react-icons/fa";
 import {
   FiBell,
   FiHelpCircle,
@@ -9,113 +13,69 @@ import {
   FiCreditCard,
   FiAlertTriangle,
 } from "react-icons/fi";
+import { useShop } from "../../../../contexts/shopContext";
 
-const commandesInitiales = [
-  {
-    id: "#10001",
-    produit: "Huile de Karité Pure",
-    date: "2022-01-10T00:00:00",
-    statut: "En traitement",
-    paiement: "COD",
-    prix: 3000,
-    priseEnCharge: false,
-    client: {
-      nom: "Claire Dubois",
-      email: "claire@example.com",
-      telephone: "+33123456789",
-      adresse: "12 rue Lafayette, Paris, France",
-      facturation: "Identique à l'adresse de livraison",
-    },
-  },
-  {
-    id: "#10002",
-    produit: "Savon Naturel Bio",
-    date: "2022-02-15T00:00:00",
-    statut: "Complétée",
-    paiement: "CC",
-    prix: 2500,
-    priseEnCharge: true,
-    client: {
-      nom: "Jean Martin",
-      email: "jean.martin@example.com",
-      telephone: "+33698765432",
-      adresse: "45 avenue Victor Hugo, Lyon, France",
-      facturation: "Adresse différente : 78 rue de Lille, Lille, France",
-    },
-  },
-  {
-    id: "#10003",
-    produit: "Ecouteur JBL",
-    date: "2023-02-15T00:00:00",
-    statut: "En traitement",
-    paiement: "OM",
-    prix: 7500,
-    priseEnCharge: false,
-    client: {
-      nom: "Nsoga David",
-      email: "dan@example.com",
-      telephone: "+237698765432",
-      adresse: "45 avenue Victor Hugo, Lyon, France",
-      facturation: "Adresse différente : 78 rue de Lille, Lille, France",
-    },
-  },
-  {
-    id: "#10004",
-    produit: "Rolex",
-    date: "2024-02-15T00:00:00",
-    statut: "Annulée",
-    paiement: "OM",
-    prix: 7500,
-    priseEnCharge: false,
-    client: {
-      nom: "Nsoga David",
-      email: "dan@example.com",
-      telephone: "+237698765432",
-      adresse: "45 avenue Victor Hugo, Lyon, France",
-      facturation: "Adresse différente : 78 rue de Lille, Lille, France",
-    },
-  },
+const STATUTS = [
+  { label: "Toutes", value: "Toutes" },
+  { label: "En traitement", value: "En traitement" },
+  { label: "Complétée", value: "Complétée" },
+  { label: "Annulée", value: "Annulée" },
 ];
 
 const TableauClient = () => {
+  const { orders } = useShop();
+
   const [ongletActif, setOngletActif] = useState("Toutes");
-  const [commandes, setCommandes] = useState(commandesInitiales);
+  const [commandes, setCommandes] = useState([]);
   const [total, setTotal] = useState(0);
-  const [commandeSelectionnee, setCommandeSelectionnee] = useState(
-    commandesInitiales[0]
-  );
+  const [commandeSelectionnee, setCommandeSelectionnee] = useState(null);
+  const [recherche, setRecherche] = useState("");
+  const [triAsc, setTriAsc] = useState(false);
 
   useEffect(() => {
-    const newTotal = () => {
-      const newCount = commandes.reduce((acc, ele) => {
-        acc += Number(ele.prix);
-        return ;
-      },{});
-      setTotal(newCount);
-    };
-    newTotal();
-  }, [total]);
-
-  const [recherche, setRecherche] = useState("");
-  const [triAsc, setTriAsc] = useState(true);
+    setCommandes(orders || []);
+  }, [orders]);
 
   const commandesFiltrees = commandes
-    .filter(
-      (cmd) =>
-        (ongletActif === "Toutes" || cmd.statut === ongletActif) &&
-        (cmd.id.toLowerCase().includes(recherche.toLowerCase()) ||
-          cmd.produit.toLowerCase().includes(recherche.toLowerCase()))
-    )
+    .filter((cmd) => {
+      const statutFiltre =
+        ongletActif === "Toutes"
+          ? true
+          : ongletActif === "En traitement"
+          ? ["OrderStatus.pending", "OrderStatus.processing"].includes(cmd.status)
+          : ongletActif === "Complétée"
+          ? cmd.status === "OrderStatus.completed"
+          : ongletActif === "Annulée"
+          ? cmd.status === "OrderStatus.cancelled"
+          : true;
+
+      const rechercheFiltre =
+        cmd.id.toLowerCase().includes(recherche.toLowerCase()) ||
+        cmd.items.some((item) =>
+          item.title.toLowerCase().includes(recherche.toLowerCase())
+        );
+
+      return statutFiltre && rechercheFiltre;
+    })
     .sort((a, b) => {
-      const dateA = new Date(a.date);
-      const dateB = new Date(b.date);
+      const dateA = new Date(a.orderDate);
+      const dateB = new Date(b.orderDate);
       return triAsc ? dateA - dateB : dateB - dateA;
     });
 
   useEffect(() => {
+    const totalAmount = commandesFiltrees.reduce(
+      (acc, cmd) => acc + Number(cmd.totalAmount || 0),
+      0
+    );
+    setTotal(totalAmount);
+  }, [commandesFiltrees]);
+
+  useEffect(() => {
     if (
-      commandesFiltrees.length &&
-      !commandesFiltrees.includes(commandeSelectionnee)
+      commandesFiltrees.length > 0 &&
+      (!commandeSelectionnee ||
+        !commandesFiltrees.find((cmd) => cmd.id === commandeSelectionnee.id))
     ) {
       setCommandeSelectionnee(commandesFiltrees[0]);
     }
@@ -124,290 +84,369 @@ const TableauClient = () => {
   const prendreEnCharge = (id) => {
     const nouvellesCommandes = commandes.map((cmd) =>
       cmd.id === id
-        ? { ...cmd, priseEnCharge: true, statut: "En traitement" }
+        ? { ...cmd, priseEnCharge: true, status: "OrderStatus.processing" }
         : cmd
     );
     setCommandes(nouvellesCommandes);
     setCommandeSelectionnee(nouvellesCommandes.find((cmd) => cmd.id === id));
   };
 
+  const getStatutLabel = (status) => {
+    switch (status) {
+      case "OrderStatus.pending":
+      case "OrderStatus.processing":
+        return "En traitement";
+      case "OrderStatus.completed":
+        return "Complétée";
+      case "OrderStatus.cancelled":
+        return "Annulée";
+      default:
+        return status;
+    }
+  };
+
+  const statutColor = (status) => {
+    switch (status) {
+      case "OrderStatus.completed":
+        return "text-green-600";
+      case "OrderStatus.cancelled":
+        return "text-red-600";
+      case "OrderStatus.pending":
+      case "OrderStatus.processing":
+        return "text-yellow-600";
+      default:
+        return "text-gray-600";
+    }
+  };
+
   return (
-    <div className="p-6 space-y-6">
-      {/* En-tête */}
-      <div className="flex justify-between items-center">
-        <div className="space-y-1">
-          <button className="text-sm text-gray-500">Retour aux clients</button>
+    <div className="p-6 bg-gray-50 min-h-screen flex flex-col gap-6 font-sans text-gray-800">
+      {/* En-tête & Recherche */}
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col">
+          <button
+            className="text-indigo-600 hover:text-indigo-800 font-medium transition"
+            aria-label="Retour aux clients"
+          >
+            &larr; Retour aux clients
+          </button>
           {commandeSelectionnee && (
-            <h1 className="text-2xl font-bold">
-              {commandeSelectionnee.client.nom}
+            <h1 className="text-3xl font-bold truncate max-w-xs mt-1">
+              {commandeSelectionnee.Name}
             </h1>
           )}
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
+          <div className="relative w-full md:w-72">
             <input
-              type="text"
-              placeholder="Rechercher"
-              className="w-60 input input-bordered pl-10"
+              type="search"
+              placeholder="Rechercher commande, produit..."
+              className="w-full rounded-lg border border-gray-300 bg-white py-2 pl-11 pr-4 shadow-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
               value={recherche}
               onChange={(e) => setRecherche(e.target.value)}
+              aria-label="Recherche commandes"
             />
             <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
           <input
             type="month"
-            className="w-60 input input-bordered"
-            defaultValue="2022-01"
+            className="w-40 rounded-lg border border-gray-300 py-2 px-3 shadow-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+            defaultValue="2025-01"
+            aria-label="Filtrer par mois"
           />
-          <FiBell className="w-5 h-5 text-gray-500" />
-          <FiHelpCircle className="w-5 h-5 text-gray-500" />
-          <button className="btn bg-white text-gray-500">
+          <button
+            className="text-gray-600 hover:text-gray-900 transition"
+            aria-label="Notifications"
+          >
+            <FiBell className="w-6 h-6" />
+          </button>
+          <button
+            className="text-gray-600 hover:text-gray-900 transition"
+            aria-label="Aide"
+          >
+            <FiHelpCircle className="w-6 h-6" />
+          </button>
+          <button className="btn btn-outline btn-sm whitespace-nowrap">
             Voir la boutique
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-4 gap-4">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
         {[
           {
             titre: "Coût total",
-            valeur: total,
+            valeur: total.toLocaleString("fr-FR", {
+              style: "currency",
+              currency: "XAF",
+              minimumFractionDigits: 0,
+            }),
             note: "Coût total des commandes affichées",
-            icon: <FiCreditCard />,
+            icon: <FiCreditCard className="w-6 h-6 text-indigo-600" />,
           },
           {
             titre: "Total des commandes",
-            valeur: `${commandes.length} 🟡`,
+            valeur: commandes.length,
             note: "Toutes les commandes",
-            icon: <FiAlertTriangle />,
+            icon: <FiAlertTriangle className="w-6 h-6 text-yellow-500" />,
           },
           {
             titre: "Complétées",
-            valeur: `${
-              commandes.filter((c) => c.statut === "Complétée").length
-            } 🟢`,
+            valeur: commandes.filter(
+              (c) => c.status === "OrderStatus.completed"
+            ).length,
             note: "Commandes terminées",
-            icon: <FcPositiveDynamic />,
+            icon: <FaCheckCircle className="w-6 h-6 text-green-600" />,
           },
           {
             titre: "Annulées",
-            valeur: `${
-              commandes.filter((c) => c.statut === "Annulée").length
-            } 🔴`,
+            valeur: commandes.filter(
+              (c) => c.status === "OrderStatus.cancelled"
+            ).length,
             note: "Commandes annulées",
-            icon: <FaRecycle />,
+            icon: <FaRecycle className="w-6 h-6 text-red-500" />,
           },
         ].map((stat, idx) => (
-          <div key={idx} className="card bg-base-100 shadow">
-            <div className="card-body p-4">
-              <div className="flex gap-1 items-center">
-                <span className="font-semibold">{stat.icon}</span>
-                <p className="text-sm text-gray-500">{stat.titre}</p>
-              </div>
-              <h2 className="text-xl font-bold">{idx===0? stat.valeur+"FCFA" : stat.valeur }</h2>
-              <p className="text-xs text-gray-400">{stat.note}</p>
+          <div
+            key={idx}
+            className="bg-white rounded-xl shadow-md p-5 flex items-center gap-4 hover:shadow-lg transition-shadow cursor-default"
+            role="region"
+            aria-label={stat.titre}
+          >
+            <div className="p-3 bg-indigo-100 rounded-full flex items-center justify-center">
+              {stat.icon}
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">{stat.titre}</p>
+              <p className="text-2xl font-semibold">{stat.valeur}</p>
+              <p className="text-xs text-gray-400 mt-1">{stat.note}</p>
             </div>
           </div>
         ))}
-      </div>
+      </section>
 
-      {/* Informations client et commandes */}
-      <div className="grid grid-cols-4 gap-6">
-        {/* Info client */}
-        <div className="col-span-1 space-y-4">
-          {commandeSelectionnee && (
-            <>
-              <div className="rounded-bl-md rounded-br-md bg-base-100 shadow">
-                <div className="card-header p-3 bg-base-200 rounded-tl-md rounded-tr-md">
-                  <div className="font-semibold flex justify-between items-center">
-                    <p className="text-sm font-bold">
-                      Last order{">"}10000FCFA
-                    </p>
-                    <div className="flex gap-2">
-                      <button className="p-2 bg-white rounded-lg">
-                        {commandeSelectionnee.priseEnCharge ? (
-                          <FaInbox />
-                        ) : (
-                          <FaShippingFast />
-                        )}
-                      </button>
-                      <button className="p-2 bg-white rounded-lg">
-                        <FiMoreVertical />
-                      </button>
-                    </div>
-                  </div>
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Date: {commandeSelectionnee.date}
-                  </p>
-                </div>
-                <div className="card-body p-4 space-y-2">
-                  <h3 className="font-semibold">Order Details</h3>
-                  <p className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Prix</span>
-                    <span> {commandeSelectionnee.prix} FCFA</span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="text-gray-600 text-sm">
-                      Total (Tax, prix)
-                    </span>
-                    <span>{commandeSelectionnee.paiement}</span>
-                  </p>
-                  <div
-                    className={`divide  bg-gray-300 rounded-full`}
-                    style={{ height: "1px" }}
-                  ></div>
-                  <div className="flex">
-                    <div className="">
-                      <h3 className="font-semibold mb-1">
-                        Shipping informations
-                      </h3>
-                      <p className="flex justify-between">
-                        <span className="text-gray-600 text-xs">
-                          {commandeSelectionnee.client.adresse}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="">
-                      <h3 className="font-semibold mb-1">
-                        Billing informations
-                      </h3>
-                      <p className="flex justify-between">
-                        <span className="text-gray-600 text-sm">
-                          Same as shipping address
-                        </span>
-                      </p>
-                    </div>
-                  </div>
-                  <div
-                    className={`divide  bg-gray-300 rounded-full`}
-                    style={{ height: "1px" }}
-                  ></div>
-                  <h3 className="font-semibold">Customer informations</h3>
-                  <p className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Nom</span>
-                    <span className="font-bold">
-                      {commandeSelectionnee.client.nom}
-                    </span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Email</span>
-                    <span className="font-bold">
-                      {commandeSelectionnee.client.email}
-                    </span>
-                  </p>
-                  <p className="flex justify-between">
-                    <span className="text-gray-600 text-sm">Telephone</span>
-                    <span className="font-bold">
-                      {commandeSelectionnee.client.telephone}
-                    </span>
-                  </p>
-                </div>
-              </div>
-              <div className="card bg-base-100 shadow">
-                <div className="card-body p-4">
-                  <h3 className="font-semibold mb-2">Activité récente</h3>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>💬 Chat en direct le vendredi 6 janvier 2022</li>
-                    <li>⭐ Évaluation donnée le lundi 9 janvier 2022</li>
-                    {commandeSelectionnee.priseEnCharge && (
-                      <li>📦 Commande prise en charge</li>
-                    )}
-                  </ul>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button className="btn btn-primary w-full">Appeler</button>
-                <button className="btn btn-outline w-full">Message</button>
-              </div>
-            </>
-          )}
-        </div>
+      {/* Onglets filtrage */}
+      <nav
+        className="flex gap-4 border-b border-gray-200 mb-4 overflow-x-auto scrollbar-thin scrollbar-thumb-indigo-300 scrollbar-track-indigo-100"
+        aria-label="Filtrer les commandes par statut"
+      >
+        {STATUTS.map(({ label, value }) => (
+          <button
+            key={value}
+            onClick={() => setOngletActif(value)}
+            className={`py-2 px-4 rounded-t-lg font-semibold transition ${
+              ongletActif === value
+                ? "bg-indigo-600 text-white shadow-md"
+                : "text-gray-600 hover:text-indigo-600 hover:border-b-2 hover:border-indigo-600"
+            }`}
+            aria-current={ongletActif === value ? "page" : undefined}
+          >
+            {label}
+          </button>
+        ))}
+      </nav>
 
-        {/* Commandes */}
-        <div className="col-span-3 space-y-4">
-          <div role="tablist" className="flex gap-2 ">
-            {["Toutes", "En traitement", "Complétée", "Annulée"].map((tab) => (
-              <button
-                key={tab}
-                role="tab"
-                className={`tab transition-shadow  ${
-                  ongletActif === tab
-                    ? " font-semibold text-xs max-w-40 text-gray-600 bg-gray-100  rounded-md"
-                    : " font-semibold text-xs max-w-40 text-gray-400 border border-gray-200  rounded-md"
-                }`}
-                onClick={() => setOngletActif(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-
-          <div className="overflow-x-auto rounded-md border">
-            <table className="table table-zebra text-sm">
-              <thead className="bg-gray-100">
-                <tr>
-                  <th className="text-left">ID</th>
-                  <th className="text-left">Nom du produit</th>
-                  <th
-                    className="text-left cursor-pointer"
-                    onClick={() => setTriAsc(!triAsc)}
+      {/* Contenu principal */}
+      <main className="flex flex-col lg:flex-row gap-6">
+        {/* Colonne gauche - Liste commandes + info client */}
+        <section
+          className="flex-shrink-0 w-full lg:w-96 bg-white rounded-xl shadow-md p-5 flex flex-col max-h-[700px]"
+          aria-label="Liste des commandes"
+        >
+          {/* Info client */}
+          {commandeSelectionnee ? (
+            <div className="mb-6">
+              <div className="flex justify-between items-center border-b border-gray-200 pb-2 mb-3">
+                <p className="text-sm font-semibold text-gray-700">
+                  Dernière commande &gt; 10000 FCFA
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    className="p-2 bg-indigo-50 rounded-md hover:bg-indigo-100 transition"
+                    aria-label={
+                      commandeSelectionnee.priseEnCharge
+                        ? "Commande prise en charge"
+                        : "Commande non prise en charge"
+                    }
                   >
-                    Date {triAsc ? "⬆️" : "⬇️"}
+                    {commandeSelectionnee.priseEnCharge ? (
+                      <FaInbox className="text-indigo-600 w-5 h-5" />
+                    ) : (
+                      <FaShippingFast className="text-indigo-600 w-5 h-5" />
+                    )}
+                  </button>
+                  <button className="p-2 bg-indigo-50 rounded-md hover:bg-indigo-100 transition">
+                    <FiMoreVertical className="text-indigo-600 w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="text-gray-700 space-y-2 text-sm leading-relaxed">
+                <p>
+                  <span className="font-semibold">Nom :</span>{" "}
+                  {commandeSelectionnee.Name}
+                </p>
+                <p>
+                  <span className="font-semibold">Email :</span>{" "}
+                  {commandeSelectionnee.email || "Non renseigné"}
+                </p>
+                <p>
+                  <span className="font-semibold">Téléphone :</span>{" "}
+                  {commandeSelectionnee.PhoneNumber
+                    ? `+237 ${commandeSelectionnee.PhoneNumber}`
+                    : "Non renseigné"}
+                </p>
+                <p>
+                  <span className="font-semibold">Adresse :</span>
+                  <br />
+                  {commandeSelectionnee.Street}, {commandeSelectionnee.City},{" "}
+                  <br />
+                  {commandeSelectionnee.State}, {commandeSelectionnee.PostalCode}
+                  , <br />
+                  {commandeSelectionnee.Country}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-center text-gray-400">Aucune commande sélectionnée</p>
+          )}
+
+          {/* Table liste commandes */}
+          <div className="overflow-y-auto flex-1 scrollbar-thin scrollbar-thumb-indigo-300 scrollbar-track-indigo-100 rounded-md border border-gray-200">
+            <table className="w-full border-collapse text-sm">
+              <thead className="bg-indigo-50 sticky top-0 z-10">
+                <tr>
+                  <th className="text-left p-3 font-medium text-indigo-700">ID</th>
+                  <th className="text-left p-3 font-medium text-indigo-700 cursor-pointer" onClick={() => setTriAsc(!triAsc)}>
+                    Date{" "}
+                    <span className="inline-block text-xs text-indigo-500">
+                      {triAsc ? "▲" : "▼"}
+                    </span>
                   </th>
-                  <th className="text-left">Statut</th>
-                  <th className="text-left">Paiement</th>
-                  <th className="text-left">Prix</th>
-                  <th className="text-left">Actions</th>
+                  <th className="text-left p-3 font-medium text-indigo-700">Statut</th>
+                  <th className="text-right p-3 font-medium text-indigo-700">Total</th>
+                  <th className="text-center p-3 font-medium text-indigo-700">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {commandesFiltrees.map((cmd, i) => (
-                  <tr key={i} className="cursor-pointer hover:bg-gray-100">
-                    <td onClick={() => setCommandeSelectionnee(cmd)}>
-                      {cmd.id}
-                    </td>
-                    <td onClick={() => setCommandeSelectionnee(cmd)}>
-                      {cmd.produit}
-                    </td>
-                    <td onClick={() => setCommandeSelectionnee(cmd)}>
-                      {cmd.date.split("T")[0]}
-                    </td>
-                    <td
-                      className={
-                        cmd.statut === "Complétée"
-                          ? "text-green-600"
-                          : cmd.statut === "Annulée"
-                          ? "text-red-600"
-                          : "text-yellow-600"
-                      }
-                    >
-                      {cmd.statut}
-                    </td>
-                    <td>{cmd.paiement}</td>
-                    <td>{cmd.prix} FCFA</td>
-                    <td>
-                      {!cmd.priseEnCharge && cmd.statut === "En traitement" && (
-                        <button
-                          className="btn btn-xs btn-outline"
-                          onClick={() => prendreEnCharge(cmd.id)}
-                        >
-                          Prendre en charge
-                        </button>
-                      )}
-                      {cmd.priseEnCharge && (
-                        <span className="text-green-500 text-xs">
-                          Déjà pris en charge
-                        </span>
-                      )}
+                {commandesFiltrees.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="text-center p-6 text-gray-400 italic">
+                      Aucune commande trouvée.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  commandesFiltrees.map((cmd) => (
+                    <tr
+                      key={cmd.id}
+                      onClick={() => setCommandeSelectionnee(cmd)}
+                      className={`cursor-pointer transition hover:bg-indigo-100 ${
+                        commandeSelectionnee?.id === cmd.id ? "bg-indigo-200" : ""
+                      }`}
+                      tabIndex={0}
+                      aria-selected={commandeSelectionnee?.id === cmd.id}
+                    >
+                      <td className="p-3 font-mono text-xs">{cmd.id}</td>
+                      <td className="p-3">
+                        {new Date(cmd.orderDate).toLocaleDateString("fr-FR")}
+                      </td>
+                      <td className={`p-3 font-semibold ${statutColor(cmd.status)}`}>
+                        {getStatutLabel(cmd.status)}
+                      </td>
+                      <td className="p-3 text-right font-semibold text-indigo-700">
+                        {Number(cmd.totalAmount).toLocaleString("fr-FR", {
+                          style: "currency",
+                          currency: "XAF",
+                          minimumFractionDigits: 0,
+                        })}
+                      </td>
+                      <td className="p-3 text-center">
+                        {!cmd.priseEnCharge && cmd.status === "OrderStatus.pending" ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              prendreEnCharge(cmd.id);
+                            }}
+                            className="px-3 py-1 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition"
+                            aria-label="Prendre en charge la commande"
+                          >
+                            Prendre en charge
+                          </button>
+                        ) : (
+                          <span className="text-green-600 font-semibold">Pris en charge</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
-        </div>
-      </div>
+        </section>
+
+        {/* Colonne droite - Détail commande */}
+        <section
+          className="flex-1 bg-white rounded-xl shadow-md p-6 overflow-y-auto max-h-[700px]"
+          aria-label="Détails de la commande sélectionnée"
+        >
+          {commandeSelectionnee ? (
+            <>
+              <h2 className="text-2xl font-semibold mb-4">Détails de la commande</h2>
+
+              <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                {commandeSelectionnee.items.map((item, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 border rounded-lg p-4 hover:shadow-lg transition cursor-default"
+                  >
+                    <img
+                      src={item.image}
+                      alt={item.title}
+                      className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                    />
+                    <div className="flex flex-col flex-1">
+                      <h3 className="font-semibold">{item.title}</h3>
+                      {item.attributes && (
+                        <p className="text-xs text-gray-500 truncate">
+                          {Object.entries(item.attributes)
+                            .map(([key, val]) => `${key}: ${val}`)
+                            .join(", ")}
+                        </p>
+                      )}
+                      <p className="text-sm font-semibold mt-1 text-indigo-700">
+                        {Number(item.price).toLocaleString("fr-FR", {
+                          style: "currency",
+                          currency: "XAF",
+                          minimumFractionDigits: 0,
+                        })}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        Qté : {item.quantity}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="border-t pt-4 flex justify-between text-lg font-semibold text-indigo-900">
+                <span>Total commande :</span>
+                <span>
+                  {Number(commandeSelectionnee.totalAmount).toLocaleString("fr-FR", {
+                    style: "currency",
+                    currency: "XAF",
+                    minimumFractionDigits: 0,
+                  })}
+                </span>
+              </div>
+            </>
+          ) : (
+            <p className="text-center text-gray-400 italic">
+              Sélectionnez une commande pour voir les détails.
+            </p>
+          )}
+        </section>
+      </main>
     </div>
   );
 };

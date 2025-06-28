@@ -1,35 +1,96 @@
 import Navigation from "../nav";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function PaymentPage() {
   const location = useLocation();
-  const plan = location.state?.plan; 
-  const navigate = useNavigate()
+  const plan = location.state?.plan;
+  const navigate = useNavigate();
 
-  const payement = () => {
-    alert('Payement effectuer avec succes');
-    navigate('/signin');
+  const [phone, setPhone] = useState("");
+  const [name, setName] = useState("");
+  const [promoCode, setPromoCode] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("ORANGE_MONEY");
+  const [loading, setLoading] = useState(false);
+
+  // Clé API sandbox (⚠️ ne jamais exposer en prod)
+  const PAYUNIT_API_KEY = "sand_3ec58uPDQGkCjqsIJFnZQtJG9JVgf7";
+
+  async function payement() {
+    if (!phone || !name) {
+      alert("Veuillez renseigner le numéro Mobile Money et le nom associé.");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const body = {
+        amount: Number(plan.price),
+        currency: "XAF",
+        payment_method: paymentMethod,
+        customer: {
+          name,
+          phone,
+        },
+        return_url: "https://buyticle-bce3f.web.app/payment-success",
+        cancel_url: "https://buyticle-bce3f.web.app/payment-cancelled",
+      };
+
+      const response = await fetch(
+        "https://sandbox-api.payunit.net/api/v1/payments/initialize",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${PAYUNIT_API_KEY}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Erreur HTTP lors de l'init paiement :", response.status, response.statusText, errorText);
+        alert(`Erreur serveur (${response.status}): ${response.statusText}`);
+        setLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data.data?.payment_url) {
+        window.location.href = data.data.payment_url;
+      } else {
+        console.error("Réponse API sans payment_url valide :", data);
+        alert("Erreur lors de l'initialisation du paiement : " + (data.message || JSON.stringify(data)));
+        setLoading(false);
+      }
+    } catch (error) {
+      console.error("Erreur réseau lors de l'appel API PayUnit :", error);
+      alert("Erreur réseau : " + error.message);
+      setLoading(false);
+    }
   }
 
   return (
     <div>
-        <Navigation/>
+      <Navigation />
       <div className="min-h-screen bg-base-100 flex items-center justify-center p-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
-          {/* Partie Gauche - Moyens de Paiement et Résumé */}
+          {/* Partie Gauche */}
           <div className="space-y-6">
             {/* Méthode de Paiement */}
             <div className="card bg-base-200 p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4">
-                Sélectionnez votre moyen de paiement
-              </h2>
+              <h2 className="text-xl font-semibold mb-4">Sélectionnez votre moyen de paiementtt</h2>
               <div className="flex flex-col gap-4">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="radio"
                     name="payment-method"
                     className="radio checked:bg-primary"
-                    defaultChecked
+                    checked={paymentMethod === "ORANGE_MONEY"}
+                    onChange={() => setPaymentMethod("ORANGE_MONEY")}
                   />
                   <span className="flex items-center gap-2">
                     <img
@@ -46,6 +107,8 @@ export default function PaymentPage() {
                     type="radio"
                     name="payment-method"
                     className="radio checked:bg-primary"
+                    checked={paymentMethod === "MTN_MOBILE_MONEY"}
+                    onChange={() => setPaymentMethod("MTN_MOBILE_MONEY")}
                   />
                   <span className="flex items-center gap-2">
                     <img
@@ -71,19 +134,13 @@ export default function PaymentPage() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 Paiement & Facture
               </div>
 
               <p className="text-gray-600 mb-6">
-                Nous nous occupons de toute la gestion de votre paiement. Vous
-                pouvez vous concentrer sur votre boutique Buyticle.
+                Nous nous occupons de toute la gestion de votre paiement. Vous pouvez vous concentrer sur votre boutique Buyticle.
               </p>
 
               <div className="card bg-base-100 p-4 shadow-sm flex items-center justify-between">
@@ -100,22 +157,21 @@ export default function PaymentPage() {
                   </div>
                   <div>
                     <h4 className="font-semibold">{plan.title}</h4>
-                    <p className="text-xs text-gray-500">
-                      {plan.description}
-                    </p>
+                    <p className="text-xs text-gray-500">{plan.description}</p>
                   </div>
                 </div>
-                <button onClick={()=> navigate('/pricing')} className="btn btn-sm btn-neutral">Modifier</button>
+                <button onClick={() => navigate("/pricing")} className="btn btn-sm btn-neutral">
+                  Modifier
+                </button>
               </div>
             </div>
           </div>
 
-
+          {/* Partie Droite */}
           <div className="card bg-base-200 p-6 shadow-md space-y-6">
             <h2 className="text-2xl font-bold">Paiement</h2>
             <p className="text-sm text-gray-500">
-              Pour finaliser votre inscription sur Buyticle, merci de compléter
-              les informations ci-dessous.
+              Pour finaliser votre inscription sur Buyticle, merci de compléter les informations ci-dessous.
             </p>
 
             <div className="form-control">
@@ -126,63 +182,65 @@ export default function PaymentPage() {
                 type="text"
                 placeholder="+237 690 *** *00"
                 className="input input-bordered"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
               />
             </div>
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">
-                  Nom associé au compte Mobile Money
-                </span>
+                <span className="label-text">Nom associé au compte Mobile Money</span>
               </label>
               <input
                 type="text"
                 placeholder="Votre Nom"
                 className="input input-bordered"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
             </div>
+
             <div className="flex gap-2">
               <input
                 type="text"
                 placeholder="Code promo (optionnel)"
                 className="input input-bordered w-full"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
               />
-              <button className="btn btn-neutral">Appliquer</button>
+              <button className="btn btn-neutral" onClick={() => alert("Code promo appliqué (simulation)")}>
+                Appliquer
+              </button>
             </div>
 
-      
             <div className="collapse collapse-arrow bg-base-100 border border-base-300">
               <input type="checkbox" />
-              <div className="collapse-title text-lg font-medium">
-                Informations sur votre boutique
-              </div>
+              <div className="collapse-title text-lg font-medium">Informations sur votre boutique</div>
               <div className="collapse-content space-y-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Nom du Vendeur</span>
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Jean Boutique"
-                    className="input input-bordered"
-                  />
+                  <input type="text" placeholder="Jean Boutique" className="input input-bordered" />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Nom de la Boutique</span>
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Boutique Unique"
-                    className="input input-bordered"
-                  />
+                  <input type="text" placeholder="Boutique Unique" className="input input-bordered" />
                 </div>
               </div>
             </div>
 
-            <button onClick={()=> payement()} className="btn bg-green-900 text-white hover:bg-green-700  w-full mt-4">
-              Payer Maintenant
+            <button
+              onClick={payement}
+              disabled={loading}
+              className={`btn bg-green-900 text-white hover:bg-green-700  w-full mt-4 ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+            >
+              {loading ? "Chargement..." : "Payer Maintenant"}
             </button>
           </div>
         </div>

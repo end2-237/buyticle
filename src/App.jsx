@@ -140,7 +140,7 @@ export default function App() {
           transition={{ delay: 0.5, duration: 1 }}
           className="text-4xl md:text-5xl font-bold mb-6"
         >
-          <span className="text-green-800 text-4xl md:text-6xl">Buyticle</span> - Votre Marketplace Mobile
+          <span className="text-4xl md:text-6xl text-orange-900">Buyticle</span> - Votre Marketplace Mobile
         </motion.h1>
 
         <motion.p
@@ -159,7 +159,7 @@ export default function App() {
           transition={{ delay: 1, duration: 0.8 }}
           className="flex flex-col md:flex-row gap-4 sm:relative z-9"
         >
-          <button onClick={()=> alert('fichier indisponible')} className="btn bg-green-600 rounded-full px-8 py-3">
+          <button onClick={()=> alert('fichier indisponible')} className="btn bg-orange-900 text-gray-400 rounded-full px-8 py-3">
             <FaAndroid/>
             Télécharger l'application
           </button>
@@ -172,7 +172,7 @@ export default function App() {
 
       {/* Section Découverte */}
       {/* Section Découverte */}
-      <section className="relative z-10 py-40 px-6 bg-gradient-to-br from-green-700 to-blue-600 text-white overflow-hidden">
+      <section className="relative z-10 py-40 px-6 bg-gradient-to-br from-orange-700 to-blue-600 text-white overflow-hidden">
         {/* Forme oblique */}
         <div className="absolute inset-0 bg-white opacity-5 transform -skew-y-6"></div>
         <div className="absolute inset-0 bg-white opacity-5 transform -skew-y-3"></div>
@@ -417,7 +417,7 @@ export default function App() {
         >
           <button
             onClick={() => navigate("/pricing")}
-            className="btn btn-primary rounded-full px-8 py-3"
+            className="btn bg-orange-700 rounded-full px-8 py-3"
           >
             S'inscrire comme vendeur
           </button>

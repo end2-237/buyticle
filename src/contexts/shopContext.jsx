@@ -3,7 +3,15 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs, doc } from "firebase/firestore";
 import { db } from "../firebase"; // adapte selon ton projet
 import { fetchShopByUserId } from "../services/shopService"; // ta fonction existante pour récupérer boutique
-import { fetchProductsByIds, addProductAndUpdateShop } from "../services/productService";
+import {
+  fetchProductsByIds,
+  addProductAndUpdateShop,
+} from "../services/productService";
+
+import { incrementProductCountForBrand } from "../services/brandService";
+import { linkProductToCategory } from "../services/categoryService";
+
+import { fetchOrdersForSeller } from "../services/orderService";
 
 const ShopContext = createContext(null);
 
@@ -15,13 +23,15 @@ export function ShopProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const [orders, setOrders] = useState([]);
+
   useEffect(() => {
     const auth = getAuth();
-  
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
       setError(null);
-  
+
       if (!currentUser) {
         setUser(null);
         setShop(null);
@@ -30,18 +40,18 @@ export function ShopProvider({ children }) {
         setLoading(false);
         return;
       }
-  
+
       setUser(currentUser);
-  
+
       try {
         const shopData = await fetchShopByUserId(currentUser.uid);
         setShop(shopData);
-  
+
         // Ici on récupère l'ID Firestore via ta fonction getShopId
         const id = await getShopId(currentUser.uid);
-        console.log("Test:",id)
+        console.log("Test:", id);
         setShopId(id);
-  
+
         if (shopData?.Products?.length) {
           const prods = await fetchProductsByIds(shopData.Products);
           setProducts(prods);
@@ -54,10 +64,9 @@ export function ShopProvider({ children }) {
         setLoading(false);
       }
     });
-  
+
     return () => unsubscribe();
   }, []);
-  
 
   // Fonction pour récupérer uniquement l'ID de la boutique par userId
   async function getShopId(userId) {
@@ -65,9 +74,9 @@ export function ShopProvider({ children }) {
       const shopsRef = collection(db, "Store"); // Référence collection
       const q = query(shopsRef, where("IdUser", "==", userId)); // filtre sur champ IdUser
       const querySnapshot = await getDocs(q);
-  
+
       if (!querySnapshot.empty) {
-        console.log("Store: ",querySnapshot.docs[0].id)
+        console.log("Store: ", querySnapshot.docs[0].id);
         return querySnapshot.docs[0].id; // retourne l'id du doc Firestore
       }
       return null;
@@ -76,7 +85,6 @@ export function ShopProvider({ children }) {
       return null;
     }
   }
-  
 
   const addProduct = async (product) => {
     if (!shopId) {
@@ -95,6 +103,15 @@ export function ShopProvider({ children }) {
         Products: [...(prev.Products || []), newProductId],
       }));
 
+      // Incrémenter le compteur de produits dans la marque et la catégorie si renseignés
+      if (product.Brand?.Id) {
+        await incrementProductCountForBrand(product.Brand.Id);
+      }
+      // Lier le produit à la catégorie
+      if (product.CategoryId) {
+        await linkProductToCategory(product.CategoryId, newProductId);
+      }
+
       setLoading(false);
       return newProductId;
     } catch (err) {
@@ -104,6 +121,29 @@ export function ShopProvider({ children }) {
     }
   };
 
+  // ...
+
+  useEffect(() => {
+    if (!shopId) return; // ne rien faire si shopId nul
+
+    setLoading(true);
+    // Fonction async interne pour charger les commandes
+    async function fetchOrders() {
+      setLoading(true);
+      setError(null);
+      try {
+        const ordersFetched = await fetchOrdersForSeller(shopId);
+        setOrders(ordersFetched);
+      } catch (err) {
+        setError(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchOrders();
+  }, [shopId]);
+
   return (
     <ShopContext.Provider
       value={{
@@ -112,6 +152,7 @@ export function ShopProvider({ children }) {
         shopId,
         products,
         setShop,
+        orders,
         loading,
         error,
         addProduct,

@@ -1,62 +1,85 @@
-import { useState } from 'react';
-import { useShop } from '../../../../contexts/shopContext'; // Ajuste ce chemin selon ton projet
+import { useState, useEffect } from "react";
+import { useShop } from "../../../../contexts/shopContext";
+import { uploadImageToFirebase } from "../../../../helpers/uploadImage";
+import { fetchBrands } from "../../../../services/brandService";
+import { fetchCategories } from "../../../../services/categoryService";
 
 const AddProduct = () => {
-  const { shop, shopId, addProduct } = useShop();
+  const { shopId, addProduct } = useShop();
 
+  const [brands, setBrands] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);
-  const [thumbnail, setThumbnail] = useState('');
+  const [thumbnail, setThumbnail] = useState("");
+
   const [product, setProduct] = useState({
-    Title: '',
-    Description: '',
-    CategoryId: '',
+    Title: "",
+    Description: "",
+    CategoryId: "",
     IsFeatured: true,
-    Price: '',
-    SalePrice: '',
-    Stock: '',
-    SKU: '',
-    ProductType: 'ProductType.single',
-    Brand: {
-      Id: '',
-      Name: '',
-      Image: '',
-      IsFeatured: true,
-      ProductsCount: 0,
-    },
+    Price: "",
+    SalePrice: "",
+    Stock:"",
+    SKU: "",
+    ProductType: "ProductType.single",
+    Brand: { Id: "", Name: "", Image: "", IsFeatured: true, ProductsCount: 0 },
     Images: [],
-    Thumbnail: '',
+    Rating: 0.0,
+    Thumbnail: "",
     ProductAttributes: [],
     ProductVariations: [],
   });
 
   const [variantInput, setVariantInput] = useState({
-    Color: '',
-    Size: '',
-    Description: '',
-    Image: '',
-    Price: '',
-    SalePrice: '',
-    Stock: '',
-    SKU: '',
+    Color: "",
+    Size: "",
+    Description: "",
+    Image: "",
+    Price: "",
+    SalePrice: "",
+    Stock: "",
+    SKU: "",
   });
 
-  const handleImageUpload = (e) => {
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const brandList = await fetchBrands();
+        setBrands(brandList);
+        const categoryList = await fetchCategories();
+        setCategories(categoryList);
+      } catch (err) {
+        console.error("Erreur chargement marques/catégories :", err);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  const handleImageUpload = async (e) => {
     const files = Array.from(e.target.files || []);
-    const previews = files.map((file) => URL.createObjectURL(file));
-    setImages((prev) => [...prev, ...previews].slice(0, 4));
+    const urls = [];
+
+    for (const file of files.slice(0, 4 - images.length)) {
+      const url = await uploadImageToFirebase(file, "Products");
+      urls.push(url);
+    }
+
+    setImages((prev) => [...prev, ...urls]);
   };
 
-  const handleVariantImage = (e) => {
+  const handleVariantImage = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      setVariantInput((prev) => ({ ...prev, Image: URL.createObjectURL(file) }));
+      const url = await uploadImageToFirebase(file, "Products");
+      setVariantInput((prev) => ({ ...prev, Image: url }));
     }
   };
 
   const addVariant = () => {
     const { Color, Size, Image, Price, SalePrice, Stock } = variantInput;
     if (!Color || !Size || !Image || !Price || !SalePrice || !Stock) {
-      alert('Merci de remplir tous les champs requis de la variante.');
+      alert("Merci de remplir tous les champs requis de la variante.");
       return;
     }
 
@@ -78,81 +101,94 @@ const AddProduct = () => {
     }));
 
     setVariantInput({
-      Color: '',
-      Size: '',
-      Description: '',
-      Image: '',
-      Price: '',
-      SalePrice: '',
-      Stock: '',
-      SKU: '',
+      Color: "",
+      Size: "",
+      Description: "",
+      Image: "",
+      Price: "",
+      SalePrice: "",
+      Stock: "",
+      SKU: "",
     });
   };
 
   const handleSubmit = async () => {
     if (!product.Title.trim() || !product.Price || images.length === 0) {
-      alert('Veuillez remplir les champs obligatoires : Titre, Prix et Images.');
+      alert(
+        "Veuillez remplir les champs obligatoires : Titre, Prix et Images."
+      );
       return;
     }
 
     if (!shopId) {
-      alert('Erreur : aucune boutique chargée.');
+      alert("Erreur : aucune boutique chargée.");
       return;
     }
 
-    const uniqueColors = [...new Set(product.ProductVariations.map((v) => v.AttributeValues.Color))];
-    const uniqueSizes = [...new Set(product.ProductVariations.map((v) => v.AttributeValues.Size))];
+    const hasVariations = product.ProductVariations.length > 0;
+    const uniqueColors = [
+      ...new Set(product.ProductVariations.map((v) => v.AttributeValues.Color)),
+    ];
+    const uniqueSizes = [
+      ...new Set(product.ProductVariations.map((v) => v.AttributeValues.Size)),
+    ];
 
     const payload = {
       ...product,
+      ProductType: hasVariations
+        ? "ProductType.variable"
+        : "ProductType.single",
       Price: Number(product.Price),
       SalePrice: Number(product.SalePrice || 0),
       Stock: Number(product.Stock || 0),
       Images: images,
-      Thumbnail: thumbnail || images[0] || '',
-      ProductAttributes: [
-        { Name: 'Color', Values: uniqueColors },
-        { Name: 'Size', Values: uniqueSizes },
-      ],
-      IdSeller: shopId, // <-- Ajout ici pour éviter undefined dans Firestore
+      Thumbnail: thumbnail || images[0] || "",
+      ProductAttributes: hasVariations
+        ? [
+            { Name: "Color", Values: uniqueColors },
+            { Name: "Size", Values: uniqueSizes },
+          ]
+        : [],
+      IdSeller: shopId,
     };
 
     try {
       await addProduct(payload);
-      alert('Produit ajouté avec succès.');
+      alert("Produit ajouté avec succès.");
 
-      // Reset form
       setProduct({
-        Title: '',
-        Description: '',
-        CategoryId: '',
+        Title: "",
+        Description: "",
+        CategoryId: "",
         IsFeatured: true,
-        Price: '',
-        SalePrice: '',
-        Stock: '',
-        SKU: '',
-        ProductType: 'ProductType.single',
+        Price: "",
+        SalePrice: "",
+        Stock: "",
+        SKU: "",
+        ProductType: "ProductType.single",
         Brand: {
-          Id: '',
-          Name: '',
-          Image: '',
+          Id: "",
+          Name: "",
+          Image: "",
           IsFeatured: true,
           ProductsCount: 0,
         },
         Images: [],
-        Thumbnail: '',
+        Thumbnail: "",
+        Rating: 0.0,
         ProductAttributes: [],
         ProductVariations: [],
       });
       setImages([]);
-      setThumbnail('');
+      setThumbnail("");
     } catch (error) {
       console.error(error);
       alert("Erreur lors de l'ajout du produit.");
     }
   };
 
-  const inputStyle = 'w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500';
+  const inputStyle =
+    "w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500";
 
   return (
     <form
@@ -162,19 +198,19 @@ const AddProduct = () => {
       }}
       className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-8"
     >
-      <h2 className="text-2xl font-semibold text-center text-gray-800">Ajouter un produit</h2>
+      <h2 className="text-2xl font-semibold text-center">Ajouter un produit</h2>
 
-      {/* Section Produit */}
+      {/* Infos produit */}
       <section>
         <h3 className="text-lg font-bold mb-2">Informations produit</h3>
         <div className="space-y-4">
           <input
             type="text"
             placeholder="Titre *"
-            required
             className={inputStyle}
             value={product.Title}
             onChange={(e) => setProduct({ ...product, Title: e.target.value })}
+            required
           />
 
           <textarea
@@ -182,58 +218,57 @@ const AddProduct = () => {
             rows={3}
             className={inputStyle}
             value={product.Description}
-            onChange={(e) => setProduct({ ...product, Description: e.target.value })}
+            onChange={(e) =>
+              setProduct({ ...product, Description: e.target.value })
+            }
           />
 
           <div className="grid grid-cols-2 gap-4">
             <input
               type="number"
-              min="0"
-              step="0.01"
               placeholder="Prix *"
-              required
               className={inputStyle}
               value={product.Price}
-              onChange={(e) => setProduct({ ...product, Price: e.target.value })}
+              onChange={(e) =>
+                setProduct({ ...product, Price: e.target.value })
+              }
+              required
             />
             <input
               type="number"
-              min="0"
-              step="0.01"
               placeholder="Prix réduit"
               className={inputStyle}
               value={product.SalePrice}
-              onChange={(e) => setProduct({ ...product, SalePrice: e.target.value })}
+              onChange={(e) =>
+                setProduct({ ...product, SalePrice: e.target.value })
+              }
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              type="number"
-              min="0"
-              placeholder="Stock"
-              className={inputStyle}
-              value={product.Stock}
-              onChange={(e) => setProduct({ ...product, Stock: e.target.value })}
-            />
-            <input
-              type="text"
-              placeholder="SKU"
-              className={inputStyle}
-              value={product.SKU}
-              onChange={(e) => setProduct({ ...product, SKU: e.target.value })}
-            />
-          </div>
+          <input
+            type="number"
+            placeholder="Stock *"
+            className={inputStyle}
+            value={product.Stock}
+            onChange={(e) => setProduct({ ...product, Stock: e.target.value })}
+            required
+          />
 
-          <input type="file" accept="image/*" multiple className="mt-2" onChange={handleImageUpload} />
-          <div className="flex gap-3 mt-2 flex-wrap">
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+
+          <div className="flex gap-2 mt-2 flex-wrap">
             {images.map((img, i) => (
               <img
                 key={i}
                 src={img}
-                alt={`img-${i}`}
-                className={`w-20 h-20 rounded object-cover border-2 cursor-pointer ${
-                  thumbnail === img ? 'border-blue-500' : 'border-gray-200'
+                alt="Produit"
+                className={`w-20 h-20 object-cover rounded cursor-pointer border ${
+                  thumbnail === img ? "border-blue-500" : "border-gray-300"
                 }`}
                 onClick={() => setThumbnail(img)}
               />
@@ -242,53 +277,57 @@ const AddProduct = () => {
         </div>
       </section>
 
-      {/* Section Marque */}
+      {/* Marque */}
       <section>
         <h3 className="text-lg font-bold mb-2">Marque</h3>
-        <div className="space-y-4">
-          <input
-            type="text"
-            placeholder="Id Marque"
-            className={inputStyle}
-            value={product.Brand.Id}
-            onChange={(e) => setProduct({ ...product, Brand: { ...product.Brand, Id: e.target.value } })}
-          />
-          <input
-            type="text"
-            placeholder="Nom Marque"
-            className={inputStyle}
-            value={product.Brand.Name}
-            onChange={(e) => setProduct({ ...product, Brand: { ...product.Brand, Name: e.target.value } })}
-          />
-          <input
-            type="text"
-            placeholder="Image Marque (URL)"
-            className={inputStyle}
-            value={product.Brand.Image}
-            onChange={(e) => setProduct({ ...product, Brand: { ...product.Brand, Image: e.target.value } })}
-          />
-          <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              checked={product.Brand.IsFeatured}
-              onChange={(e) => setProduct({ ...product, Brand: { ...product.Brand, IsFeatured: e.target.checked } })}
-            />
-            <label>Marque en vedette</label>
-          </div>
-          <input
-            type="number"
-            min="0"
-            placeholder="Nombre de produits de la marque"
-            className={inputStyle}
-            value={product.Brand.ProductsCount}
-            onChange={(e) =>
-              setProduct({ ...product, Brand: { ...product.Brand, ProductsCount: Number(e.target.value) } })
+        <select
+          className={inputStyle}
+          value={product.Brand.Id}
+          onChange={(e) => {
+            const selectedBrand = brands.find((b) => b.id === e.target.value);
+            if (selectedBrand) {
+              setProduct({
+                ...product,
+                Brand: {
+                  Id: selectedBrand.id,
+                  Name: selectedBrand.Name,
+                  Image: selectedBrand.Image,
+                  IsFeatured: selectedBrand.IsFeatured,
+                  ProductsCount: selectedBrand.ProductsCount || 0,
+                },
+              });
             }
-          />
-        </div>
+          }}
+        >
+          <option value="">-- Sélectionner une marque --</option>
+          {brands.map((brand) => (
+            <option key={brand.id} value={brand.id}>
+              {brand.Name}
+            </option>
+          ))}
+        </select>
       </section>
 
-      {/* Section Variante */}
+      {/* Catégorie */}
+      <section>
+        <h3 className="text-lg font-bold mb-2">Catégorie</h3>
+        <select
+          className={inputStyle}
+          value={product.CategoryId}
+          onChange={(e) =>
+            setProduct({ ...product, CategoryId: e.target.value })
+          }
+        >
+          <option value="">-- Sélectionner une catégorie --</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.Name}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      {/* Variante */}
       <section>
         <h3 className="text-lg font-bold mb-2">Ajouter une variante</h3>
         <div className="space-y-4">
@@ -298,91 +337,107 @@ const AddProduct = () => {
               placeholder="Couleur *"
               className={inputStyle}
               value={variantInput.Color}
-              onChange={(e) => setVariantInput({ ...variantInput, Color: e.target.value })}
+              onChange={(e) =>
+                setVariantInput({ ...variantInput, Color: e.target.value })
+              }
             />
             <input
               type="text"
               placeholder="Taille *"
               className={inputStyle}
               value={variantInput.Size}
-              onChange={(e) => setVariantInput({ ...variantInput, Size: e.target.value })}
+              onChange={(e) =>
+                setVariantInput({ ...variantInput, Size: e.target.value })
+              }
             />
           </div>
 
           <textarea
-            placeholder="Description variante"
+            placeholder="Description"
             rows={2}
             className={inputStyle}
             value={variantInput.Description}
-            onChange={(e) => setVariantInput({ ...variantInput, Description: e.target.value })}
+            onChange={(e) =>
+              setVariantInput({ ...variantInput, Description: e.target.value })
+            }
           />
 
-          <input type="file" accept="image/*" className={inputStyle} onChange={handleVariantImage} />
+          <input
+            type="file"
+            accept="image/*"
+            className={inputStyle}
+            onChange={handleVariantImage}
+          />
           {variantInput.Image && (
-            <img src={variantInput.Image} alt="variant" className="w-24 h-24 object-cover rounded mt-2" />
+            <img
+              src={variantInput.Image}
+              alt="Variante"
+              className="w-24 h-24 mt-2 object-cover rounded"
+            />
           )}
 
           <div className="grid grid-cols-3 gap-4">
             <input
               type="number"
-              min="0"
-              step="0.01"
               placeholder="Prix *"
               className={inputStyle}
               value={variantInput.Price}
-              onChange={(e) => setVariantInput({ ...variantInput, Price: e.target.value })}
+              onChange={(e) =>
+                setVariantInput({ ...variantInput, Price: e.target.value })
+              }
             />
             <input
               type="number"
-              min="0"
-              step="0.01"
               placeholder="Prix réduit *"
               className={inputStyle}
               value={variantInput.SalePrice}
-              onChange={(e) => setVariantInput({ ...variantInput, SalePrice: e.target.value })}
+              onChange={(e) =>
+                setVariantInput({ ...variantInput, SalePrice: e.target.value })
+              }
             />
             <input
               type="number"
-              min="0"
               placeholder="Stock *"
               className={inputStyle}
               value={variantInput.Stock}
-              onChange={(e) => setVariantInput({ ...variantInput, Stock: e.target.value })}
+              onChange={(e) =>
+                setVariantInput({ ...variantInput, Stock: e.target.value })
+              }
             />
           </div>
 
           <input
             type="text"
-            placeholder="SKU variante"
+            placeholder="SKU"
             className={inputStyle}
             value={variantInput.SKU}
-            onChange={(e) => setVariantInput({ ...variantInput, SKU: e.target.value })}
+            onChange={(e) =>
+              setVariantInput({ ...variantInput, SKU: e.target.value })
+            }
           />
 
           <button
             type="button"
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             onClick={addVariant}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Ajouter variante
           </button>
 
-          {/* Affichage des variantes ajoutées */}
-          <div className="mt-4">
-            <h4 className="font-semibold">Variantes ajoutées :</h4>
-            {product.ProductVariations.length === 0 && <p>Aucune variante pour l’instant.</p>}
-            <ul className="list-disc pl-5">
-              {product.ProductVariations.map((v, i) => (
-                <li key={i}>
-                  Couleur : {v.AttributeValues.Color}, Taille : {v.AttributeValues.Size}, Prix : {v.Price}€, Stock : {v.Stock}
+          {product.ProductVariations.length > 0 && (
+            <ul className="mt-4 list-disc pl-5">
+              {product.ProductVariations.map((v, idx) => (
+                <li key={idx}>
+                  {v.AttributeValues.Color} - {v.AttributeValues.Size} :{" "}
+                  {v.Price}€ - Stock : {v.Stock}
                 </li>
               ))}
             </ul>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Bouton soumission */}
+      {/* Bouton Submit */}
       <button
         type="submit"
         className="w-full py-3 bg-green-600 text-white font-semibold rounded hover:bg-green-700"

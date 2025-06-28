@@ -15,3 +15,18 @@
   .animate-shimmer {
     animation: shimmer 2s infinite linear;
   }
+
+
+  @keyframes fade-in-out {
+    0%, 100% {
+      opacity: 0.2;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
+  .animate-fade-in-out {
+    animation: fade-in-out 1.8s ease-in-out infinite;
+  }
+  

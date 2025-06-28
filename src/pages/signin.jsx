@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import GridShape from "../components/gridShape";
-import logo from "../assets/logobuy.png"
+import logo from "../assets/buylogo2.png"
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase"; // adapte le chemin si nécessaire
 
@@ -164,7 +164,7 @@ export default function SignInForm() {
             <motion.button
               whileTap={{ scale: 0.95 }}
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200 flex items-center justify-center"
+              className="w-full bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200 flex items-center justify-center"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -187,7 +187,7 @@ export default function SignInForm() {
 
       {/* Partie droite - Illustration */}
       <motion.div
-        className="hidden md:flex flex-col items-center justify-center w-1/2 bg-green-900 text-white p-10 relative overflow-hidden"
+        className="hidden md:flex flex-col items-center justify-center w-1/2 bg-orange-900 text-white p-10 relative overflow-hidden"
 
         
       >
@@ -204,7 +204,7 @@ export default function SignInForm() {
             <img
               src={logo}
               alt="Logo"
-              className="h-12"
+              className="h-24"
             />
           </div>
           <h3 className="text-2xl font-bold mb-2">Bienvenue</h3>

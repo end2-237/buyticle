@@ -2,11 +2,12 @@ import { FaShoppingBag, FaUsers, FaChartLine } from "react-icons/fa";
 import { FaLocationCrosshairs, FaWallet } from "react-icons/fa6";
 import { FiArrowRight, FiClock } from "react-icons/fi";
 import { useShop } from "../../../contexts/shopContext";
+import Loader from "../../othersPages/loader";
 
 export default function Accueil() {
   const { shop, loading, error } = useShop();
 
-  if (loading) return <div className="p-6 text-gray-500">Chargement de vos données...</div>;
+  if (loading) return <Loader/>;
   if (error) return <div className="p-6 text-red-500">Erreur : {error.message}</div>;
 
   const actions = [
