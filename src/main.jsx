@@ -27,6 +27,7 @@ import "leaflet/dist/leaflet.css";
 import SoldePage from "./pages/dashboard/vendeurs/solde.jsx";
 import { ShopProvider } from "./contexts/shopContext.jsx";
 import PrivateRoute from "./routes/PrivateRoute.jsx";
+import PaymentSuccess from "./components/payementSucess.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -43,7 +44,7 @@ root.render(
           <Route path="/payment" element={<PaymentForm />} />
           <Route path="/notfound" element={<NotFoundPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/payment-success" element={<OnboardingPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
 
           {/* Routes prive pour les vendeurs */}
 

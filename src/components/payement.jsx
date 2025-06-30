@@ -55,6 +55,7 @@ export default function PaymentPage() {
   
       if (data.success) {
         // alert("Paiement réussi :\n" + JSON.stringify(data.data, null, 2));
+        navigate("/payment-success");
       } else {
         console.error("Erreur lors de l'initialisation du paiement :", data);
         alert("Erreur lors de l'initialisation du paiement : " + JSON.stringify(data));

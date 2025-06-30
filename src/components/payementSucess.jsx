@@ -39,7 +39,7 @@ export default function PaymentSuccess() {
 
           <button
             className="btn btn-neutral"
-            onClick={() => navigate("/dashboard/vendeur/home")}
+            onClick={() => navigate("/signin")}
           >
             Aller à mon Dashboard
           </button>
