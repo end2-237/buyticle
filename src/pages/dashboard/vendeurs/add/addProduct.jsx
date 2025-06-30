@@ -150,7 +150,9 @@ const AddProduct = () => {
           ]
         : [],
       IdSeller: shopId,
+      Rating: Number(product.Rating || 0), // Ajout explicite du champ Rating
     };
+    
 
     try {
       await addProduct(payload);

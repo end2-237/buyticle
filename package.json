@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@payunit/nodejs-sdk": "^1.1.4",
     "@react-google-maps/api": "^2.20.7",
     "autoprefixer": "^10.4.21",
     "daisyui": "^4.10.2",

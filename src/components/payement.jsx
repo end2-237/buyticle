@@ -13,65 +13,62 @@ export default function PaymentPage() {
   const [paymentMethod, setPaymentMethod] = useState("ORANGE_MONEY");
   const [loading, setLoading] = useState(false);
 
-  // Clé API sandbox (⚠️ ne jamais exposer en prod)
-  const PAYUNIT_API_KEY = "sand_3ec58uPDQGkCjqsIJFnZQtJG9JVgf7";
-
-  async function payement() {
-    if (!phone || !name) {
-      alert("Veuillez renseigner le numéro Mobile Money et le nom associé.");
+  
+  async function payment() {
+    if (!phone.trim()) {
+      alert("Veuillez renseigner un numéro Mobile Money valide.");
       return;
     }
-
+  
+    if (!plan?.price) {
+      alert("Plan invalide.");
+      return;
+    }
+  
     setLoading(true);
-
+  
     try {
-      const body = {
-        amount: Number(plan.price),
-        currency: "XAF",
-        payment_method: paymentMethod,
-        customer: {
-          name,
-          phone,
-        },
-        return_url: "https://buyticle-bce3f.web.app/payment-success",
-        cancel_url: "https://buyticle-bce3f.web.app/payment-cancelled",
-      };
-
       const response = await fetch(
-        "https://sandbox-api.payunit.net/api/v1/payments/initialize",
+        "https://us-central1-buyticle-bce3f.cloudfunctions.net/payWithMobileMoney",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${PAYUNIT_API_KEY}`,
           },
-          body: JSON.stringify(body),
+          body: JSON.stringify({
+            amount: Number(plan.price),
+            phone_number: phone.trim(),
+          }),
         }
       );
-
+  
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Erreur HTTP lors de l'init paiement :", response.status, response.statusText, errorText);
-        alert(`Erreur serveur (${response.status}): ${response.statusText}`);
+        console.error("Erreur serveur :", response.status, response.statusText, errorText);
+        alert(`Erreur serveur : ${response.status} ${response.statusText}\n${errorText}`);
         setLoading(false);
         return;
       }
-
+  
       const data = await response.json();
-
-      if (data.data?.payment_url) {
-        window.location.href = data.data.payment_url;
+      console.log("Paiement réussi :", data);
+  
+      if (data.success) {
+        // alert("Paiement réussi :\n" + JSON.stringify(data.data, null, 2));
       } else {
-        console.error("Réponse API sans payment_url valide :", data);
-        alert("Erreur lors de l'initialisation du paiement : " + (data.message || JSON.stringify(data)));
-        setLoading(false);
+        console.error("Erreur lors de l'initialisation du paiement :", data);
+        alert("Erreur lors de l'initialisation du paiement : " + JSON.stringify(data));
       }
     } catch (error) {
-      console.error("Erreur réseau lors de l'appel API PayUnit :", error);
+      console.error("Erreur réseau :", error);
       alert("Erreur réseau : " + error.message);
+    } finally {
       setLoading(false);
     }
   }
+  
+  
+  
 
   return (
     <div>
@@ -234,7 +231,7 @@ export default function PaymentPage() {
             </div>
 
             <button
-              onClick={payement}
+              onClick={payment}
               disabled={loading}
               className={`btn bg-green-900 text-white hover:bg-green-700  w-full mt-4 ${
                 loading ? "opacity-50 cursor-not-allowed" : ""
