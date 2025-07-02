@@ -86,30 +86,31 @@ export default function App() {
         </div>
         {/*email box*/}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="flex justify-center"
-        >
-          <div className="border xs:w-[100px] w-86 md:w-96 flex rounded rounded-lg">
-            <div className="flex items-center pl-6">
-              <div className=" text-xl text-gray-500">
-                <label className="cursor-pointer" htmlFor="email">
-                  <FiMail />
-                </label>
-              </div>
-              <input
-                type="email"
-                placeholder="buyticle@business.com"
-                className="p-2 px-8 md:px-10 outline-none"
-                id="email"
-              />
-            </div>
-            <button className="p-2 bg-gray-200 rounded rounded-lg  font-semibold text-gray-600 ">
-              s'inscrire
-            </button>
-          </div>
-        </motion.div>
+  initial={{ opacity: 0, y: -10 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.3, duration: 0.5 }}
+  className="flex justify-center w-full px-2"
+>
+  <div className="border flex rounded-lg w-full max-w-[300px] xs:max-w-[340px] sm:max-w-[380px] md:max-w-[500px]">
+    <div className="flex flex-1 items-center pl-2 xs:pl-4 sm:pl-6">
+      <div className="text-xl text-gray-500">
+        <label className="cursor-pointer" htmlFor="email">
+          <FiMail />
+        </label>
+      </div>
+      <input
+        type="email"
+        placeholder="buyticle@business.com"
+        className="flex-1 p-2 px-2 xs:px-4 sm:px-8 md:px-10 outline-none text-sm xs:text-base"
+        id="email"
+      />
+    </div>
+    <button className="p-2 bg-gray-200 rounded-lg font-semibold text-gray-600 text-sm xs:text-base w-20 xs:w-24 sm:w-auto">
+      s'inscrire
+    </button>
+  </div>
+</motion.div>
+
       </div>
       <section className="relative z-10 flex flex-col justify-center items-center text-center px-6 pt-12 pb-32">
         <motion.div

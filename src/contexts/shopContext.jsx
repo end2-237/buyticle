@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { collection, query, where, getDocs, doc } from "firebase/firestore";
-import { db } from "../firebase"; // adapte selon ton projet
-import { fetchShopByUserId } from "../services/shopService"; // ta fonction existante pour récupérer boutique
+import { db } from "../firebase";
+import { _isActiveStore, fetchShopByUserId } from "../services/shopService";
 import {
   fetchProductsByIds,
   addProductAndUpdateShop,
@@ -22,6 +22,7 @@ export function ShopProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isActive, setIsActive] = useState(null);
 
   const [orders, setOrders] = useState([]);
 
@@ -47,7 +48,15 @@ export function ShopProvider({ children }) {
         const shopData = await fetchShopByUserId(currentUser.uid);
         setShop(shopData);
 
-        // Ici on récupère l'ID Firestore via ta fonction getShopId
+        if (shopData) {
+          const subscription = await _isActiveStore(shopData);
+          setIsActive(subscription);
+        } else {
+          setIsActive(false); // Par défaut, on considère qu'il n'a pas d'abonnement actif
+        }
+        
+
+        //  récupèration de l'ID Firestore via  la fonction getShopId
         const id = await getShopId(currentUser.uid);
         console.log("Test:", id);
         setShopId(id);
@@ -121,10 +130,8 @@ export function ShopProvider({ children }) {
     }
   };
 
-  // ...
-
   useEffect(() => {
-    if (!shopId) return; // ne rien faire si shopId nul
+    if (!shopId) return;
 
     setLoading(true);
     // Fonction async interne pour charger les commandes
@@ -151,14 +158,16 @@ export function ShopProvider({ children }) {
         shop,
         shopId,
         products,
-        setProducts, // Ajouté ici
+        setProducts,
         setShop,
+        isActive,
+        setIsActive,
         orders,
         loading,
         error,
         addProduct,
         getShopId,
-        setLoading, // Ajoute-le aussi si tu veux pouvoir le gérer depuis l'extérieur
+        setLoading,
       }}
     >
       {children}

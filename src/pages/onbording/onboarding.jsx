@@ -303,18 +303,18 @@ export default function OnboardingPage() {
                     await createUserAndStore({
                       email,
                       password,
-                      firstName: "", // à remplir si tu ajoutes ce champ plus tard
-                      lastName: "", // idem
-                      userName: "", // idem
-                      profilePicture: "", // idem
-                      phoneNumber: "", // idem
+                      firstName: "", 
+                      lastName: "", 
+                      userName: "", 
+                      profilePicture: "",
+                      phoneNumber: "",
                       userType: "seller",
                       shopName,
                       sellerType,
                       categories: selectedList,
                     });
 
-                    navigate("/pricing");
+                    navigate("/signin");
                   } catch (err) {
                     console.error("Erreur création utilisateur :", err);
                     alert(

@@ -28,6 +28,7 @@ import SoldePage from "./pages/dashboard/vendeurs/solde.jsx";
 import { ShopProvider } from "./contexts/shopContext.jsx";
 import PrivateRoute from "./routes/PrivateRoute.jsx";
 import PaymentSuccess from "./components/payementSucess.jsx";
+import GoToSubscription from "./components/GotToSubscription.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -45,6 +46,7 @@ root.render(
           <Route path="/notfound" element={<NotFoundPage />} />
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/subscription" element={<GoToSubscription />} />
 
           {/* Routes prive pour les vendeurs */}
 

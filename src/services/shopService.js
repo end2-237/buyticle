@@ -15,3 +15,11 @@ export async function fetchShopByUserId(userId) {
     throw error;
   }
 }
+
+export async function _isActiveStore(shop) {
+  if (shop?.Subscription?.IsActived) {
+    return true;
+  }
+  return false;
+}
+
