@@ -4,7 +4,7 @@ const { PayunitClient } = require('@payunit/nodejs-sdk');
 
 const client = new PayunitClient({
   baseURL: 'https://gateway.payunit.net',
-  apiKey: 'sand_3ec58uPDQGkCjqsIJFnZQtJG9JVgf7',
+  apiKey: 'sand_PtOK5EkhQYpYVfMs7QaAqvbz5znNAd',
   apiUsername: '2102aa79-f893-4f38-ac77-22524a648422',
   apiPassword: '650fd5a9-57a8-4abb-ad1c-e2059cb76520',
   mode: 'test',

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import lock from "../assets/coin.gif";
-import background from "../assets/background-buyticle.png"; // ton image de fond générée
+import background from "../assets/bullet2.png"; 
 
 export default function GoToSubscription() {
   const navigate = useNavigate();
@@ -12,7 +12,7 @@ export default function GoToSubscription() {
     >
       <div className="bg-white bg-opacity-90 shadow-md rounded-xl p-8 max-w-md w-full text-center border border-gray-200 backdrop-blur-md">
         
-        {/* Icône cadenas */}
+        {/* Icône*/}
         <div className="flex justify-center mb-4">
           <img src={lock} alt="Cadenas" className="size-20" />
         </div>
