@@ -17,9 +17,12 @@ import {
   FiChevronUp,
   FiStar,
 } from "react-icons/fi";
+import { useShop } from "../contexts/shopContext";
+
 
 const Sidebar = ({ open, setOpen }) => {
   const location = useLocation();
+  const {userData} = useShop();
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("darkMode");
     return saved !== null ? JSON.parse(saved) : true;
@@ -197,13 +200,13 @@ const Sidebar = ({ open, setOpen }) => {
       <div className="px-4 py-3 border-t border-gray-700">
         <div className="flex items-center justify-between">
           <img
-            src="https://i.pravatar.cc/40"
+            src={userData.ProfilePicture}
             className="rounded-full w-9 h-9 border border-gray-600"
             alt="avatar"
           />
           {open && (
             <div className="ml-3 flex flex-col">
-              <span className="text-sm font-medium text-white">Ton Nom</span>
+              <span className="text-sm font-medium text-white">{userData.FirstName}</span>
               <button className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1">
                 <FiLogOut /> Déconnexion
               </button>
