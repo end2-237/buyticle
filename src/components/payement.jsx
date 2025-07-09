@@ -1,11 +1,15 @@
 import Navigation from "../nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useShop } from "../contexts/shopContext";
+
 
 export default function PaymentPage() {
   const location = useLocation();
   const plan = location.state?.plan;
   const navigate = useNavigate();
+  const { activateShop } = useShop();
+
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -55,6 +59,7 @@ export default function PaymentPage() {
   
       if (data.success) {
         // alert("Paiement réussi :\n" + JSON.stringify(data.data, null, 2));
+        await activateShop(plan);
         navigate("/payment-success");
       } else {
         console.error("Erreur lors de l'initialisation du paiement :", data);

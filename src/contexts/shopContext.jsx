@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import { _isActiveStore, fetchShopByUserId } from "../services/shopService";
 import {
@@ -130,6 +130,34 @@ export function ShopProvider({ children }) {
     }
   };
 
+
+  const activateShop = async (plan) => {
+    if (!shopId) return;
+  
+    try {
+      const shopRef = doc(db, "Store", shopId);
+      await updateDoc(shopRef, {
+        "Subscription.IsActived": true,
+        "Subscription.Plan": plan?.title,
+        "Subscription.Price": plan?.price,
+        "Subscription.DateActivated": new Date(),
+      });
+      
+  
+      setIsActive(true); 
+      setShop((prev) => ({
+        ...prev,
+        Subscription: {
+          ...(prev.Subscription || {}),
+          IsActived: true,
+          DateActivated: new Date(),
+        },
+      }));
+    } catch (err) {
+      console.error("Erreur lors de l'activation de la boutique :", err);
+    }
+  };
+
   useEffect(() => {
     if (!shopId) return;
 
@@ -168,6 +196,7 @@ export function ShopProvider({ children }) {
         addProduct,
         getShopId,
         setLoading,
+        activateShop,
       }}
     >
       {children}
