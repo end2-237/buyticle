@@ -1,5 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import logo from "../assets/buylogo.png";
+import { getAuth, signOut } from "firebase/auth";
+import { useNavigate } from "react-router-dom";
+
 import {
   FiBell,
   FiSearch,
@@ -10,10 +13,13 @@ import {
   FiMessageSquare,
   FiPlus,
 } from "react-icons/fi";
-
+import { useShop } from "../contexts/shopContext";
 const Navbar = ({ toggleSidebar }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+
+  const  {userData} = useShop();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -24,6 +30,17 @@ const Navbar = ({ toggleSidebar }) => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    try {
+      await signOut(auth);
+      navigate("/signin");
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion :", error);
+    }
+  };
+  
 
   return (
     <header className="bg-white dark:bg-gray-900 shadow px-4 md:px-6 py-3 flex flex-wrap md:flex-nowrap justify-between items-center border-b border-gray-200 dark:border-gray-700">
@@ -72,7 +89,7 @@ const Navbar = ({ toggleSidebar }) => {
             aria-controls="profile-menu"
           >
             <img
-              src="https://i.pravatar.cc/32"
+              src={userData.ProfilePicture}
               alt="User Avatar"
               className="rounded-full w-8 h-8"
             />
@@ -107,12 +124,13 @@ const Navbar = ({ toggleSidebar }) => {
             >
               <FiSettings className="mr-2" /> Paramètres
             </a>
-            <a
-              href="/logout"
-              className="flex items-center px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              <FiLogOut className="mr-2" /> Déconnexion
-            </a>
+            <button
+  onClick={handleLogout}
+  className="flex items-center w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+>
+  <FiLogOut className="mr-2" /> Déconnexion
+</button>
+
           </div>
         </div>
       </div>

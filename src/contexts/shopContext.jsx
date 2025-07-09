@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  getDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "../firebase";
 import { _isActiveStore, fetchShopByUserId } from "../services/shopService";
 import {
@@ -15,8 +23,26 @@ import { fetchOrdersForSeller } from "../services/orderService";
 
 const ShopContext = createContext(null);
 
+async function fetchUserData(uid) {
+  try {
+    const docRef = doc(db, "Users", uid); // L'ID du document est égal à l'UID
+    const docSnap = await getDoc(docRef);
+
+    if (docSnap.exists()) {
+      return docSnap.data();
+    } else {
+      console.warn("Aucun document utilisateur trouvé");
+      return null;
+    }
+  } catch (err) {
+    console.error("Erreur lors de la récupération de l'utilisateur :", err);
+    return null;
+  }
+}
+
 export function ShopProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [shop, setShop] = useState(null);
   const [shopId, setShopId] = useState(null);
   const [products, setProducts] = useState([]);
@@ -44,6 +70,13 @@ export function ShopProvider({ children }) {
 
       setUser(currentUser);
 
+      const userInfo = await fetchUserData(currentUser.uid);
+      console.log(
+        "Données Firestore récupérées pour l'utilisateur :",
+        userInfo
+      );
+      setUserData(userInfo);
+
       try {
         const shopData = await fetchShopByUserId(currentUser.uid);
         setShop(shopData);
@@ -54,7 +87,6 @@ export function ShopProvider({ children }) {
         } else {
           setIsActive(false); // Par défaut, on considère qu'il n'a pas d'abonnement actif
         }
-        
 
         //  récupèration de l'ID Firestore via  la fonction getShopId
         const id = await getShopId(currentUser.uid);
@@ -130,10 +162,9 @@ export function ShopProvider({ children }) {
     }
   };
 
-
   const activateShop = async (plan) => {
     if (!shopId) return;
-  
+
     try {
       const shopRef = doc(db, "Store", shopId);
       await updateDoc(shopRef, {
@@ -142,9 +173,8 @@ export function ShopProvider({ children }) {
         "Subscription.Price": plan?.price,
         "Subscription.DateActivated": new Date(),
       });
-      
-  
-      setIsActive(true); 
+
+      setIsActive(true);
       setShop((prev) => ({
         ...prev,
         Subscription: {
@@ -197,6 +227,8 @@ export function ShopProvider({ children }) {
         getShopId,
         setLoading,
         activateShop,
+        userData,
+
       }}
     >
       {children}

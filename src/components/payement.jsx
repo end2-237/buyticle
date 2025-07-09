@@ -1,14 +1,18 @@
 import Navigation from "../nav";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useShop } from "../contexts/shopContext";
+import Modal from "../components/Modal"; // adapte le chemin
+
 
 
 export default function PaymentPage() {
   const location = useLocation();
   const plan = location.state?.plan;
   const navigate = useNavigate();
-  const { activateShop } = useShop();
+  const { activateShop, user, shopId } = useShop();
+  const [showModal, setShowModal] = useState(false);
+
 
 
   const [phone, setPhone] = useState("");
@@ -16,6 +20,7 @@ export default function PaymentPage() {
   const [promoCode, setPromoCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("ORANGE_MONEY");
   const [loading, setLoading] = useState(false);
+
 
   
   async function payment() {
@@ -73,6 +78,22 @@ export default function PaymentPage() {
     }
   }
   
+  
+  useEffect(() => {
+    if (!user || !shopId) {
+      setShowModal(true); 
+    }
+  }, [user, shopId]);
+
+  if (showModal) {
+    return (
+      <Modal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={() => navigate("/signin")}
+      />
+    );
+  }
   
   
 
