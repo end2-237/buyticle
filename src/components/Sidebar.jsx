@@ -167,7 +167,7 @@ const Sidebar = ({ open, setOpen }) => {
           className="p-2 bg-gray-700 hover:bg-gray-600 rounded-full transition-colors"
           aria-label={open ? "Réduire" : "Déployer"}
         >
-          {open ? <FiChevronLeft /> : <FiChevronRight />}
+          {open ? <FiChevronLeft className="text-gray-200" /> : <FiChevronRight className="text-gray-200"/>}
         </button>
       </div>
 
