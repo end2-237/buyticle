@@ -1,5 +1,5 @@
 const functions = require('firebase-functions');
-const cors = require('cors')({ origin: true });  // Autorise toutes origines (à restreindre en prod)
+const cors = require('cors')({ origin: true }); 
 const { PayunitClient } = require('@payunit/nodejs-sdk');
 
 const client = new PayunitClient({

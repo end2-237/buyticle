@@ -1,4 +1,4 @@
-import logo from "./assets/logobuy.png";
+import logo from "./assets/buylogo.png";
 
 export default function Footer() {
   return (
@@ -6,13 +6,15 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
         {/* Logo & description */}
         <div className="flex flex-col space-y-4">
-          <h3 className="text-gray-900 text-2xl font-bold flex gap-1"><img src={logo} alt="logo" className="size-8" />Buyticle</h3>
+          <h3 className="text-orange-700 text-2xl font-bold flex gap-1 flex  items-center">
+            <img src={logo} alt="logo" className="size-14" /> Buylogo
+          </h3>
           <p className="text-sm">
             La marketplace mobile nouvelle génération pour acheter et vendre en
             toute simplicité. Disponible sur iOS et Android.
           </p>
           <div className="flex space-x-4 mt-4">
-            <a
+            {/* <a
               href="#"
               className="bg-white hover:bg-gray-200 p-2 rounded-full transition"
             >
@@ -21,13 +23,13 @@ export default function Footer() {
                 alt="Apple Store"
                 className="h-6 w-6"
               />
-            </a>
+            </a> */}
             <a
               href="#"
               className="bg-white hover:bg-gray-200 p-2 rounded-full transition"
             >
               <img
-                src="/icons/playstore.svg"
+                src="https://firebasestorage.googleapis.com/v0/b/buyticle-bce3f.firebasestorage.app/o/buylogo.jpg?alt=media&token=861a1bc1-843b-458a-9bd1-7e075ed8d5a1"
                 alt="Google Play"
                 className="h-6 w-6"
               />
@@ -52,10 +54,10 @@ export default function Footer() {
         {/* Liens - Vendeurs */}
         <div className="flex flex-col space-y-3">
           <h4 className="text-gray-900 font-semibold mb-3">Vendeurs</h4>
-          <a href="#vendeur" className="hover:text-primary hover:underline">
+          <a href="/onboarding" className="hover:text-primary hover:underline">
             S'inscrire
           </a>
-          <a href="#vendeur" className="hover:text-primary hover:underline">
+          <a href="/pricing" className="hover:text-primary hover:underline">
             Nos Formules
           </a>
           <a href="#vendeur" className="hover:text-primary hover:underline">

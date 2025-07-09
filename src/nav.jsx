@@ -85,7 +85,7 @@ export default function Navigation() {
           <a href="/contact" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Contactez-nous
           </a>
-          <button className="flex gap-1 items-center rounded-full bg-gradient-to-r from-green-900 to-green-400 text-white px-6 py-2 w-full hover:opacity-90 transition">
+          <button className="flex gap-1 items-center rounded-full bg-gradient-to-r from-orange-900 to-blue-400 text-white px-6 py-2 w-full hover:opacity-90 transition">
             <FaAndroid/>
             Télécharger l'application
           </button>

@@ -8,15 +8,25 @@ import { FiMail } from "react-icons/fi";
 import { getThreeUsers, getUsersCount } from "./models/UserModel";
 import GridShape from "./components/gridShape";
 import { FaAndroid } from "react-icons/fa";
+import { subscribeToNewsletter } from "./services/NewsletterService";
 
 function getTimeLeft(targetDate) {
   const now = new Date();
   const difference = targetDate - now;
-  if (difference <= 0) return { days: "00", hours: "00", minutes: "00", seconds: "00" };
+  if (difference <= 0)
+    return { days: "00", hours: "00", minutes: "00", seconds: "00" };
 
-  const days = String(Math.floor(difference / (1000 * 60 * 60 * 24))).padStart(2, "0");
-  const hours = String(Math.floor((difference / (1000 * 60 * 60)) % 24)).padStart(2, "0");
-  const minutes = String(Math.floor((difference / 1000 / 60) % 60)).padStart(2, "0");
+  const days = String(Math.floor(difference / (1000 * 60 * 60 * 24))).padStart(
+    2,
+    "0"
+  );
+  const hours = String(
+    Math.floor((difference / (1000 * 60 * 60)) % 24)
+  ).padStart(2, "0");
+  const minutes = String(Math.floor((difference / 1000 / 60) % 60)).padStart(
+    2,
+    "0"
+  );
   const seconds = String(Math.floor((difference / 1000) % 60)).padStart(2, "0");
 
   return { days, hours, minutes, seconds };
@@ -25,9 +35,10 @@ function getTimeLeft(targetDate) {
 export default function App() {
   const [trustedUsers, setTrustedUsers] = useState([]);
   const [usersCount, setUsersCount] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(getTimeLeft(new Date("2025-06-09T00:00:00")));
+  const [timeLeft, setTimeLeft] = useState(
+    getTimeLeft(new Date("2025-06-09T00:00:00"))
+  );
   const navigate = useNavigate();
-
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -46,10 +57,19 @@ export default function App() {
     fetchData();
   }, []);
 
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState(null); // success, error
+
+  const handleSubscribe = async () => {
+    const result = await subscribeToNewsletter(email);
+    setStatus(result.success ? "success" : "error");
+    if (result.success) setEmail("");
+  };
+
   return (
     <div className="relative min-h-screen bg-base-100 text-base-content overflow-hidden z-1">
       {/* Background grille discrète */}
-      <GridShape/>
+      <GridShape />
 
       {/* Navbar */}
       <Navigation />
@@ -61,7 +81,9 @@ export default function App() {
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }} className="">
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className=""
+        >
           <p className="text-gray-500 text-xs font-semibold">
             Votre marketplace disponible dans
           </p>
@@ -86,30 +108,76 @@ export default function App() {
         </div>
         {/*email box*/}
         <motion.div
-  initial={{ opacity: 0, y: -10 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.3, duration: 0.5 }}
-  className="flex justify-center w-full px-2"
->
-  <div className="border flex rounded-lg w-full max-w-[300px] xs:max-w-[340px] sm:max-w-[380px] md:max-w-[500px]">
-    <div className="flex flex-1 items-center pl-2 xs:pl-4 sm:pl-6">
-      <div className="text-xl text-gray-500">
-        <label className="cursor-pointer" htmlFor="email">
-          <FiMail />
-        </label>
-      </div>
-      <input
-        type="email"
-        placeholder="buyticle@business.com"
-        className="flex-1 p-2 px-2 xs:px-4 sm:px-8 md:px-10 outline-none text-sm xs:text-base"
-        id="email"
-      />
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="flex justify-center w-full px-2"
+        >
+          <div className="border flex rounded-lg w-full max-w-[300px] xs:max-w-[340px] sm:max-w-[380px] md:max-w-[500px]">
+            <div className="flex flex-1 items-center pl-2 xs:pl-4 sm:pl-6">
+              <div className="text-xl text-gray-500">
+                <label className="cursor-pointer" htmlFor="email">
+                  <FiMail />
+                </label>
+              </div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="buyticle@business.com"
+                className="flex-1 p-2 px-2 xs:px-4 sm:px-8 md:px-10 outline-none text-sm xs:text-base"
+                id="email"
+              />
+            </div>
+            <button
+              onClick={handleSubscribe}
+              className="p-2 bg-gray-200 rounded-lg font-semibold text-gray-600 text-sm xs:text-base w-20 xs:w-24 sm:w-auto"
+            >
+              s'inscrire
+            </button>
+          </div>
+        </motion.div>
+        {status === "success" && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mt-4 flex justify-center"
+  >
+    <div className="flex items-center gap-2 bg-green-100 text-green-800 border border-green-300 rounded-lg px-4 py-2 shadow-sm text-sm">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 text-green-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+      Merci pour votre inscription à la newsletter !
     </div>
-    <button className="p-2 bg-gray-200 rounded-lg font-semibold text-gray-600 text-sm xs:text-base w-20 xs:w-24 sm:w-auto">
-      s'inscrire
-    </button>
-  </div>
-</motion.div>
+  </motion.div>
+)}
+
+{status === "error" && (
+  <motion.div
+    initial={{ opacity: 0, y: -10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mt-4 flex justify-center"
+  >
+    <div className="flex items-center gap-2 bg-red-100 text-red-800 border border-red-300 rounded-lg px-4 py-2 shadow-sm text-sm">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className="h-5 w-5 text-red-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+      </svg>
+      Une erreur est survenue. Veuillez réessayer.
+    </div>
+  </motion.div>
+)}
 
       </div>
       <section className="relative z-10 flex flex-col justify-center items-center text-center px-6 pt-12 pb-32">
@@ -122,9 +190,9 @@ export default function App() {
           <div className="flex -space-x-2">
             {trustedUsers.map((user) => (
               <img
-                key={user.id}
-                src={user.photoURL || "/default-avatar.png"}
-                alt={user.name || "Utilisateur"}
+                key={user.Id}
+                src={user.ProfilePicture || "/default-avatar.png"}
+                alt={user.Name || "Utilisateur"}
                 className="w-8 h-8 rounded-full ring-2 ring-base-100"
               />
             ))}
@@ -141,7 +209,8 @@ export default function App() {
           transition={{ delay: 0.5, duration: 1 }}
           className="text-4xl md:text-5xl font-bold mb-6"
         >
-          <span className="text-4xl md:text-6xl text-orange-900">Buyticle</span> - Votre Marketplace Mobile
+          <span className="text-4xl md:text-6xl text-orange-900">Buyticle</span>{" "}
+          - Votre Marketplace Mobile
         </motion.h1>
 
         <motion.p
@@ -160,15 +229,18 @@ export default function App() {
           transition={{ delay: 1, duration: 0.8 }}
           className="flex flex-col md:flex-row gap-4 sm:relative z-9"
         >
-          <button onClick={()=> alert('fichier indisponible')} className="btn bg-orange-900 text-gray-400 rounded-full px-8 py-3">
-            <FaAndroid/>
+          <button
+            onClick={() => alert("fichier indisponible")}
+            className="btn bg-orange-900 text-gray-400 rounded-full px-8 py-3"
+          >
+            <FaAndroid />
             Télécharger l'application
           </button>
           <button className="btn btn-outline rounded-full px-8 py-3">
             En savoir plus
           </button>
         </motion.div>
-        <GridShape/>
+        <GridShape />
       </section>
 
       {/* Section Découverte */}
@@ -323,7 +395,7 @@ export default function App() {
       </section>
       {/* Section Équipe */}
       <section className="py-24 px-6 bg-gray-50 text-center relative z-1">
-        <GridShape/>
+        <GridShape />
         <motion.h2
           initial={{ opacity: 0, y: -20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -337,21 +409,21 @@ export default function App() {
           Une équipe passionnée au service de votre expérience d'achat.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
           {/* Membre 1 */}
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
+            transition={{ delay: 0.4, duration: 0.8 }}
             className="flex flex-col items-center"
           >
             <img
-              src="/team1.jpg"
-              alt="Alice"
+              src="/team2.jpg"
+              alt="Nsoga"
               className="w-32 h-32 rounded-full object-cover mb-6 shadow-lg"
             />
-            <h3 className="text-xl font-semibold mb-1">Alice Dupont</h3>
-            <p className="text-gray-400 text-sm">CEO & Fondatrice</p>
+            <h3 className="text-xl font-semibold mb-1">Nsoga David</h3>
+            <p className="text-gray-400 text-sm">Lead Developper</p>
           </motion.div>
 
           {/* Membre 2 */}
@@ -363,30 +435,67 @@ export default function App() {
           >
             <img
               src="/team2.jpg"
-              alt="Bruno"
+              alt="Mbong"
               className="w-32 h-32 rounded-full object-cover mb-6 shadow-lg"
             />
-            <h3 className="text-xl font-semibold mb-1">Bruno Martin</h3>
-            <p className="text-gray-400 text-sm">CTO & Co-fondateur</p>
-          </motion.div>
-
-          {/* Membre 3 */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6, duration: 0.8 }}
-            className="flex flex-col items-center"
-          >
-            <img
-              src="/team3.jpg"
-              alt="Claire"
-              className="w-32 h-32 rounded-full object-cover mb-6 shadow-lg"
-            />
-            <h3 className="text-xl font-semibold mb-1">Claire Moreau</h3>
-            <p className="text-gray-400 text-sm">Responsable Marketing</p>
+            <h3 className="text-xl font-semibold mb-1">Mbong Koth</h3>
+            <p className="text-gray-400 text-sm">Directeur Marketing</p>
           </motion.div>
         </div>
       </section>
+
+      {/* FAQ */}
+
+      <section className="py-24 px-6 bg-base-200">
+  <h2 className="text-3xl font-bold text-center mb-12">
+    Questions Fréquentes
+  </h2>
+  <div className="max-w-3xl mx-auto space-y-6">
+    <details className="bg-white p-4 rounded shadow">
+      <summary className="cursor-pointer font-semibold">
+        Comment puis-je devenir vendeur sur Buyticle ?
+      </summary>
+      <p className="mt-2 text-gray-600">
+        Pour devenir vendeur, il vous suffit de créer un compte, de remplir votre profil professionnel
+        et de choisir une formule d’abonnement adaptée à vos besoins. Rendez-vous sur la page
+        "S'inscrire comme vendeur" pour commencer.
+      </p>
+    </details>
+
+    <details className="bg-white p-4 rounded shadow">
+      <summary className="cursor-pointer font-semibold">
+        Quels modes de paiement sont acceptés ?
+      </summary>
+      <p className="mt-2 text-gray-600">
+        Nous acceptons les paiements par Mobile Money (MTN, Orange) ainsi que par carte bancaire
+        grâce à notre partenaire PayUnit, pour une sécurité maximale.
+      </p>
+    </details>
+
+    <details className="bg-white p-4 rounded shadow">
+      <summary className="cursor-pointer font-semibold">
+        Quand vais-je recevoir ma commande ?
+      </summary>
+      <p className="mt-2 text-gray-600">
+        Les délais de livraison varient selon le vendeur et votre lieu de résidence.
+        La plupart des commandes locales sont livrées entre 24h et 72h.
+        Vous pouvez suivre l’état de votre commande depuis votre tableau de bord.
+      </p>
+    </details>
+
+    <details className="bg-white p-4 rounded shadow">
+      <summary className="cursor-pointer font-semibold">
+        Que faire si le produit reçu ne correspond pas ?
+      </summary>
+      <p className="mt-2 text-gray-600">
+        Si votre produit est défectueux ou ne correspond pas à la description,
+        vous pouvez ouvrir un litige dans un délai de 48h après réception.
+        Notre équipe vous assistera pour obtenir un échange ou un remboursement selon les cas.
+      </p>
+    </details>
+  </div>
+</section>
+
 
       {/* Section Vendeur */}
       <section className="relative z-10 py-40 px-6 bg-base-100 text-center">
@@ -417,7 +526,7 @@ export default function App() {
           className="flex flex-col md:flex-row gap-4 justify-center"
         >
           <button
-            onClick={() => navigate("/pricing")}
+            onClick={() => navigate("/onboarding")}
             className="btn bg-orange-700 rounded-full px-8 py-3"
           >
             S'inscrire comme vendeur

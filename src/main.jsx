@@ -38,7 +38,6 @@ root.render(
       <Router>
         <Routes>
           <Route path="/" element={<App />} />
-          <Route path="/home" element={<HomePage />} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/signin" element={<SignInForm />} />
           <Route path="/contact" element={<ContactForm />} />
