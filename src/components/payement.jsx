@@ -89,7 +89,7 @@ export default function PaymentPage() {
     return (
       <Modal
         isOpen={showModal}
-        onClose={() => setShowModal(false)}
+        onClose={() => {setShowModal(false), navigate("/pricing")}}
         onConfirm={() => navigate("/signin")}
       />
     );
