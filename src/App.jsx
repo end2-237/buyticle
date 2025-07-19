@@ -106,8 +106,6 @@ export default function App() {
           </div>
           <span className="text-lg font-bold ml-2">Ouverture</span>
         </div>
-        <h1>Mon site React avec déploiement auto 🚀</h1>
-
         {/*email box*/}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
