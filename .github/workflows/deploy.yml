@@ -31,4 +31,4 @@ jobs:
       - name: Déployer vers Firebase (Hosting + Functions)
         run: |
           npm install -g firebase-tools
-          firebase deploy ,functions --token "${{ secrets.FIREBASE_TOKEN }}"
+          firebase deploy --project=buyticle-bce3f,functions --token "${{ secrets.FIREBASE_TOKEN }}"
