@@ -3,7 +3,7 @@ name: Déploiement Firebase Hosting + Functions
 on:
   push:
     branches:
-      - main
+      - main  # Branche où tu veux déclencher le déploiement
 
 jobs:
   build-and-deploy:
@@ -18,17 +18,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Installer dépendances du projet React
+      - name: Installer les dépendances React/Vite
         run: npm install
 
-      - name: Construire le site avec Vite
+      - name: Construire le site React/Vite
         run: npm run build
 
-      - name: Installer les dépendances des fonctions Firebase
+      - name: Installer les dépendances des Firebase Functions
         run: npm install
         working-directory: functions
 
-      - name: Déployer vers Firebase (Hosting + Functions)
-        run: |
-          npm install -g firebase-tools
-          firebase deploy --project=buyticle-bce3f ,functions --token "${{ secrets.FIREBASE_TOKEN }}"
+      - name: Installer Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Déployer Hosting + Functions sur Firebase
+        run: firebase deploy --project=buyticle-bce3f --only hosting,functions --token "${{ secrets.FIREBASE_TOKEN }}"
