@@ -7,7 +7,7 @@ export default function Footer() {
         {/* Logo & description */}
         <div className="flex flex-col space-y-4">
           <h3 className="text-orange-700 text-2xl font-bold flex gap-1 flex  items-center">
-            <img src={logo} alt="logo" className="size-14" /> Buylogo
+            <img src={logo} alt="logo" className="size-14" /> Buyticle
           </h3>
           <p className="text-sm">
             La marketplace mobile nouvelle génération pour acheter et vendre en

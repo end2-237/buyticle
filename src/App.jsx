@@ -106,6 +106,8 @@ export default function App() {
           </div>
           <span className="text-lg font-bold ml-2">Ouverture</span>
         </div>
+        <h1>Mon site React avec déploiement auto 🚀</h1>
+
         {/*email box*/}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -394,55 +396,55 @@ export default function App() {
         </div>
       </section>
       {/* Section Équipe */}
-      <section className="py-24 px-6 bg-gray-50 text-center relative z-1">
-        <GridShape />
-        <motion.h2
-          initial={{ opacity: 0, y: -20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="text-4xl font-bold mb-6"
-        >
-          Notre <span className="text-indigo-500">Équipe</span>
-        </motion.h2>
+      {/* Section Service Client Pro */}
+<section className="py-24 px-6 bg-gray-50 text-center relative z-1">
+  <GridShape />
+  <motion.h2
+    initial={{ opacity: 0, y: -20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 1 }}
+    className="text-4xl font-bold mb-6"
+  >
+    Service Client <span className="text-indigo-500">Professionnel</span>
+  </motion.h2>
 
-        <p className="text-gray-500 max-w-xl mx-auto mb-16">
-          Une équipe passionnée au service de votre expérience d'achat.
-        </p>
+  <p className="text-gray-500 max-w-xl mx-auto mb-16">
+    Une équipe dédiée à votre écoute pour vous accompagner dans votre expérience sur Buyticle.
+  </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Membre 1 */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="flex flex-col items-center"
-          >
-            <img
-              src="/team2.jpg"
-              alt="Nsoga"
-              className="w-32 h-32 rounded-full object-cover mb-6 shadow-lg"
-            />
-            <h3 className="text-xl font-semibold mb-1">Nsoga David</h3>
-            <p className="text-gray-400 text-sm">Lead Developper</p>
-          </motion.div>
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+    {/* Contact 1 */}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.4, duration: 0.8 }}
+      className="flex flex-col items-center"
+    >
+      <div className="w-24 h-24 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-3xl font-bold shadow-md mb-6">
+        ND
+      </div>
+      <h3 className="text-xl font-semibold mb-1">Nsoga David</h3>
+      <p className="text-gray-400 text-sm">Support Technique</p>
+      <p className="text-gray-500 text-sm mt-1">support@buyticle.com</p>
+    </motion.div>
 
-          {/* Membre 2 */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="flex flex-col items-center"
-          >
-            <img
-              src="/team2.jpg"
-              alt="Mbong"
-              className="w-32 h-32 rounded-full object-cover mb-6 shadow-lg"
-            />
-            <h3 className="text-xl font-semibold mb-1">Mbong Koth</h3>
-            <p className="text-gray-400 text-sm">Directeur Marketing</p>
-          </motion.div>
-        </div>
-      </section>
+    {/* Contact 2 */}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      transition={{ delay: 0.5, duration: 0.8 }}
+      className="flex flex-col items-center"
+    >
+      <div className="w-24 h-24 flex items-center justify-center rounded-full bg-indigo-100 text-indigo-600 text-3xl font-bold shadow-md mb-6">
+        MK
+      </div>
+      <h3 className="text-xl font-semibold mb-1">Mbong Koth</h3>
+      <p className="text-gray-400 text-sm">Support Commercial</p>
+      <p className="text-gray-500 text-sm mt-1">contact@buyticle.com</p>
+    </motion.div>
+  </div>
+</section>
+
 
       {/* FAQ */}
 

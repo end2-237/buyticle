@@ -130,7 +130,7 @@ export default function SignInForm() {
               disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 rounded-lg transition"
             >
-              {isLoading ? "Loading..." : "Log In"}
+              {isLoading ? "Chargement..." : "Connexion"}
             </motion.button>
           </form>
 
