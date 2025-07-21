@@ -10,7 +10,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase";
-import { _isActiveStore, fetchShopByUserId } from "../services/shopService";
+import { _isActiveStore, fetchShopByUserId, handleSaveLocation } from "../services/shopService";
 import {
   fetchProductsByIds,
   addProductAndUpdateShop,
@@ -187,6 +187,9 @@ export function ShopProvider({ children }) {
       console.error("Erreur lors de l'activation de la boutique :", err);
     }
   };
+  const  saveLocation = async (userLocation, address) => {
+    await handleSaveLocation(userLocation, shop, shopId,address);
+  };
 
   useEffect(() => {
     if (!shopId) return;
@@ -228,7 +231,7 @@ export function ShopProvider({ children }) {
         setLoading,
         activateShop,
         userData,
-
+        saveLocation,
       }}
     >
       {children}

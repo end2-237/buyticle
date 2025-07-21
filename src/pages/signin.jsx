@@ -1,8 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  signInWithRedirect,
+  getRedirectResult,
+  GoogleAuthProvider,
+} from "firebase/auth";
 import { auth } from "../firebase";
 import logo from "../assets/buylogo.png";
 import bg from "../assets/bgmosaic.jpg";
@@ -14,15 +18,32 @@ export default function SignInForm() {
   const [error, setError] = useState("");
   const navigate = useNavigate();
 
+  //Gérer la redirection après auth Google
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      setIsLoading(true);
+      try {
+        const result = await getRedirectResult(auth);
+        if (result?.user) {
+          navigate("/dashboard/vendeur/home");
+        }
+      } catch (err) {
+        console.error("Erreur redirection Google :", err);
+        setError("Connexion avec Google échouée.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkRedirectResult();
+  }, [navigate]);
+
   const signInWithGoogle = async () => {
     setError("");
     setIsLoading(true);
 
     const provider = new GoogleAuthProvider();
-
     try {
-      await signInWithPopup(auth, provider);
-      navigate("/dashboard/vendeur/home");
+      await signInWithRedirect(auth, provider); // ← redirection
     } catch (err) {
       console.error(err);
       setError("Connexion avec Google échouée. Veuillez réessayer.");
@@ -42,6 +63,7 @@ export default function SignInForm() {
       await signInWithEmailAndPassword(auth, email, password);
       navigate("/dashboard/vendeur/home");
     } catch (err) {
+      console.error(err);
       setError("Adresse e-mail ou mot de passe incorrect.");
       setIsLoading(false);
     }
@@ -61,15 +83,15 @@ export default function SignInForm() {
             onClick={() => navigate("/")}
             className="btn p-4 mb-10 rounded-lg bg-gray-100 border px-6"
           >
-            <FaHome></FaHome> Home
+            <FaHome /> Home
           </button>
           <img src={logo} alt="Logo" className="h-12 mb-8" />
 
           <h2 className="text-3xl font-bold text-gray-900 mb-1">
-          Bienvenue sur votre espace vendeur
+            Bienvenue sur votre espace vendeur
           </h2>
           <p className="text-sm text-gray-500 mb-6">
-          Connectez-vous pour accéder à votre tableau de bord.
+            Connectez-vous pour accéder à votre tableau de bord.
           </p>
 
           {error && (
@@ -120,7 +142,7 @@ export default function SignInForm() {
                 Se souvenir de moi
               </label>
               <a href="#" className="text-purple-600 hover:underline">
-              Mot de passe oublié ?
+                Mot de passe oublié ?
               </a>
             </div>
 
@@ -157,9 +179,9 @@ export default function SignInForm() {
 
           {/* Footer */}
           <p className="mt-6 text-center text-sm text-gray-600">
-          Vous n’avez pas encore de compte ?{" "}
+            Vous n’avez pas encore de compte ?{" "}
             <a href="/onboarding" className="text-purple-600 hover:underline">
-            Créez-en un ici
+              Créez-en un ici
             </a>
           </p>
         </motion.div>

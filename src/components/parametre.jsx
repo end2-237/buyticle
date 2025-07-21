@@ -6,8 +6,10 @@ import { FaInfo } from "react-icons/fa";
 import { FaBagShopping } from "react-icons/fa6";
 import { FiArrowRight } from "react-icons/fi";
 import { GoogleMap, LoadScript, Marker } from "@react-google-maps/api";
+import { useShop } from "../contexts/shopContext";
 
 export default function Parametres() {
+  const { shop, userData, saveLocation } = useShop();
   const [editMode, setEditMode] = useState([false, false, false, false]);
 
   const plans = [
@@ -58,24 +60,58 @@ export default function Parametres() {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
+          setUserLocation(
+            shop?.Location || {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            }
+          );
         },
-        () => setUserLocation({ lat: 4.068, lng: 9.718 })
+        () => setUserLocation(shop?.Location || { lat: 4.068, lng: 9.718 })
       );
     } else {
-      setUserLocation({ lat: 4.068, lng: 9.718 });
+      setUserLocation(shop?.Location || { lat: 4.068, lng: 9.718 });
     }
-  }, []);
+  }, [shop]);
+
+  const geocodeLatLng = async (lat, lng) => {
+    const geocoder = new window.google.maps.Geocoder();
+    const latlng = { lat, lng };
+  
+    return new Promise((resolve, reject) => {
+      geocoder.geocode({ location: latlng }, (results, status) => {
+        if (status === "OK") {
+          if (results[0]) {
+            resolve(results[0].formatted_address);
+          } else {
+            resolve("Adresse non trouvée");
+          }
+        } else {
+          reject("Erreur de géocodage : " + status);
+        }
+      });
+    });
+  };
+
+  const updateLocation = async (lat, lng) => {
+    setUserLocation({ lat, lng });
+    try {
+      const address = await geocodeLatLng(lat, lng);
+      setShopInfo((prev) => ({ ...prev, adresse: address }));
+    } catch (err) {
+      console.error(err);
+      setShopInfo((prev) => ({ ...prev, adresse: "Erreur de géocodage" }));
+    }
+  };
+  
 
   const [shopInfo, setShopInfo] = useState({
-    nom: "ForeverShop",
-    categorie: "Vetement & Accessoires",
-    contact: "+237696995879",
-    adresse: "Makepe",
+    nom: shop.Name,
+    categorie: shop.Categories ? shop.Categories.join(", ") : "",
+    contact: userData.PhoneNumber || "Veuillez completer ce champ dans votre profile",
+    adresse: shop.Location?.address,
     description: "Lorem ipsum dolor sit amet consectetur adipisicing elit.",
+    activityType: shop.ActivityType,
   });
 
   const toggleEdit = (index) => {
@@ -96,9 +132,7 @@ export default function Parametres() {
       <h1 className="mb-4 text-xl font-semibold text-gray-800">Paramètres</h1>
 
       <section className="mb-12">
-        <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-          Informations de votre boutique
-        </h2>
+        <h2 className="text-2xl font-semibold text-gray-600 mb-4">Informations de votre boutique</h2>
         <span className="flex items-center gap-2 text-gray-400 text-sm mb-6">
           <FaBagShopping />
           <p>Toutes vos informations seront nécessaires pour une meilleure expérience</p>
@@ -117,35 +151,55 @@ export default function Parametres() {
                     <p className="text-xs text-gray-400">Configurer le nom de votre boutique etc</p>
                   </div>
                 </div>
-                <button
-                  className="text-xs py-1 border rounded-md p-3"
-                  onClick={() => toggleEdit(0)}
-                >
+                <button className="text-xs py-1 border rounded-md p-3" onClick={() => toggleEdit(0)}>
                   {editMode[0] ? "Sauvegarder" : <FiArrowRight />}
                 </button>
               </div>
               {editMode[0] ? (
                 <div className="mt-4 space-y-3">
-                  {Object.entries({ nom: "Nom de la boutique", categorie: "Catégorie de la boutique", contact: "Numéro de contact", adresse: "Adresse" }).map(([key, label]) => (
+                  {Object.entries({
+                    nom: "Nom de la boutique",
+                    categorie: "Catégorie de la boutique",
+                    contact: "Numéro de contact",
+                    adresse: "Adresse",
+                  }).map(([key, label]) => (
                     <div key={key}>
                       <label className="text-xs text-gray-400 block mb-1">{label}</label>
                       <input
                         type="text"
                         className="border rounded p-2 w-full"
-                        value={shopInfo[key]}
+                        value={shopInfo[key] || ""}
                         onChange={(e) => handleChange(key, e.target.value)}
                       />
                     </div>
                   ))}
+                  <div key="activityType">
+                    <label className="text-xs text-gray-400 block mb-1">Type d'activité</label>
+                    <input
+                      type="text"
+                      className="border rounded p-2 w-full"
+                      value={shopInfo.activityType || ""}
+                      onChange={(e) => handleChange("activityType", e.target.value)}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div className="divide-y divide-gray-200 mt-4">
-                  {Object.entries({ nom: "Nom de la boutique", categorie: "Catégorie de la boutique", contact: "Numéro de contact", adresse: "Adresse" }).map(([key, label]) => (
+                  {Object.entries({
+                    nom: "Nom de la boutique",
+                    categorie: "Catégorie de la boutique",
+                    contact: "Numéro de contact",
+                    adresse: "Adresse",
+                  }).map(([key, label]) => (
                     <div key={key} className="flex justify-between py-2">
                       <span className="text-gray-400 text-xs">{label}</span>
                       <span className="font-semibold">{shopInfo[key]}</span>
                     </div>
                   ))}
+                  <div key="activityType" className="flex justify-between py-2">
+                    <span className="text-gray-400 text-xs">Type d'activité</span>
+                    <span className="font-semibold">{shopInfo.activityType}</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -161,10 +215,7 @@ export default function Parametres() {
                     <p className="text-xs text-gray-400">Donner des spécifications</p>
                   </div>
                 </div>
-                <button
-                  className="text-xs py-1 border rounded-md p-3"
-                  onClick={() => toggleEdit(1)}
-                >
+                <button className="text-xs py-1 border rounded-md p-3" onClick={() => toggleEdit(1)}>
                   {editMode[1] ? "Sauvegarder" : <FiArrowRight />}
                 </button>
               </div>
@@ -199,79 +250,155 @@ export default function Parametres() {
           <div className="w-full md:w-2/5 border rounded-md p-5 mt-6 md:mt-0">
             <h3 className="font-semibold text-lg mb-4">Résumé de la boutique</h3>
             {Object.entries(shopInfo).map(([k, v]) => (
-              <div className="mb-3" key={k}><strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {v}</div>
+              <div className="mb-3" key={k}>
+                <strong>{k.charAt(0).toUpperCase() + k.slice(1)}:</strong> {v}
+              </div>
             ))}
             <div className="h-60 w-full mt-4 rounded overflow-hidden">
               <LoadScript googleMapsApiKey="AIzaSyCL5Xr-TWf6i6wKJw5TkspiZRmhLFaG3rs">
                 {userLocation && (
-                  <GoogleMap mapContainerStyle={mapContainerStyle} center={userLocation} zoom={13}>
-                    <Marker position={userLocation} />
-                  </GoogleMap>
+                  <GoogleMap
+                  mapContainerStyle={mapContainerStyle}
+                  center={userLocation}
+                  zoom={13}
+                  onClick={(e) => updateLocation(e.latLng.lat(), e.latLng.lng())}
+                >
+                  <Marker
+                    position={userLocation}
+                    draggable={true}
+                    onDragEnd={(e) =>
+                      updateLocation(e.latLng.lat(), e.latLng.lng())
+                    }
+                  />
+                </GoogleMap>
+                
+                
                 )}
               </LoadScript>
             </div>
+            <button
+              className="mt-4 px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 transition"
+              onClick={() => saveLocation(userLocation, shopInfo?.adresse)}
+            >
+              Enregistrer la localisation
+            </button>
           </div>
         </div>
       </section>
 
-      <section className="mb-12">
-        <h2 className="mb-4 text-lg font-bold">Choisir votre formule</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {plans.map(({ name, prix, delai, description, action, active }) => (
-            <div key={name} className={`card p-5 rounded-md border ${active ? "border-primary bg-primary/10" : "border-gray-300"}`}>
-              <h3 className="font-bold">{name}</h3>
-              <p>{description}</p>
-              <p className="text-xl font-semibold mt-3">{prix} FCFA / {delai}</p>
-              <button
-                className={`mt-4 px-4 py-2 rounded ${active ? "bg-primary text-white" : "border border-primary text-primary"}`}
-                onClick={() => alert(`Vous avez choisi la formule ${name}`)}
-              >
-                {action}
-              </button>
-            </div>
-          ))}
-        </div>
 
-        <div className="mt-10 overflow-x-auto">
-          <table className="w-full border border-gray-300 rounded-md">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="p-3 border border-gray-300"></th>
-                {plans.map(({ name }) => (
-                  <th key={name} className="p-3 border border-gray-300 text-center font-semibold">{name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {Object.keys(plans[0].features).map((feature) => (
-                <tr key={feature} className="hover:bg-gray-50">
-                  <td className="p-3 border border-gray-300 font-medium">{feature}</td>
-                  {plans.map(({ features, name }) => (
-                    <td key={name + feature} className="p-3 border border-gray-300 text-center">{features[feature]}</td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <section className="mb-12">
+  <h2 className="mb-4 text-lg font-bold">Choisir votre formule</h2>
+
+  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+    {plans.map(({ name, prix, delai, description, action, active }) => (
+      <div
+        key={name}
+        className={`card p-5 rounded-md border ${
+          active ? "border-primary bg-primary/10" : "border-gray-300"
+        }`}
+      >
+        <h3 className="font-bold">{name}</h3>
+        <p>{description}</p>
+        <p className="text-xl font-semibold mt-3">
+          {prix} FCFA / {delai}
+        </p>
+        <button
+          className={`mt-4 px-4 py-2 rounded ${
+            active
+              ? "bg-primary text-white"
+              : "border border-primary text-primary"
+          }`}
+          onClick={() => alert(`Vous avez choisi la formule ${name}`)}
+        >
+          {action}
+        </button>
+      </div>
+    ))}
+  </div>
+
+  <div className="mt-10 overflow-x-auto">
+    <table className="w-full border border-gray-300 rounded-md">
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="p-3 border border-gray-300"></th>
+          {plans.map(({ name }) => (
+            <th
+              key={name}
+              className="p-3 border border-gray-300 text-center font-semibold"
+            >
+              {name}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {Object.keys(plans[0].features).map((feature) => (
+          <tr key={feature} className="hover:bg-gray-50">
+            <td className="p-3 border border-gray-300 font-medium">{feature}</td>
+            {plans.map(({ features, name }) => (
+              <td
+                key={name + feature}
+                className="p-3 border border-gray-300 text-center"
+              >
+                {features[feature]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
+
 
       <section>
         <h2 className="text-lg font-semibold mb-4">Modifier votre profil</h2>
-        <form onSubmit={(e) => { e.preventDefault(); alert("Profil sauvegardé !"); }} className="space-y-4 max-w-md">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            alert("Profil sauvegardé !");
+          }}
+          className="space-y-4 max-w-md"
+        >
           <div>
-            <label className="block text-sm font-medium text-gray-700">Nom complet</label>
-            <input type="text" className="mt-1 block w-full rounded border border-gray-300 p-2" defaultValue="Jean Dupont" name="fullname" />
+            <label className="block text-sm font-medium text-gray-700">
+              Nom complet
+            </label>
+            <input
+              type="text"
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+              defaultValue="Jean Dupont"
+              name="fullname"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input type="email" className="mt-1 block w-full rounded border border-gray-300 p-2" defaultValue="jean.dupont@email.com" name="email" />
+            <label className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+              defaultValue="jean.dupont@email.com"
+              name="email"
+            />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700">Mot de passe</label>
-            <input type="password" className="mt-1 block w-full rounded border border-gray-300 p-2" name="password" />
+            <label className="block text-sm font-medium text-gray-700">
+              Mot de passe
+            </label>
+            <input
+              type="password"
+              className="mt-1 block w-full rounded border border-gray-300 p-2"
+              name="password"
+            />
           </div>
-          <button type="submit" className="rounded bg-primary px-4 py-2 text-white hover:bg-primary-dark">Sauvegarder le profil</button>
+          <button
+            type="submit"
+            className="rounded bg-primary px-4 py-2 text-white hover:bg-primary-dark"
+          >
+            Sauvegarder le profil
+          </button>
         </form>
       </section>
     </div>
