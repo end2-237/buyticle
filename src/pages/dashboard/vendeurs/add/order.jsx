@@ -136,7 +136,6 @@ const TableauClient = () => {
             </h1>
           )}
         </div>
-        <span>test de branch</span>
         <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">
           <div className="relative w-full md:w-72">
             <input
