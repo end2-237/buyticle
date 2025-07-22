@@ -1,4 +1,3 @@
-// Modernisation du composant CatalogueProduits avec un design responsive et raffiné
 import React, { useState, useMemo } from "react";
 import {
   FiChevronDown,
@@ -101,8 +100,7 @@ const CatalogueProduits = () => {
   };
 
   const supprimerProduit = async (id) => {
-    if (!window.confirm("Confirmez-vous la suppression de ce produit ?"))
-      return;
+    if (!window.confirm("Confirmez-vous la suppression de ce produit ?")) return;
 
     if (!shopId) {
       alert("Impossible de récupérer l'ID de la boutique.");
@@ -112,10 +110,7 @@ const CatalogueProduits = () => {
     try {
       setLoading(true);
       await deleteProductAndUpdateShop(id, shopId);
-
-      // Mise à jour locale des produits après suppression
       setProducts((prev) => prev.filter((p) => p.id !== id));
-
       alert("Produit supprimé avec succès.");
     } catch (error) {
       console.error("Erreur lors de la suppression :", error);
@@ -128,16 +123,11 @@ const CatalogueProduits = () => {
   const toggleActifProduit = (id) => {};
   const dupliquerProduit = (id) => {};
 
-  if (loading)
-    return <p className="text-center text-gray-600 mt-10">Chargement...</p>;
+  if (loading) return <p className="text-center text-gray-600 mt-10">Chargement...</p>;
   if (error)
-    return (
-      <p className="text-center text-red-500 mt-10">Erreur : {error.message}</p>
-    );
+    return <p className="text-center text-red-500 mt-10">Erreur : {error.message}</p>;
   if (!products.length)
-    return (
-      <p className="text-center text-gray-500 mt-10">Aucun produit trouvé.</p>
-    );
+    return <p className="text-center text-gray-500 mt-10">Aucun produit trouvé.</p>;
 
   return (
     <div className="min-h-screen px-4 md:px-8 py-6 space-y-6">
@@ -202,77 +192,78 @@ const CatalogueProduits = () => {
           produitsPage.map((p) => (
             <div
               key={p.id}
-              className="border rounded-xl p-4 bg-white shadow-sm flex flex-col justify-between gap-4 transition hover:shadow-md"
+              className="rounded-2xl p-5 bg-white shadow-md flex flex-col justify-between transition hover:shadow-lg"
             >
-              <div className="flex items-start gap-3">
+              <div className="w-full flex justify-center">
                 <img
                   src={p.Thumbnail}
                   alt={p.Title}
-                  className="w-20 h-20 object-cover rounded-md border"
+                  className="w-24 h-24 object-contain"
                 />
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-1">
-                    <h3 className="font-semibold text-gray-800 line-clamp-1">
-                      {p.Title}
-                    </h3>
-                    {p.Brand?.IsFeatured && (
-                      <FaCrown
-                        className="text-yellow-500"
-                        title="Créateur de marque"
-                      />
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500">
-                    Catégorie: {p.CategoryId}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {p.Price?.toLocaleString()} FCFA
-                  </p>
-                </div>
               </div>
 
-              <div className="flex flex-wrap justify-between text-sm text-gray-600 mt-2">
-                <span>Stock: {p.Stock ?? "N/A"}</span>
-                <span>Vendus: {p.vendu ?? "N/A"}</span>
-                <span>Revenu: {p.revenu?.toLocaleString() ?? "N/A"} FCFA</span>
+              <div className="text-center space-y-1 mt-2">
+                <div className="flex justify-center items-center gap-1">
+                  <h3 className="font-bold text-gray-900 text-lg line-clamp-1">
+                    {p.Title}
+                  </h3>
+                  {p.Brand?.IsFeatured && (
+                    <FaCrown className="text-yellow-500" title="Créateur de marque" />
+                  )}
+                </div>
+                <p className="text-sm text-gray-500">Catégorie: {p.CategoryId}</p>
+                <p className="text-base font-medium text-gray-700">
+                  {p.Price?.toLocaleString()} FCFA
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-y-2 text-sm text-gray-600 mt-4">
                 <span>
-                  Date:{" "}
+                  <span className="font-medium text-gray-800">Stock:</span>{" "}
+                  {p.Stock ?? "N/A"}
+                </span>
+                <span>
+                  <span className="font-medium text-gray-800">Vendus:</span>{" "}
+                  {p.vendu ?? "N/A"}
+                </span>
+                <span>
+                  <span className="font-medium text-gray-800">Revenu:</span>{" "}
+                  {p.revenu?.toLocaleString() ?? "N/A"} FCFA
+                </span>
+                <span>
+                  <span className="font-medium text-gray-800">Date:</span>{" "}
                   {new Date(p.CreatedAt?.seconds * 1000).toLocaleDateString()}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center mt-4">
+              <div className="flex justify-between items-center pt-4 border-t mt-4">
                 <button
                   className={`rounded-full p-2 ${
-                    p.actif
-                      ? "bg-green-100 text-green-600"
-                      : "bg-red-100 text-red-600"
+                    p.actif ? "bg-green-100 text-green-600" : "bg-red-100 text-red-600"
                   }`}
                   onClick={() => toggleActifProduit(p.id)}
                   title={p.actif ? "Désactiver" : "Activer"}
                 >
                   {p.actif ? <FiPlay /> : <FiPause />}
                 </button>
-                <div className="flex gap-2">
+                <div className="flex gap-3">
                   <button
-                    onClick={() =>
-                      navigate(`/dashboard/vendeur/produits/${p.id}`)
-                    }
-                    className="text-blue-600 hover:text-blue-800"
+                    onClick={() => navigate(`/dashboard/vendeur/produits/${p.id}`)}
+                    className="p-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
                     title="Voir / Modifier"
                   >
                     <FiEye />
                   </button>
                   <button
                     onClick={() => dupliquerProduit(p.id)}
-                    className="text-gray-600 hover:text-gray-800"
+                    className="p-2 rounded-full bg-gray-100 text-gray-700 hover:bg-gray-200"
                     title="Dupliquer"
                   >
                     <FiCopy />
                   </button>
                   <button
                     onClick={() => supprimerProduit(p.id)}
-                    className="text-red-500 hover:text-red-700"
+                    className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-200"
                     title="Supprimer"
                   >
                     <FiTrash2 />
