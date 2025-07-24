@@ -53,15 +53,15 @@ export default function PricingPage() {
             <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
               <FaApple className="text-xl md:text-3xl" />
               <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
-                Votre marketplace bientot disponible sur les systemes IOS.
+                Votre marketplace bientôt disponible sur les systèmes iOS.
               </p>
             </div>
           </div>
           <h1 className="text-4xl md:text-6xl font-bold mb-4">
-            Offre de Lancement Beta
+            Offre de lancement Bêta
           </h1>
           <p className="text-lg max-w-2xl mx-auto text-gray-600 ">
-            Rejoignez Buyticle gratuitement pendant la phase beta.
+            Rejoignez Buyticle gratuitement pendant la phase bêta.
           </p>
         </div>
 
@@ -143,6 +143,8 @@ export default function PricingPage() {
           </motion.div>
         </div>
 
+        <div className="max-w-full flex items-center justify-center p-6 text-center bg-primary"> Pour vous permettre d’évaluer la pertinence de notre service, nous mettons à votre disposition une version bêta complète. Profitez de l’expérience Buyticle dès maintenant.</div>
+
         <Footer />
       </div>
     );
@@ -158,7 +160,7 @@ export default function PricingPage() {
           <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
             <FaApple className="text-xl md:text-3xl" />
             <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
-              Votre marketplace bientot disponible sur les systemes IOS.
+              Votre marketplace bientôt disponible sur les systèmes iOS.
             </p>
           </div>
         </div>
