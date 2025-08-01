@@ -3,22 +3,24 @@ import { getAllPlans } from "../models/PlanModel";
 import { motion } from "framer-motion";
 import Navigation from "../nav";
 import Footer from "../footer";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CardSkeleton from "../components/CardSkeleton";
 import { FaApple } from "react-icons/fa";
 
 export default function PricingPage() {
   const navigate = useNavigate();
+
+  const versionBeta = false;
+
   const [tab, setTab] = useState("standard");
   const [emplacements, setEmplacements] = useState(10);
-  const [duree, setDuree] = useState(1); // 👈 durée en mois
+  const [duree, setDuree] = useState(1);
   const [abonnements, setAbonnements] = useState([]);
 
   useEffect(() => {
     async function fetchPlans() {
       try {
         const plansFromDb = await getAllPlans();
-        console.log("Plans récupérés:", plansFromDb);
         const normalizedPlans = plansFromDb.map((plan) => ({
           id: plan.id,
           highlight: plan.Highlight || false,
@@ -39,8 +41,116 @@ export default function PricingPage() {
   }, []);
 
   const prixParEmplacement = 500;
-  const prixTotal = emplacements * prixParEmplacement * duree; // 👈 prix en fonction de la durée choisie
+  const prixTotal = emplacements * prixParEmplacement * duree;
 
+  if (!versionBeta) {
+    return (
+      <div className="min-h-screen bg-base-100 text-base-content">
+        <Navigation />
+
+        <div className="text-center mb-16 p-4">
+          <div className="flex justify-center">
+            <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
+              <FaApple className="text-xl md:text-3xl" />
+              <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
+                Votre marketplace bientôt disponible sur les systèmes iOS.
+              </p>
+            </div>
+          </div>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            Offre de lancement Bêta
+          </h1>
+          <p className="text-lg max-w-2xl mx-auto text-gray-600 ">
+            Rejoignez Buyticle gratuitement pendant la phase bêta.
+          </p>
+        </div>
+
+        <div className="max-w-xl mx-auto pb-6 md:p-2 p-4 pt-10 md:pt-0">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="card border border-green-800 shadow-sm bg-gray-050"
+          >
+            <div className="card-body text-center">
+              <div className="flex justify-center items-center gap-5">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="size-8"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M15.362 5.214A8.252 8.252 0 0 1 12 21 8.25 8.25 0 0 1 6.038 7.047 8.287 8.287 0 0 0 9 9.601a8.983 8.983 0 0 1 3.361-6.867 8.21 8.21 0 0 0 3 2.48Z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M12 18a3.75 3.75 0 0 0 .495-7.468 5.99 5.99 0 0 0-1.925 3.547 5.975 5.975 0 0 1-2.133-1.001A3.75 3.75 0 0 0 12 18Z"
+                  />
+                </svg>
+
+                <h2 className="card-title text-3xl mb-2">
+                  Formule Beta Limitée
+                </h2>
+              </div>
+
+              <p className="text-gray-500 mb-4">
+                Profitez de toutes les fonctionnalités sans frais pendant notre
+                phase de test.
+              </p>
+              <div className="text-5xl font-bold text-primary mb-4">0 FCFA</div>
+              <ul className="space-y-2 text-sm mb-6">
+                <li className="flex items-center justify-center gap-2">
+                  <span className="text-success">✔</span> Accès complet à la
+                  plateforme
+                </li>
+                <li className="flex items-center justify-center gap-2">
+                  <span className="text-success">✔</span> Support gratuit
+                </li>
+                <li className="flex items-center justify-center gap-2">
+                  <span className="text-success">✔</span> Nombre illimité de
+                  produits
+                </li>
+              </ul>
+              <button
+                onClick={() =>
+                  navigate("/payment", {
+                    state: {
+                      plan: {
+                        title: "Formule Beta Limitée",
+                        description: "Accès complet gratuit pendant la beta",
+                        price: 0,
+                        features: [
+                          "Accès complet",
+                          "Support gratuit",
+                          "Nombre illimité de produits",
+                        ],
+                        custom: true,
+                      },
+                    },
+                  })
+                }
+                className="btn btn-primary w-full"
+              >
+                S’inscrire gratuitement
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        <div className="max-w-full flex items-center justify-center p-6 text-center bg-primary"> Pour vous permettre d’évaluer la pertinence de notre service, nous mettons à votre disposition une version bêta complète. Profitez de l’expérience Buyticle dès maintenant.</div>
+
+        <Footer />
+      </div>
+    );
+  }
+
+  //
   return (
     <div className="min-h-screen bg-base-100 text-base-content">
       <Navigation />
@@ -50,7 +160,7 @@ export default function PricingPage() {
           <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
             <FaApple className="text-xl md:text-3xl" />
             <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
-              Votre marketplace bientot disponible sur les systemes IOS.
+              Votre marketplace bientôt disponible sur les systèmes iOS.
             </p>
           </div>
         </div>
@@ -66,7 +176,9 @@ export default function PricingPage() {
         <button
           onClick={() => setTab("standard")}
           className={`btn btn-md mx-4 md:btn-lg rounded-full ${
-            tab === "standard" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
+            tab === "standard"
+              ? "bg-green-900 text-white hover:bg-green-700"
+              : "btn-outline"
           }`}
         >
           Formules Standard
@@ -74,7 +186,9 @@ export default function PricingPage() {
         <button
           onClick={() => setTab("personnalisable")}
           className={`btn btn-md mx-4 md:btn-lg rounded-full ${
-            tab === "personnalisable" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
+            tab === "personnalisable"
+              ? "bg-green-900 text-white hover:bg-green-700"
+              : "btn-outline"
           }`}
         >
           Formule Personnalisable
@@ -82,7 +196,7 @@ export default function PricingPage() {
       </div>
 
       {tab === "standard" ? (
-        // Partie formules standards (identique)
+        // Partie formules standards
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto p-4 pb-8">
           {abonnements.length === 0
             ? Array.from({ length: 4 }).map((_, index) => (
