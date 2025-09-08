@@ -44,7 +44,7 @@ const TableauClient = () => {
           : ongletActif === "En traitement"
           ? ["OrderStatus.pending", "OrderStatus.processing"].includes(cmd.status)
           : ongletActif === "Complétée"
-          ? cmd.status === "OrderStatus.delivered"
+          ? ["OrderStatus.completed", "OrderStatus.delivered"].includes(cmd.status)
           : ongletActif === "Annulée"
           ? cmd.status === "OrderStatus.cancelled"
           : true;
@@ -97,7 +97,9 @@ const TableauClient = () => {
       case "OrderStatus.processing":
         return "En traitement";
       case "OrderStatus.completed":
-        return "Complétée";
+        return "Livré";
+      case "OrderStatus.delivered":
+        return "Livré";
       case "OrderStatus.cancelled":
         return "Annulée";
       default:
@@ -108,6 +110,8 @@ const TableauClient = () => {
   const statutColor = (status) => {
     switch (status) {
       case "OrderStatus.completed":
+        return "text-green-600";
+      case "OrderStatus.delivered":
         return "text-green-600";
       case "OrderStatus.cancelled":
         return "text-red-600";
@@ -194,7 +198,7 @@ const TableauClient = () => {
           {
             titre: "Complétées",
             valeur: commandes.filter(
-              (c) => c.status === "OrderStatus.completed"
+              (c) => c.status === "OrderStatus.completed" || c.status === "OrderStatus.delivered"
             ).length,
             note: "Commandes terminées",
             icon: <FaCheckCircle className="w-6 h-6 text-green-600" />,
@@ -259,7 +263,7 @@ const TableauClient = () => {
             <div className="mb-6">
               <div className="flex justify-between items-center border-b border-gray-200 pb-2 mb-3">
                 <p className="text-sm font-semibold text-gray-700">
-                  Dernière commande &gt; 10000 FCFA
+                  Dernière commande &gt; {commandeSelectionnee.total}
                 </p>
                 <div className="flex gap-2">
                   <button
