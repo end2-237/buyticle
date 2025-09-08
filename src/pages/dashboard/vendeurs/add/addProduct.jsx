@@ -127,9 +127,7 @@ const AddProduct = () => {
 
   const handleSubmit = async () => {
     if (!product.Title.trim() || !product.Price || images.length === 0) {
-      alert(
-        "Veuillez remplir les champs obligatoires : Titre, Prix et Images."
-      );
+      alert("Veuillez remplir les champs obligatoires : Titre, Prix et Images.");
       return;
     }
     if (!shopId) {
@@ -143,22 +141,19 @@ const AddProduct = () => {
     const uniqueSizes = [
       ...new Set(product.ProductVariations.map((v) => v.AttributeValues.Size)),
     ];
+
     const payload = {
       ...product,
-      ProductType: hasVariations
-        ? "ProductType.variable"
-        : "ProductType.single",
+      ProductType: hasVariations ? "ProductType.variable" : "ProductType.single",
       Price: Number(product.Price),
       SalePrice: Number(product.SalePrice || 0),
       Stock: Number(product.Stock || 0),
       Images: images,
       Thumbnail: thumbnail || images[0] || "",
-      ProductAttributes: hasVariations
-        ? [
-            { Name: "Color", Values: uniqueColors },
-            { Name: "Size", Values: uniqueSizes },
-          ]
-        : [],
+      ProductAttributes: hasVariations ? [
+        { Name: "Color", Values: uniqueColors },
+        { Name: "Size", Values: uniqueSizes },
+      ] : [],
       IdSeller: shopId,
       Rating: Number(product.Rating || 0),
     };
@@ -175,13 +170,7 @@ const AddProduct = () => {
         Stock: "",
         SKU: "",
         ProductType: "ProductType.single",
-        Brand: {
-          Id: "",
-          Name: "",
-          Image: "",
-          IsFeatured: true,
-          ProductsCount: 0,
-        },
+        Brand: { Id: "", Name: "", Image: "", IsFeatured: true, ProductsCount: 0 },
         Images: [],
         Rating: 0.0,
         Thumbnail: "",
@@ -196,8 +185,7 @@ const AddProduct = () => {
     }
   };
 
-  const inputStyle =
-    "w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500";
+  const inputStyle = "w-full p-2 border border-gray-300 rounded-md focus:outline-blue-500";
 
   return (
     <form
@@ -276,11 +264,10 @@ const AddProduct = () => {
             }
           }}
         >
+
           <option value="">-- Sélectionner une marque --</option>
           {brands.map((brand) => (
-            <option key={brand.id} value={brand.id}>
-              {brand.Name}
-            </option>
+            <option key={brand.id} value={brand.id}>{brand.Name}</option>
           ))}
         </select>
 
@@ -293,15 +280,14 @@ const AddProduct = () => {
         >
           <option value="">-- Sélectionner une catégorie --</option>
           {categories.map((category) => (
-            <option key={category.id} value={category.id}>
-              {category.Name}
-            </option>
+            <option key={category.id} value={category.id}>{category.Name}</option>
           ))}
         </select>
       </div>
 
       {/* Right Column: Images and Variants */}
       <div className="space-y-6">
+
         {/* Full-width Submit Button */}
         <div className="md:col-span-2 flex items-right justify-right max-w-full">
           <button
@@ -507,13 +493,11 @@ const AddProduct = () => {
           >
             Ajouter variante
           </button>
+
           {product.ProductVariations.length > 0 && (
             <ul className="mt-4 list-disc pl-5">
               {product.ProductVariations.map((v, idx) => (
-                <li key={idx}>
-                  {v.AttributeValues.Color} - {v.AttributeValues.Size} :{" "}
-                  {v.Price}€ - Stock : {v.Stock}
-                </li>
+                <li key={idx}>{v.AttributeValues.Color} - {v.AttributeValues.Size} : {v.Price}€ - Stock : {v.Stock}</li>
               ))}
             </ul>
           )}
