@@ -44,7 +44,7 @@ const TableauClient = () => {
           : ongletActif === "En traitement"
           ? ["OrderStatus.pending", "OrderStatus.processing"].includes(cmd.status)
           : ongletActif === "Complétée"
-          ? cmd.status === "OrderStatus.completed"
+          ? cmd.status === "OrderStatus.delivered"
           : ongletActif === "Annulée"
           ? cmd.status === "OrderStatus.cancelled"
           : true;
