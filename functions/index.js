@@ -4,17 +4,17 @@ const { PayunitClient } = require('@payunit/nodejs-sdk');
 
 const client = new PayunitClient({
   baseURL: 'https://gateway.payunit.net',
-  apiKey: 'sand_PtOK5EkhQYpYVfMs7QaAqvbz5znNAd',
+  apiKey: 'live_lQNXNk8DNAcZpuYduL49yxOccIwBEY0Sn0SMZhDB',
   apiUsername: '2102aa79-f893-4f38-ac77-22524a648422',
   apiPassword: '650fd5a9-57a8-4abb-ad1c-e2059cb76520',
-  mode: 'test',
-  timeout: 10000,
+  mode: 'live',
+  timeout: 30000,
 });
 
 exports.payWithMobileMoney = functions.https.onRequest((req, res) => {
   cors(req, res, async () => {
     try {
-      const { amount, phone_number } = req.body;
+      const { amount, phone_number, paymentMethod } = req.body;
 
       if (!amount || !phone_number) {
         return res.status(400).json({ error: 'amount et phone_number sont requis' });
@@ -30,7 +30,7 @@ exports.payWithMobileMoney = functions.https.onRequest((req, res) => {
         return_url: 'https://buyticle.com',
         notify_url: 'https://buyticle.com',
         payment_country: 'CM',
-        pay_with: 'CM_ORANGE',
+        pay_with: paymentMethod,
       });
 
       // 2. Vérification du transaction_id
@@ -39,7 +39,7 @@ exports.payWithMobileMoney = functions.https.onRequest((req, res) => {
       // 3. Paiement Mobile Money
       const paymentResult = await client.collections.makePayment({
         amount: amount,
-        gateway: 'CM_ORANGE',
+        gateway: paymentMethod,
         currency: 'XAF',
         transaction_id: validTransactionId,
         phone_number: phone_number,
