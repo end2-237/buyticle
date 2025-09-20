@@ -14,7 +14,7 @@ export default function PaymentPage() {
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [promoCode, setPromoCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("ORANGE_MONEY");
+  const [paymentMethod, setPaymentMethod] = useState("CM_ORANGE"); 
   const [loading, setLoading] = useState(false);
 
   async function payment() {
@@ -23,8 +23,13 @@ export default function PaymentPage() {
       return;
     }
 
-    if (!plan?.price) {
+    if (!plan?.price || !plan?.title) {
       alert("Plan invalide.");
+      return;
+    }
+
+    if (!user?.uid) {
+      alert("Utilisateur non connecté !");
       return;
     }
 
@@ -39,9 +44,15 @@ export default function PaymentPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: Number(plan.price),
+            amount: parseInt(plan.price.toString().replace(/\D/g, ""), 10),
             phone_number: phone.trim(),
             paymentMethod: paymentMethod,
+            userId: user.uid, 
+            plan: {
+              title: plan.title,
+              price: plan.price,
+              description: plan.description || "",
+            }, 
           }),
         }
       );
@@ -62,12 +73,10 @@ export default function PaymentPage() {
       }
 
       const data = await response.json();
-      console.log("Paiement réussi :", data);
+      console.log("Paiement initialisé :", data);
 
       if (data.success) {
-        // alert("Paiement réussi :\n" + JSON.stringify(data.data, null, 2));
-        await activateShop(plan);
-        navigate("/payment-success");
+        navigate("/payment-encours");
       } else {
         console.error("Erreur lors de l'initialisation du paiement :", data);
         alert(
@@ -111,7 +120,7 @@ export default function PaymentPage() {
             {/* Méthode de Paiement */}
             <div className="card bg-base-200 p-6 shadow-md">
               <h2 className="text-xl font-semibold mb-4">
-                Sélectionnez votre moyen de paiementtt
+                Sélectionnez votre moyen de paiement
               </h2>
               <div className="flex flex-col gap-4">
                 <label className="flex items-center gap-3 cursor-pointer">
