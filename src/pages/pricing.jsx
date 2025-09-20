@@ -3,12 +3,15 @@ import { getAllPlans } from "../models/PlanModel";
 import { motion } from "framer-motion";
 import Navigation from "../nav";
 import Footer from "../footer";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import CardSkeleton from "../components/CardSkeleton";
 import { FaApple } from "react-icons/fa";
 
 export default function PricingPage() {
   const navigate = useNavigate();
+
+  const versionBeta = false;
+
   const [tab, setTab] = useState("standard");
   const [emplacements, setEmplacements] = useState(10);
   const [duree, setDuree] = useState(1);
@@ -19,7 +22,6 @@ export default function PricingPage() {
     async function fetchPlans() {
       try {
         const plansFromDb = await getAllPlans();
-        console.log("Plans récupérés:", plansFromDb);
         const normalizedPlans = plansFromDb.map((plan) => ({
           id: plan.id,
           highlight: plan.Highlight || false,
@@ -149,6 +151,7 @@ export default function PricingPage() {
     );
   }
 
+  //
   return (
     <div className="min-h-screen bg-base-100 text-base-content">
       <Navigation />
@@ -158,7 +161,7 @@ export default function PricingPage() {
           <div className="border border-dashed border-green-800 p-3 rounded-md mb-4 md:mb-2 w-2/3 md:w-1/3 flex gap-1 justify-between items-center bg-green-100">
             <FaApple className="text-xl md:text-3xl" />
             <p className="text-[10px] md:text-xs text-gray-600 font-semibold">
-              Votre marketplace bientot disponible sur les systemes IOS.
+              Votre marketplace bientôt disponible sur les systèmes iOS.
             </p>
           </div>
         </div>
@@ -174,7 +177,9 @@ export default function PricingPage() {
         <button
           onClick={() => setTab("standard")}
           className={`btn btn-md mx-4 md:btn-lg rounded-full ${
-            tab === "standard" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
+            tab === "standard"
+              ? "bg-green-900 text-white hover:bg-green-700"
+              : "btn-outline"
           }`}
         >
           Formules Standard
@@ -182,7 +187,9 @@ export default function PricingPage() {
         <button
           onClick={() => setTab("personnalisable")}
           className={`btn btn-md mx-4 md:btn-lg rounded-full ${
-            tab === "personnalisable" ? "bg-green-900 text-white hover:bg-green-700" : "btn-outline"
+            tab === "personnalisable"
+              ? "bg-green-900 text-white hover:bg-green-700"
+              : "btn-outline"
           }`}
         >
           Formule Personnalisable
@@ -190,7 +197,7 @@ export default function PricingPage() {
       </div>
 
       {tab === "standard" ? (
-        // Partie formules standards (identique)
+        // Partie formules standards
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto p-4 pb-8">
           {abonnements.length === 0
             ? Array.from({ length: 4 }).map((_, index) => (
