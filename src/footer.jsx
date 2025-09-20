@@ -64,6 +64,13 @@ export default function Footer() {
             Support Vendeur
           </a>
         </div>
+        {/* Privacy policy */}
+        <div className="flex flex-col space-y-3">
+          <h4 className="text-gray-900 font-semibold mb-3">Confidentialité</h4>
+          <a href="/privacy-policy" className="hover:text-primary hover:underline">
+            Politique de confidentialité
+          </a>
+        </div>
 
         {/* Réseaux sociaux */}
         <div className="flex flex-col space-y-4">

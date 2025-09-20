@@ -29,6 +29,8 @@ import { ShopProvider } from "./contexts/shopContext.jsx";
 import PrivateRoute from "./routes/PrivateRoute.jsx";
 import PaymentSuccess from "./components/payementSucess.jsx";
 import GoToSubscription from "./components/GotToSubscription.jsx";
+import PayementEncours from "./components/payement_encours.jsx";
+import PrivacyPolicyPage from "./components/privacyPolicy.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -46,6 +48,8 @@ root.render(
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
           <Route path="/subscription" element={<GoToSubscription />} />
+          <Route path="/payment-encours" element={<PayementEncours />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
 
           {/* Routes prive pour les vendeurs */}
 

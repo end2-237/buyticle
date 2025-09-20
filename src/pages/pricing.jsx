@@ -16,6 +16,7 @@ export default function PricingPage() {
   const [emplacements, setEmplacements] = useState(10);
   const [duree, setDuree] = useState(1);
   const [abonnements, setAbonnements] = useState([]);
+  const versionBeta = true;
 
   useEffect(() => {
     async function fetchPlans() {
@@ -345,7 +346,7 @@ export default function PricingPage() {
                           "Boutique 100% personnalisable",
                           "Support prioritaire",
                         ],
-                        custom: true, // (optionnel pour différencier un plan perso)
+                        custom: true, 
                         emplacements,
                         duree,
                       },

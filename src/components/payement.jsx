@@ -2,9 +2,7 @@ import Navigation from "../nav";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useShop } from "../contexts/shopContext";
-import Modal from "../components/Modal"; // adapte le chemin
-
-
+import Modal from "../components/Modal";
 
 export default function PaymentPage() {
   const location = useLocation();
@@ -13,29 +11,30 @@ export default function PaymentPage() {
   const { activateShop, user, shopId } = useShop();
   const [showModal, setShowModal] = useState(false);
 
-
-
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [promoCode, setPromoCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("ORANGE_MONEY");
+  const [paymentMethod, setPaymentMethod] = useState("CM_ORANGE"); 
   const [loading, setLoading] = useState(false);
 
-
-  
   async function payment() {
     if (!phone.trim()) {
       alert("Veuillez renseigner un numéro Mobile Money valide.");
       return;
     }
-  
-    if (!plan?.price) {
+
+    if (!plan?.price || !plan?.title) {
       alert("Plan invalide.");
       return;
     }
-  
+
+    if (!user?.uid) {
+      alert("Utilisateur non connecté !");
+      return;
+    }
+
     setLoading(true);
-  
+
     try {
       const response = await fetch(
         "https://us-central1-buyticle-bce3f.cloudfunctions.net/payWithMobileMoney",
@@ -45,30 +44,45 @@ export default function PaymentPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            amount: Number(plan.price),
+            amount: parseInt(plan.price.toString().replace(/\D/g, ""), 10),
             phone_number: phone.trim(),
+            paymentMethod: paymentMethod,
+            userId: user.uid, 
+            plan: {
+              title: plan.title,
+              price: plan.price,
+              description: plan.description || "",
+            }, 
           }),
         }
       );
-  
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Erreur serveur :", response.status, response.statusText, errorText);
-        alert(`Erreur serveur : ${response.status} ${response.statusText}\n${errorText}`);
+        console.error(
+          "Erreur serveur :",
+          response.status,
+          response.statusText,
+          errorText
+        );
+        alert(
+          `Erreur serveur : ${response.status} ${response.statusText}\n${errorText}`
+        );
         setLoading(false);
         return;
       }
-  
+
       const data = await response.json();
-      console.log("Paiement réussi :", data);
-  
+      console.log("Paiement initialisé :", data);
+
       if (data.success) {
-        // alert("Paiement réussi :\n" + JSON.stringify(data.data, null, 2));
-        await activateShop(plan);
-        navigate("/payment-success");
+        navigate("/payment-encours");
       } else {
         console.error("Erreur lors de l'initialisation du paiement :", data);
-        alert("Erreur lors de l'initialisation du paiement : " + JSON.stringify(data));
+        alert(
+          "Erreur lors de l'initialisation du paiement : " +
+            JSON.stringify(data)
+        );
       }
     } catch (error) {
       console.error("Erreur réseau :", error);
@@ -77,11 +91,10 @@ export default function PaymentPage() {
       setLoading(false);
     }
   }
-  
-  
+
   useEffect(() => {
     if (!user || !shopId) {
-      setShowModal(true); 
+      setShowModal(true);
     }
   }, [user, shopId]);
 
@@ -89,13 +102,13 @@ export default function PaymentPage() {
     return (
       <Modal
         isOpen={showModal}
-        onClose={() => {setShowModal(false), navigate("/pricing")}}
+        onClose={() => {
+          setShowModal(false), navigate("/pricing");
+        }}
         onConfirm={() => navigate("/signin")}
       />
     );
   }
-  
-  
 
   return (
     <div>
@@ -106,19 +119,21 @@ export default function PaymentPage() {
           <div className="space-y-6">
             {/* Méthode de Paiement */}
             <div className="card bg-base-200 p-6 shadow-md">
-              <h2 className="text-xl font-semibold mb-4">Sélectionnez votre moyen de paiementtt</h2>
+              <h2 className="text-xl font-semibold mb-4">
+                Sélectionnez votre moyen de paiement
+              </h2>
               <div className="flex flex-col gap-4">
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="radio"
                     name="payment-method"
                     className="radio checked:bg-primary"
-                    checked={paymentMethod === "ORANGE_MONEY"}
-                    onChange={() => setPaymentMethod("ORANGE_MONEY")}
+                    checked={paymentMethod === "CM_ORANGE"}
+                    onChange={() => setPaymentMethod("CM_ORANGE")}
                   />
                   <span className="flex items-center gap-2">
                     <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/2/22/Orange_logo.svg"
+                      src="https://firebasestorage.googleapis.com/v0/b/buyticle-bce3f.firebasestorage.app/o/Assets%2Fom.png?alt=media&token=8cb9080b-c144-4df2-85b0-1bb322b10449"
                       alt="Orange Money"
                       className="w-6 h-6"
                     />
@@ -126,17 +141,18 @@ export default function PaymentPage() {
                   </span>
                 </label>
 
-                <label className="flex items-center gap-3 cursor-pointer">
+                <label className="flex items-center gap-3 cursor-pointer opacity-50">
                   <input
                     type="radio"
                     name="payment-method"
                     className="radio checked:bg-primary"
-                    checked={paymentMethod === "MTN_MOBILE_MONEY"}
-                    onChange={() => setPaymentMethod("MTN_MOBILE_MONEY")}
+                    checked={paymentMethod === "CM_MTNMOMO"}
+                    onChange={() => setPaymentMethod("CM_MTNMOMO")}
+                    disabled
                   />
                   <span className="flex items-center gap-2">
                     <img
-                      src="https://upload.wikimedia.org/wikipedia/commons/3/33/MTN_Logo.svg"
+                      src="https://firebasestorage.googleapis.com/v0/b/buyticle-bce3f.firebasestorage.app/o/Assets%2Fmomo.png?alt=media&token=c8eff689-c544-4d28-baf3-c6ff2badd3fa"
                       alt="MTN Mobile Money"
                       className="w-6 h-6"
                     />
@@ -158,13 +174,19 @@ export default function PaymentPage() {
                   viewBox="0 0 24 24"
                   stroke="currentColor"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
                 Paiement & Facture
               </div>
 
               <p className="text-gray-600 mb-6">
-                Nous nous occupons de toute la gestion de votre paiement. Vous pouvez vous concentrer sur votre boutique Buyticle.
+                Nous nous occupons de toute la gestion de votre paiement. Vous
+                pouvez vous concentrer sur votre boutique Buyticle.
               </p>
 
               <div className="card bg-base-100 p-4 shadow-sm flex items-center justify-between">
@@ -184,7 +206,10 @@ export default function PaymentPage() {
                     <p className="text-xs text-gray-500">{plan.description}</p>
                   </div>
                 </div>
-                <button onClick={() => navigate("/pricing")} className="btn btn-sm btn-neutral">
+                <button
+                  onClick={() => navigate("/pricing")}
+                  className="btn btn-sm btn-neutral"
+                >
                   Modifier
                 </button>
               </div>
@@ -195,7 +220,8 @@ export default function PaymentPage() {
           <div className="card bg-base-200 p-6 shadow-md space-y-6">
             <h2 className="text-2xl font-bold">Paiement</h2>
             <p className="text-sm text-gray-500">
-              Pour finaliser votre inscription sur Buyticle, merci de compléter les informations ci-dessous.
+              Pour finaliser votre inscription sur Buyticle, merci de compléter
+              les informations ci-dessous.
             </p>
 
             <div className="form-control">
@@ -213,7 +239,9 @@ export default function PaymentPage() {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Nom associé au compte Mobile Money</span>
+                <span className="label-text">
+                  Nom associé au compte Mobile Money
+                </span>
               </label>
               <input
                 type="text"
@@ -232,27 +260,40 @@ export default function PaymentPage() {
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
               />
-              <button className="btn btn-neutral" onClick={() => alert("Code promo appliqué (simulation)")}>
+              <button
+                className="btn btn-neutral"
+                onClick={() => alert("Code promo appliqué (simulation)")}
+              >
                 Appliquer
               </button>
             </div>
 
             <div className="collapse collapse-arrow bg-base-100 border border-base-300">
               <input type="checkbox" />
-              <div className="collapse-title text-lg font-medium">Informations sur votre boutique</div>
+              <div className="collapse-title text-lg font-medium">
+                Informations sur votre boutique
+              </div>
               <div className="collapse-content space-y-4">
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Nom du Vendeur</span>
                   </label>
-                  <input type="text" placeholder="Jean Boutique" className="input input-bordered" />
+                  <input
+                    type="text"
+                    placeholder="Jean Boutique"
+                    className="input input-bordered"
+                  />
                 </div>
 
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Nom de la Boutique</span>
                   </label>
-                  <input type="text" placeholder="Boutique Unique" className="input input-bordered" />
+                  <input
+                    type="text"
+                    placeholder="Boutique Unique"
+                    className="input input-bordered"
+                  />
                 </div>
               </div>
             </div>
