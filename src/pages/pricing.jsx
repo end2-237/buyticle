@@ -10,13 +10,11 @@ import { FaApple } from "react-icons/fa";
 export default function PricingPage() {
   const navigate = useNavigate();
 
-  const versionBeta = false;
-
   const [tab, setTab] = useState("standard");
   const [emplacements, setEmplacements] = useState(10);
   const [duree, setDuree] = useState(1);
   const [abonnements, setAbonnements] = useState([]);
-  const versionBeta = false;
+  const [versionBeta, setVersionBeta] = useState(false);
 
   useEffect(() => {
     async function fetchPlans() {
