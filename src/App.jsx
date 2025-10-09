@@ -9,6 +9,7 @@ import { getThreeUsers, getUsersCount } from "./models/UserModel";
 import GridShape from "./components/gridShape";
 import { FaAndroid } from "react-icons/fa";
 import { subscribeToNewsletter } from "./services/NewsletterService";
+import NewLetter from "./components/newletter";
 
 function getTimeLeft(targetDate) {
   const now = new Date();
@@ -107,7 +108,7 @@ export default function App() {
           <span className="text-lg font-bold ml-2">Ouverture</span>
         </div>
         {/*email box*/}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.5 }}
@@ -136,8 +137,8 @@ export default function App() {
               s'inscrire
             </button>
           </div>
-        </motion.div>
-        {status === "success" && (
+        </motion.div> */}
+        {/* {status === "success" && (
   <motion.div
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -156,9 +157,8 @@ export default function App() {
       Merci pour votre inscription à la newsletter !
     </div>
   </motion.div>
-)}
-
-{status === "error" && (
+)} 
+   {status === "error" && (
   <motion.div
     initial={{ opacity: 0, y: -10 }}
     animate={{ opacity: 1, y: 0 }}
@@ -177,7 +177,7 @@ export default function App() {
       Une erreur est survenue. Veuillez réessayer.
     </div>
   </motion.div>
-)}
+)} */}
 
       </div>
       <section className="relative z-10 flex flex-col justify-center items-center text-center px-6 pt-12 pb-32">
@@ -393,6 +393,9 @@ export default function App() {
           </motion.div>
         </div>
       </section>
+      {/* Section newsletter */}
+      <NewLetter/>
+      
       {/* Section Équipe */}
       {/* Section Service Client Pro */}
 <section className="py-24 px-6 bg-gray-50 text-center relative z-1">

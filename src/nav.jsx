@@ -25,10 +25,10 @@ export default function Navigation() {
         <a href="/contact" className="text-gray-700 hover:text-black transition">
           Contactez-nous
         </a>
-        <button className="flex gap-1 items-center rounded-full bg-gradient-to-r from-orange-900 to-blue-400  text-white px-6 py-2 hover:opacity-90 transition">
+        <a href="https://play.google.com/apps/internaltest/4701420296100637084" className="flex gap-1 items-center rounded-full bg-gradient-to-r from-orange-900 to-blue-400  text-white px-6 py-2 hover:opacity-90 transition">
         <FaAndroid/>
           Télécharger l'application
-        </button>
+        </a>
         <button
           onClick={() => navigate("/signin")}
           className="rounded-full border border-gray-400 text-gray-800 px-6 py-2 hover:bg-gray-100 transition"

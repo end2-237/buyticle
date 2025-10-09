@@ -14,7 +14,7 @@ export default function PricingPage() {
   const [emplacements, setEmplacements] = useState(10);
   const [duree, setDuree] = useState(1);
   const [abonnements, setAbonnements] = useState([]);
-  const [versionBeta, setVersionBeta] = useState(false);
+  const [versionBeta, setVersionBeta] = useState(true);
 
   useEffect(() => {
     async function fetchPlans() {
