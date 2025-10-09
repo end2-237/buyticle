@@ -133,3 +133,186 @@ exports.payunitWebhook = functions.https.onRequest((req, res) => {
     }
   });
 });
+
+
+
+
+
+
+// === PAWAPAY PAYMENT ===
+
+// === PAWAPAY PAYMENT ===
+exports.pawapayPay = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      const { amount, phone_number, userId, return_url } = req.body;
+
+      if (!amount || isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ error: "Le montant doit être un nombre positif" });
+      }
+      if (!phone_number) return res.status(400).json({ error: "phone_number est requis" });
+      if (!userId) return res.status(400).json({ error: "userId est requis" });
+      if (!return_url) return res.status(400).json({ error: "return_url est requis" });
+
+      const depositId = `PAWA_${Date.now()}`;
+      console.log("👉 Nouvelle transaction PawaPay:", depositId);
+
+      const axios = require("axios");
+      const response = await axios.post(
+        "https://sandbox-api.pawapay.io/v2/deposits",
+        {
+          depositId,
+          payer: {
+            type: "MMO",
+            accountDetails: {
+              phoneNumber: phone_number,
+              provider: "ORANGE_CM" // à adapter selon le pays / opérateur
+            }
+          },
+          clientReferenceId: `INV-${Date.now()}`,
+          customerMessage: "Paiement service", // message générique
+          amount: amount.toString(),
+          currency: "XAF",
+          metadata: [
+            {
+              orderId: `ORD-${Date.now()}`
+            },
+            {
+              customerId: userId,
+              isPII: true
+            }
+          ]
+        },
+        {
+          headers: {
+            Authorization: `Bearer eyJraWQiOiIxIiwiYWxnIjoiRVMyNTYifQ.eyJ0dCI6IkFBVCIsInN1YiI6IjcxMDIiLCJtYXYiOiIxIiwiZXhwIjoyMDc0NDY5NTU1LCJpYXQiOjE3NTg5MzY3NTUsInBtIjoiREFGLFBBRiIsImp0aSI6ImY5MmExNWFmLWQxNjMtNDFhNS1hZjEyLWVkMWE0ZGI1NDI0NSJ9.VyaNFaRtFDEl9dRLYyHhPXEj2myr3jUr6r1jhngveGdwmyWA4bq6M5F9-jb3fG2IkmUyxLaVBFvYUgT69wLPqQ`,
+            "Content-Type": "application/json"
+          }
+        }
+      );
+
+      const { depositId: returnedId, status } = response.data;
+
+      // Sauvegarde en Firestore
+      await db.collection("Transactions").doc(depositId).set({
+        userId,
+        amount,
+        status,
+        type: "payment",
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        phone: phone_number
+      });
+
+      return res.status(200).json({
+        success: true,
+        transactionId: returnedId,
+        status,
+        data: response.data
+      });
+    } catch (error) {
+      console.error("❌ Erreur paiement PawaPay:", error.response?.data || error.message);
+      return res.status(500).json({ success: false, error: error.message || "Erreur serveur" });
+    }
+  });
+});
+
+
+// === WEBHOOK PAWAPAY ===
+
+// === PAWAPAY CALLBACKS ===
+exports.pawapayDepositCallback = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      console.log("📩 PawaPay Deposit Callback:", req.body);
+
+      const { transactionId, status, amount, currency, msisdn } = req.body;
+
+      if (!transactionId) {
+        return res.status(400).send("transactionId manquant");
+      }
+
+      // Exemple : mise à jour transaction en base
+      const txnRef = db.collection("Transactions").doc(transactionId);
+      await txnRef.set(
+        {
+          type: "deposit",
+          status,
+          amount,
+          currency,
+          phone: msisdn,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      res.status(200).send("Deposit callback OK");
+    } catch (error) {
+      console.error("❌ Erreur depositCallback:", error);
+      res.status(500).send("Erreur serveur");
+    }
+  });
+});
+
+exports.pawapayPaymentCallback = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      console.log("📩 PawaPay Payment Callback:", req.body);
+
+      const { transactionId, status, amount, currency, msisdn } = req.body;
+
+      if (!transactionId) {
+        return res.status(400).send("transactionId manquant");
+      }
+
+      const txnRef = db.collection("Transactions").doc(transactionId);
+      await txnRef.set(
+        {
+          type: "payment",
+          status,
+          amount,
+          currency,
+          phone: msisdn,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      res.status(200).send("Payment callback OK");
+    } catch (error) {
+      console.error("❌ Erreur paymentCallback:", error);
+      res.status(500).send("Erreur serveur");
+    }
+  });
+});
+
+exports.pawapayRefundCallback = functions.https.onRequest((req, res) => {
+  cors(req, res, async () => {
+    try {
+      console.log("📩 PawaPay Refund Callback:", req.body);
+
+      const { transactionId, status, amount, currency } = req.body;
+
+      if (!transactionId) {
+        return res.status(400).send("transactionId manquant");
+      }
+
+      const txnRef = db.collection("Transactions").doc(transactionId);
+      await txnRef.set(
+        {
+          type: "refund",
+          status,
+          amount,
+          currency,
+          updatedAt: new Date(),
+        },
+        { merge: true }
+      );
+
+      res.status(200).send("Refund callback OK");
+    } catch (error) {
+      console.error("❌ Erreur refundCallback:", error);
+      res.status(500).send("Erreur serveur");
+    }
+  });
+});
+
