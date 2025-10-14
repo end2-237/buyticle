@@ -12,7 +12,7 @@ export default function NewLetter() {
     if (status) {
       timer = setTimeout(() => {
         setStatus(null);
-      }, 20000); // 20 secondes
+      }, 20000); 
     }
     return () => clearTimeout(timer);
   }, [status]);
