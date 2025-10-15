@@ -31,6 +31,7 @@ import PaymentSuccess from "./components/payementSucess.jsx";
 import GoToSubscription from "./components/GotToSubscription.jsx";
 import PayementEncours from "./components/payement_encours.jsx";
 import PrivacyPolicyPage from "./components/privacyPolicy.jsx";
+import ServicesPage from "./pages/services.jsx";
 
 const root = createRoot(document.getElementById("root"));
 
@@ -50,6 +51,7 @@ root.render(
           <Route path="/subscription" element={<GoToSubscription />} />
           <Route path="/payment-encours" element={<PayementEncours />} />
           <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/services" element={<ServicesPage />} />
 
           {/* Routes prive pour les vendeurs */}
 
