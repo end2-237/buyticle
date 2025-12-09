@@ -19,6 +19,9 @@ export default function Navigation() {
         <a href="/notfound" className="text-gray-700 hover:text-black transition">
           Découvrir
         </a>
+        <a href="/services" className="bg-gradient-to-r from-green-900 to-blue-400 text-white rounded-full px-6 py-2 text-gray-700 hover:text-black transition">
+          Buyticle Go
+        </a>
         <a href="/onboarding" className="text-gray-700 hover:text-black transition">
           Vendre
         </a>
@@ -78,6 +81,9 @@ export default function Navigation() {
           </a>
           <a href="/notfound" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Découvrir
+          </a>
+          <a href="/services" className=" bg-gradient-to-r from-green-900 to-blue-400 text-white rounded-full px-6 py-2 text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
+            Buyticle Go
           </a>
           <a href="/onboarding" className="text-gray-700 hover:text-black transition" onClick={() => setMenuOpen(false)}>
             Vendre
