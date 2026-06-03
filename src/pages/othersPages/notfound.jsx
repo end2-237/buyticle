@@ -1,40 +1,34 @@
-import GridShape from "../../components/gridShape";
-import img1 from "../../assets/error/404.svg"
-import img2 from "../../assets/error/404-dark.svg"
-import { Link } from "react-router-dom";
-
 export default function NotFoundPage() {
   return (
-    <>
-      <div className="relative flex flex-col items-center justify-center min-h-screen p-6 overflow-hidden z-1">
-        <GridShape />
-        <div className="mx-auto w-full max-w-[242px] text-center sm:max-w-[472px]">
-          <h1 className="mb-8 font-bold text-gray-800 text-title-md dark:text-white/90 xl:text-title-2xl">
-            ERROR
-          </h1>
-
-          <img src={img1} alt="404" className="dark:hidden" />
-          <img
-            src={img2}
-            alt="404"
-            className="hidden dark:block"
-          />
-
-          <p className="mt-10 mb-6 text-base text-gray-700 dark:text-gray-400 sm:text-lg">
-            We can’t seem to find the page you are looking for!
-          </p>
-
-          <button onClick={() => window.location.reload()}
-            className="inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-5 py-3.5 text-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
-          >
-            Reload
-          </button>
-        </div>
-        {/* <!-- Footer --> */}
-        <p className="absolute text-sm text-center text-gray-500 -translate-x-1/2 bottom-6 left-1/2 dark:text-gray-400">
-          &copy; {new Date().getFullYear()} - Buyticle
-        </p>
+    <div className="bg-[#080808] text-white min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
+        <span className="text-[clamp(200px,40vw,400px)] font-black text-white/[0.02] leading-none tracking-tighter">
+          404
+        </span>
       </div>
-    </>
+
+      <div className="relative z-10 text-center">
+        <p className="text-[#FF4500] font-mono text-xs tracking-[0.4em] uppercase mb-8">
+          ✦ Page introuvable
+        </p>
+        <h1 className="text-[clamp(48px,8vw,100px)] font-black tracking-tighter leading-none mb-8">
+          Oops.
+        </h1>
+        <p className="text-gray-500 text-base mb-12 max-w-sm mx-auto leading-relaxed">
+          La page que vous cherchez n'existe pas ou a été déplacée.
+        </p>
+        <a
+          href="/"
+          className="inline-flex items-center gap-3 bg-[#FF4500] text-white px-8 py-4 rounded-full font-semibold text-sm hover:bg-white hover:text-black transition-all duration-300 group"
+        >
+          Retour à l'accueil
+          <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
+        </a>
+      </div>
+
+      <p className="absolute bottom-8 text-gray-700 text-xs font-mono">
+        © {new Date().getFullYear()} Buyticle
+      </p>
+    </div>
   );
 }
