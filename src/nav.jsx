@@ -6,13 +6,43 @@ export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const navRef = useRef(null);
+  const phraseRef = useRef(null);
+  const brandRef = useRef(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    // Initial entrance
     gsap.from(navRef.current, { opacity: 0, y: -12, duration: 0.8, ease: "power3.out" });
-    return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const isScrolled = window.scrollY > 80;
+      if (isScrolled !== scrolled) setScrolled(isScrolled);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, [scrolled]);
+
+  // Animate text swap on scroll state change
+  useEffect(() => {
+    if (!phraseRef.current || !brandRef.current) return;
+
+    if (scrolled) {
+      // phrase out → brand in
+      gsap.to(phraseRef.current, { y: -16, opacity: 0, duration: 0.35, ease: "power2.in" });
+      gsap.fromTo(brandRef.current,
+        { y: 16, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "power3.out", delay: 0.1 }
+      );
+    } else {
+      // brand out → phrase in
+      gsap.to(brandRef.current, { y: 16, opacity: 0, duration: 0.35, ease: "power2.in" });
+      gsap.fromTo(phraseRef.current,
+        { y: -16, opacity: 0 },
+        { y: 0, opacity: 1, duration: 0.4, ease: "power3.out", delay: 0.1 }
+      );
+    }
+  }, [scrolled]);
 
   const links = [
     { label: "Projets", href: "/#projets" },
@@ -24,17 +54,42 @@ export default function Navigation() {
     <>
       <nav
         ref={navRef}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-400 ${
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
           scrolled
             ? "bg-[#EDECEA]/90 backdrop-blur-xl border-b border-[#0A0A0A]/10"
             : "bg-transparent"
         }`}
       >
         <div className="max-w-[1400px] mx-auto px-6 md:px-14 py-5 flex items-center justify-between">
-          <a href="/" className="flex items-center group z-10">
-            <img src={logo} alt="Buyticle" className="h-10 w-auto group-hover:opacity-80 transition-opacity duration-200" />
+
+          {/* Logo + animated text label */}
+          <a href="/" className="flex items-center gap-3 group z-10">
+            <img
+              src={logo}
+              alt="Buyticle"
+              className="h-9 w-auto flex-shrink-0 group-hover:opacity-75 transition-opacity duration-200"
+            />
+            {/* Stacked text container — phrase & brand overlap, one visible at a time */}
+            <div className="relative overflow-hidden h-6 hidden md:block" style={{ minWidth: "200px" }}>
+              {/* Tagline — visible at top */}
+              <span
+                ref={phraseRef}
+                className="absolute inset-0 flex items-center text-[#0A0A0A]/40 text-xs font-mono tracking-[0.2em] uppercase whitespace-nowrap"
+              >
+                Agence digitale · Douala
+              </span>
+              {/* Brand name — appears on scroll */}
+              <span
+                ref={brandRef}
+                className="absolute inset-0 flex items-center text-[#0A0A0A] font-black text-base tracking-tight whitespace-nowrap opacity-0"
+                style={{ transform: "translateY(16px)" }}
+              >
+                BUYTICLE
+              </span>
+            </div>
           </a>
 
+          {/* Desktop links */}
           <div className="hidden md:flex items-center gap-10">
             {links.map((l) => (
               <a key={l.label} href={l.href}
@@ -45,6 +100,7 @@ export default function Navigation() {
             ))}
           </div>
 
+          {/* Right CTA + burger */}
           <div className="flex items-center gap-3">
             <a
               href="https://play.google.com/apps/internaltest/4701420296100637084"
@@ -73,7 +129,7 @@ export default function Navigation() {
         menuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
       }`}>
         <div className="space-y-8 mt-16">
-          {links.map((l, i) => (
+          {links.map((l) => (
             <a key={l.label} href={l.href}
               onClick={() => setMenuOpen(false)}
               className="block text-[clamp(40px,9vw,72px)] font-black tracking-tight text-[#0A0A0A]/70 hover:text-[#FF4500] transition-colors duration-200 leading-none"
