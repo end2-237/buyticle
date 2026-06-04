@@ -3,6 +3,8 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navigation from "./nav";
 import Footer from "./footer";
+import BackToTop from "./components/BackToTop";
+import FloatingBar from "./components/FloatingBar";
 import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -386,6 +388,8 @@ export default function App() {
       </section>
 
       <Footer />
+      <BackToTop />
+      <FloatingBar />
     </div>
   );
 }
