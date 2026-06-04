@@ -3,10 +3,11 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navigation from "./nav";
 import Footer from "./footer";
+import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Screenshot via thum.io (free, no auth) ─── */
+/* ─── Screenshot via thum.io ─── */
 const thumb = (url) =>
   `https://image.thum.io/get/width/1200/crop/900/noanimate/${url}`;
 
@@ -62,85 +63,86 @@ const tape = [
   "Cloud", "Cameroun", "Agence", "Mobile", "SaaS", "Infogérance", "Prestation",
 ];
 
-/* ─── Project card ─── */
-function ProjectCard({ p, index }) {
+/* ─── Agency-style project card (awwwards directory) ─── */
+function AgencyCard({ p }) {
   return (
     <a
       href={p.href}
       target="_blank"
       rel="noopener noreferrer"
-      className="proj-card group relative block overflow-hidden rounded-2xl bg-[#D8D5D0]"
-      style={{ aspectRatio: "4/3" }}
+      className="proj-card group block bg-[#1C1C1C] rounded-2xl overflow-hidden hover:-translate-y-1 transition-transform duration-400"
     >
-      {/* Screenshot */}
-      <img
-        src={thumb(p.href)}
-        alt={p.name}
-        loading="lazy"
-        className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-[1.04]"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
-
-      {/* Overlay on hover */}
-      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-400" />
-
-      {/* Top badge */}
-      <div className="absolute top-4 left-4 flex items-center gap-2">
-        <span className="bg-white/90 backdrop-blur-sm text-black text-[10px] font-mono px-2.5 py-1 rounded-full">
-          {p.type}
-        </span>
-      </div>
-
-      {/* Visit icon on hover */}
-      <div className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white flex items-center justify-center text-black opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-1 group-hover:translate-y-0">
-        <span className="text-sm">↗</span>
-      </div>
-
-      {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-0 p-5 translate-y-2 group-hover:translate-y-0 transition-transform duration-400">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-white/50 text-[10px] font-mono mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              {p.url}
-            </p>
-            <h3 className="text-white text-xl font-black tracking-tight leading-none">
-              {p.name}
-            </h3>
-          </div>
-          <span className="text-white/40 font-mono text-[10px] flex-shrink-0">{p.year}</span>
+      {/* Top row: logo + screenshot */}
+      <div className="flex items-start gap-4 p-5 pb-0">
+        {/* Logo circle */}
+        <div className="w-12 h-12 rounded-full bg-[#FF4500] flex items-center justify-center flex-shrink-0 text-white font-black text-sm">
+          {p.name.charAt(0)}
         </div>
-        <p className="text-white/60 text-xs mt-2 max-h-0 group-hover:max-h-12 overflow-hidden transition-all duration-500 leading-relaxed">
-          {p.desc}
-        </p>
+        {/* Screenshot thumbnail */}
+        <div className="flex-1 rounded-xl overflow-hidden bg-[#2a2a2a]" style={{ aspectRatio: "16/10" }}>
+          <img
+            src={thumb(p.href)}
+            alt={p.name}
+            loading="lazy"
+            className="w-full h-full object-cover object-top"
+            onError={(e) => { e.currentTarget.parentElement.style.background = "#2a2a2a"; e.currentTarget.style.display = "none"; }}
+          />
+        </div>
+      </div>
+
+      {/* Dots (carousel indicator style) */}
+      <div className="flex items-center gap-1.5 px-5 pt-4">
+        <span className="w-2 h-2 rounded-full bg-white/70" />
+        <span className="w-2 h-2 rounded-full bg-white/20" />
+        <span className="w-2 h-2 rounded-full bg-white/20" />
+        <span className="w-2 h-2 rounded-full bg-white/20" />
+      </div>
+
+      {/* Info */}
+      <div className="px-5 pt-3 pb-5">
+        <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-1">Cameroun</p>
+        <div className="flex items-end justify-between gap-4 mb-2">
+          <h3 className="text-white text-2xl font-black tracking-tight leading-none group-hover:text-[#FF4500] transition-colors duration-300">
+            {p.name}
+          </h3>
+          <div className="border border-white/20 rounded-lg px-3 py-1.5 text-center flex-shrink-0">
+            <p className="text-white/40 text-[9px] font-mono uppercase tracking-wider leading-none">Type</p>
+            <p className="text-white text-sm font-bold leading-tight mt-0.5">{p.year}</p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between pt-3 border-t border-white/10">
+          <span className="text-white/35 text-xs font-mono">{p.url}</span>
+          <span className="text-white/35 text-xs font-mono">{p.type.split(" · ")[0]}</span>
+        </div>
       </div>
     </a>
   );
 }
 
 export default function App() {
-  const heroRef = useRef(null);
-  const line1Ref = useRef(null);
-  const line2Ref = useRef(null);
-  const tagRef = useRef(null);
-  const subRef = useRef(null);
+  const heroTagRef = useRef(null);
+  const heroTitleRef = useRef(null);
+  const heroBadgeRef = useRef(null);
+  const heroImgRef = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Awwwards-style hero entrance
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-      tl.from(tagRef.current, { opacity: 0, y: 10, duration: 0.5 })
-        .from(line1Ref.current, { y: "110%", duration: 1 }, "-=0.2")
-        .from(line2Ref.current, { y: "110%", duration: 1 }, "-=0.8")
-        .from(subRef.current, { opacity: 0, y: 20, duration: 0.7 }, "-=0.5");
+      tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 })
+        .from(heroTitleRef.current, { y: "105%", duration: 1.1 }, "-=0.2")
+        .from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.5")
+        .from(heroImgRef.current, { opacity: 0, y: 30, duration: 0.9, ease: "power3.out" }, "-=0.3");
 
+      // Project cards
       gsap.from(".proj-card", {
-        opacity: 0, y: 60, stagger: 0.12, duration: 0.9, ease: "power3.out",
-        scrollTrigger: { trigger: ".proj-section", start: "top 75%" },
+        opacity: 0, y: 50, stagger: 0.12, duration: 0.8, ease: "power3.out",
+        scrollTrigger: { trigger: ".proj-section", start: "top 78%" },
       });
 
+      // Services
       gsap.from(".svc-row", {
-        opacity: 0, x: -40, stagger: 0.1, duration: 0.6,
+        opacity: 0, x: -30, stagger: 0.09, duration: 0.6,
         scrollTrigger: { trigger: ".svc-section", start: "top 78%" },
       });
 
@@ -150,67 +152,79 @@ export default function App() {
           scrollTrigger: { trigger: el, start: "top 88%" },
         });
       });
-    }, heroRef);
+    });
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <div ref={heroRef} className="bg-[#EDECEA] text-[#0A0A0A] overflow-x-hidden selection:bg-[#0A0A0A] selection:text-[#EDECEA]">
-
+    <div className="bg-[#EDECEA] text-[#0A0A0A] overflow-x-hidden selection:bg-[#0A0A0A] selection:text-[#EDECEA]">
       <Navigation />
 
-      {/* ══════════ HERO ══════════ */}
-      <section className="relative min-h-screen flex flex-col justify-center px-6 md:px-14 pt-28 pb-16 overflow-hidden">
-        <div className="max-w-[1400px] mx-auto w-full">
+      {/* ══════════════════════════════════════
+          HERO — awwwards style (centered)
+      ══════════════════════════════════════ */}
+      <section className="relative pt-36 pb-0 px-6 md:px-14 text-center overflow-hidden">
 
-          <p ref={tagRef} className="text-[#0A0A0A]/40 font-mono text-[11px] tracking-[0.4em] uppercase mb-8">
-            Agence digitale · Cameroun · est. 2023
-          </p>
-
-          <div className="overflow-hidden leading-none">
-            <h1 ref={line1Ref}
-              className="text-[clamp(72px,13vw,200px)] font-black tracking-[-0.03em] leading-[0.88]"
-            >
-              BUYTICLE
-            </h1>
-          </div>
-          <div className="overflow-hidden leading-none">
-            <p ref={line2Ref}
-              className="text-[clamp(18px,3.5vw,56px)] font-black tracking-[-0.02em] text-[#0A0A0A]/25 mt-3 leading-none"
-            >
-              Tech · Design · Commerce
-            </p>
-          </div>
-
-          <div ref={subRef} className="flex flex-col md:flex-row md:items-end justify-between gap-10 mt-16">
-            <p className="text-[#0A0A0A]/50 text-sm md:text-base max-w-sm leading-relaxed">
-              Nous concevons des expériences numériques, développons des plateformes et accompagnons les entreprises dans leur transformation digitale.
-            </p>
-            <div className="flex gap-3 flex-wrap">
-              <a href="#projets"
-                className="group flex items-center gap-3 bg-[#0A0A0A] text-[#EDECEA] px-8 py-3.5 rounded-full text-sm font-semibold hover:bg-[#FF4500] transition-colors duration-300"
-              >
-                Voir nos projets
-                <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
-              </a>
-              <a href="/contact"
-                className="flex items-center gap-3 border border-[#0A0A0A]/20 text-[#0A0A0A]/60 px-8 py-3.5 rounded-full text-sm font-semibold hover:border-[#0A0A0A]/60 hover:text-[#0A0A0A] transition-all duration-300"
-              >
-                Contact
-              </a>
-            </div>
-          </div>
+        {/* Tag line — like "Site of the Day | Jun 3, 2026 | Score 7.23 of 10" */}
+        <div ref={heroTagRef} className="flex items-center justify-center gap-3 mb-8">
+          <span className="text-[#0A0A0A]/40 text-sm">Agence Digitale</span>
+          <span className="border border-[#0A0A0A]/20 text-[#0A0A0A] text-sm px-3 py-0.5 rounded font-medium">
+            Cameroun
+          </span>
+          <span className="text-[#0A0A0A]/40 text-sm">Est. 2023</span>
         </div>
 
-        {/* Scroll hint */}
-        <div className="absolute bottom-10 right-14 hidden md:flex flex-col items-center gap-2 text-[#0A0A0A]/25">
-          <span className="text-[9px] font-mono tracking-[0.4em] uppercase">Scroll</span>
-          <div className="w-px h-16 bg-gradient-to-b from-[#0A0A0A]/25 to-transparent" />
+        {/* Massive centered title */}
+        <div className="overflow-hidden">
+          <h1
+            ref={heroTitleRef}
+            className="text-[clamp(80px,16vw,240px)] font-black tracking-[-0.04em] leading-[0.85]"
+          >
+            BUYTICLE
+          </h1>
+        </div>
+
+        {/* Agency badge — like "Locomotive PRO" on awwwards */}
+        <div ref={heroBadgeRef} className="flex items-center justify-center gap-3 mt-6 mb-12">
+          <img src={logo} alt="Buyticle" className="w-8 h-8 rounded-full object-contain bg-[#0A0A0A]/5 p-1" />
+          <span className="font-semibold text-[#0A0A0A] text-base">Buyticle</span>
+          <span className="bg-[#0A0A0A] text-[#EDECEA] text-[10px] font-mono px-2 py-0.5 rounded tracking-wider uppercase">
+            Agence
+          </span>
+        </div>
+
+        {/* Featured image — full width, fills bottom of hero */}
+        <div
+          ref={heroImgRef}
+          className="relative w-full overflow-hidden rounded-t-2xl"
+          style={{ maxHeight: "75vh" }}
+        >
+          <img
+            src="/hero-brand.jpg"
+            alt="Buyticle Brand"
+            className="w-full h-full object-cover"
+            style={{ minHeight: "400px", maxHeight: "75vh" }}
+            onError={(e) => {
+              // Fallback gradient if image not yet added
+              e.currentTarget.style.display = "none";
+              e.currentTarget.parentElement.style.background =
+                "linear-gradient(135deg, #FF4500 0%, #FF6B35 40%, #FF8C5A 100%)";
+              e.currentTarget.parentElement.style.minHeight = "400px";
+              e.currentTarget.parentElement.innerHTML += `
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;">
+                  <p style="font-family:monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;opacity:0.7">
+                    Ajoutez public/hero-brand.jpg
+                  </p>
+                </div>`;
+            }}
+          />
         </div>
       </section>
 
-      {/* ══════════ MARQUEE ══════════ */}
+      {/* ══════════════════════════════════════
+          MARQUEE
+      ══════════════════════════════════════ */}
       <div className="border-y border-[#0A0A0A]/10 py-4 overflow-hidden bg-[#E8E5E1]">
         <div className="marquee-track">
           {[...tape, ...tape].map((t, i) => (
@@ -221,7 +235,9 @@ export default function App() {
         </div>
       </div>
 
-      {/* ══════════ STATEMENT ══════════ */}
+      {/* ══════════════════════════════════════
+          STATEMENT
+      ══════════════════════════════════════ */}
       <section className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto grid md:grid-cols-12 gap-8">
           <div className="md:col-span-2">
@@ -230,7 +246,7 @@ export default function App() {
           <div className="md:col-span-10 reveal-up">
             <p className="text-[clamp(20px,3vw,46px)] font-black leading-[1.15] tracking-tight">
               Buyticle est une agence camerounaise spécialisée dans le développement de produits digitaux, la prestation de services informatiques et le commerce général.{" "}
-              <span className="text-[#0A0A0A]/30">
+              <span className="text-[#0A0A0A]/25">
                 Nous construisons des outils qui simplifient la vie des entreprises et des particuliers.
               </span>
             </p>
@@ -238,26 +254,37 @@ export default function App() {
         </div>
       </section>
 
-      {/* ══════════ PROJETS ══════════ */}
-      <section id="projets" className="proj-section py-24 px-6 md:px-14">
+      {/* ══════════════════════════════════════
+          PROJETS — awwwards directory style
+      ══════════════════════════════════════ */}
+      <section id="projets" className="proj-section py-24 px-6 md:px-14 bg-[#141414]">
         <div className="max-w-[1400px] mx-auto">
 
-          <div className="mb-6 reveal-up">
-            <p className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase mb-4">Réalisations</p>
-            <h2 className="text-[clamp(48px,8vw,120px)] font-black tracking-[-0.03em] leading-none">
-              PROJETS
-            </h2>
+          {/* Header */}
+          <div className="flex items-end justify-between mb-10 reveal-up">
+            <div>
+              <p className="text-white/30 font-mono text-[10px] tracking-[0.4em] uppercase mb-4">Réalisations</p>
+              <h2 className="text-[clamp(40px,7vw,96px)] font-black tracking-[-0.03em] leading-none text-white">
+                PROJETS
+              </h2>
+            </div>
+            <span className="text-white/15 font-mono text-sm hidden md:block">
+              {projects.length.toString().padStart(2, "0")} projets
+            </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-10">
+          {/* Cards grid — awwwards directory layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {projects.map((p, i) => (
-              <ProjectCard key={i} p={p} index={i} />
+              <AgencyCard key={i} p={p} />
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════ SERVICES ══════════ */}
+      {/* ══════════════════════════════════════
+          SERVICES
+      ══════════════════════════════════════ */}
       <section className="svc-section py-28 px-6 md:px-14 bg-[#E8E5E1] border-y border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
@@ -273,9 +300,11 @@ export default function App() {
 
           <div className="divide-y divide-[#0A0A0A]/10">
             {services.map((s, i) => (
-              <div key={i} className="svc-row group grid md:grid-cols-12 gap-6 py-6 hover:bg-[#0A0A0A]/[0.03] -mx-4 px-4 rounded-xl transition-colors duration-200 cursor-default">
+              <div key={i}
+                className="svc-row group grid md:grid-cols-12 gap-6 py-7 hover:bg-[#0A0A0A]/[0.03] -mx-4 px-4 rounded-xl transition-colors duration-200 cursor-default"
+              >
                 <div className="md:col-span-1">
-                  <span className="text-[#0A0A0A]/30 font-mono text-[10px]">{s.num}</span>
+                  <span className="text-[#0A0A0A]/25 font-mono text-[10px]">{s.num}</span>
                 </div>
                 <div className="md:col-span-6">
                   <h3 className="font-bold text-base md:text-lg tracking-tight group-hover:text-[#FF4500] transition-colors duration-300">
@@ -294,7 +323,9 @@ export default function App() {
         </div>
       </section>
 
-      {/* ══════════ STATS ══════════ */}
+      {/* ══════════════════════════════════════
+          STATS
+      ══════════════════════════════════════ */}
       <section className="py-24 px-6 md:px-14 border-b border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 reveal-up">
@@ -308,14 +339,16 @@ export default function App() {
                 <div className="text-[clamp(48px,6vw,88px)] font-black tracking-[-0.04em] leading-none mb-2 group-hover:text-[#FF4500] transition-colors duration-400">
                   {s.n}
                 </div>
-                <div className="text-[#0A0A0A]/40 text-xs font-mono tracking-widest uppercase">{s.label}</div>
+                <div className="text-[#0A0A0A]/35 text-xs font-mono tracking-widest uppercase">{s.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════ CTA ══════════ */}
+      {/* ══════════════════════════════════════
+          CTA
+      ══════════════════════════════════════ */}
       <section className="py-36 px-6 md:px-14 overflow-hidden">
         <div className="max-w-[1400px] mx-auto reveal-up">
           <p className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase mb-8">
