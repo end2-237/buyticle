@@ -31,11 +31,8 @@ export default function Navigation() {
         }`}
       >
         <div className="max-w-[1400px] mx-auto px-6 md:px-14 py-5 flex items-center justify-between">
-          <a href="/" className="flex items-center gap-2.5 group z-10">
-            <img src={logo} alt="Buyticle" className="h-8 w-auto" />
-            <span className="text-[#0A0A0A] font-black text-base tracking-tight group-hover:text-[#FF4500] transition-colors duration-200">
-              BUYTICLE
-            </span>
+          <a href="/" className="flex items-center group z-10">
+            <img src={logo} alt="Buyticle" className="h-10 w-auto group-hover:opacity-80 transition-opacity duration-200" />
           </a>
 
           <div className="hidden md:flex items-center gap-10">
@@ -86,7 +83,7 @@ export default function Navigation() {
           ))}
         </div>
         <div className="absolute bottom-12 left-8 text-[#0A0A0A]/25 text-[10px] font-mono tracking-widest uppercase">
-          Buyticle · Cameroun 🇨🇲
+          Douala · Cameroun 🇨🇲 · Est. 2025
         </div>
       </div>
     </>

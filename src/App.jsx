@@ -170,9 +170,9 @@ export default function App() {
         <div ref={heroTagRef} className="flex items-center justify-center gap-3 mb-8">
           <span className="text-[#0A0A0A]/40 text-sm">Agence Digitale</span>
           <span className="border border-[#0A0A0A]/20 text-[#0A0A0A] text-sm px-3 py-0.5 rounded font-medium">
-            Cameroun
+            Douala
           </span>
-          <span className="text-[#0A0A0A]/40 text-sm">Est. 2023</span>
+          <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
         </div>
 
         {/* Massive centered title */}
@@ -185,13 +185,15 @@ export default function App() {
           </h1>
         </div>
 
-        {/* Agency badge — like "Locomotive PRO" on awwwards */}
-        <div ref={heroBadgeRef} className="flex items-center justify-center gap-3 mt-6 mb-12">
-          <img src={logo} alt="Buyticle" className="w-8 h-8 rounded-full object-contain bg-[#0A0A0A]/5 p-1" />
-          <span className="font-semibold text-[#0A0A0A] text-base">Buyticle</span>
-          <span className="bg-[#0A0A0A] text-[#EDECEA] text-[10px] font-mono px-2 py-0.5 rounded tracking-wider uppercase">
-            Agence
-          </span>
+        {/* Tagline badge */}
+        <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-6 mb-12">
+          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Informatique</span>
+          <span className="text-[#0A0A0A]/20">·</span>
+          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Design</span>
+          <span className="text-[#0A0A0A]/20">·</span>
+          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Commerce</span>
+          <span className="text-[#0A0A0A]/20">·</span>
+          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
         </div>
 
         {/* Featured image — full width, fills bottom of hero */}

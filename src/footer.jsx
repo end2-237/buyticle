@@ -9,14 +9,11 @@ export default function Footer() {
         <div className="grid grid-cols-12 gap-8 pb-16 border-b border-[#0A0A0A]/10">
 
           <div className="col-span-12 md:col-span-5">
-            <a href="/" className="flex items-center gap-2.5 mb-6 group w-fit">
-              <img src={logo} alt="Buyticle" className="h-8 w-auto" />
-              <span className="text-[#0A0A0A] font-black text-base tracking-tight group-hover:text-[#FF4500] transition-colors">
-                BUYTICLE
-              </span>
+            <a href="/" className="mb-6 group inline-block w-fit">
+              <img src={logo} alt="Buyticle" className="h-10 w-auto group-hover:opacity-80 transition-opacity duration-200" />
             </a>
             <p className="text-[#0A0A0A]/40 text-sm leading-relaxed max-w-xs">
-              Agence digitale camerounaise.<br />Informatique · Design · Commerce général.
+              Agence digitale basée à Douala, Cameroun.<br />Informatique · Design · Commerce général.
             </p>
             <div className="flex items-center gap-5 mt-8">
               {[
@@ -78,7 +75,7 @@ export default function Footer() {
 
         <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
           <p className="text-[#0A0A0A]/25 text-[11px] font-mono">© {year} Buyticle. Tous droits réservés.</p>
-          <p className="text-[#0A0A0A]/20 text-[11px] font-mono">Agence digitale · Cameroun 🇨🇲</p>
+          <p className="text-[#0A0A0A]/20 text-[11px] font-mono">Douala, Cameroun 🇨🇲 · Est. 2025</p>
         </div>
       </div>
     </footer>
