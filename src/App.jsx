@@ -347,33 +347,41 @@ export default function App() {
           {/* Client logos grid */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-[#0A0A0A]/10 border border-[#0A0A0A]/10 rounded-2xl overflow-hidden reveal-up">
             {[
-              { name: "One Freestyle", sector: "E-commerce · Sport", init: "OF", color: "#FF4500" },
-              { name: "Obli Space",    sector: "SaaS · Productivité",  init: "OS", color: "#0A0A0A" },
-              { name: "Eetra",         sector: "Marketplace · Local",  init: "EE", color: "#FF6B35" },
-              { name: "Camille",       sector: "Vitrine · Beauté",     init: "CA", color: "#8B7355" },
-              { name: "Client 05",     sector: "À venir",              init: "—",  color: "#AAAAAA" },
-              { name: "Client 06",     sector: "À venir",              init: "—",  color: "#AAAAAA" },
-              { name: "Client 07",     sector: "À venir",              init: "—",  color: "#AAAAAA" },
-              { name: "Votre projet",  sector: "Bientôt ici",          init: "+",  color: "#FF4500" },
-            ].map((c, i) => (
-              <div key={i} className={`group bg-[#EDECEA] p-6 md:p-8 flex flex-col gap-4 hover:bg-[#F5F2EF] transition-colors duration-200 ${c.name === "Votre projet" ? "cursor-pointer" : ""}`}>
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-                  style={{ backgroundColor: c.color }}
+              { name: "One Freestyle", sector: "E-commerce · Sport",    init: "OF", color: "#FF4500", href: "https://www.onefreestyle.store/" },
+              { name: "Obli Space",    sector: "SaaS · Productivité",   init: "OS", color: "#0A0A0A", href: "https://obli.space/" },
+              { name: "Eetra",         sector: "Marketplace · Local",   init: "EE", color: "#FF6B35", href: "https://eetra.buyticle.com/" },
+              { name: "Camille",       sector: "Vitrine · Beauté",      init: "CA", color: "#8B7355", href: "https://camille.vps.buyticle.com/" },
+              { name: "No Limit CM",   sector: "Web · Communication",   init: "NL", color: "#1A1A2E", href: "https://nolimitcm.com/" },
+              { name: "Chimicam",      sector: "Industrie · Savon Pakeh", init: "CH", color: "#2E7D32", href: null },
+              { name: "LFD Services",  sector: "Services · BTP",        init: "LF", color: "#1565C0", href: "https://lfdservices.com/" },
+              { name: "Votre projet",  sector: "Bientôt ici",           init: "+",  color: "#FF4500", href: "/contact" },
+            ].map((c, i) => {
+              const Wrapper = c.href ? "a" : "div";
+              const wrapperProps = c.href
+                ? { href: c.href, target: c.href.startsWith("http") ? "_blank" : undefined, rel: c.href.startsWith("http") ? "noopener noreferrer" : undefined }
+                : {};
+              return (
+                <Wrapper key={i} {...wrapperProps}
+                  className="group bg-[#EDECEA] p-6 md:p-8 flex flex-col gap-4 hover:bg-[#F5F2EF] transition-colors duration-200"
                 >
-                  {c.init}
-                </div>
-                <div>
-                  <p className={`font-bold text-sm tracking-tight ${c.init === "—" ? "text-[#0A0A0A]/20" : "text-[#0A0A0A]"}`}>{c.name}</p>
-                  <p className="text-[#0A0A0A]/35 text-[10px] font-mono mt-1">{c.sector}</p>
-                </div>
-                {c.name === "Votre projet" && (
-                  <a href="/contact" className="text-[#FF4500] text-[10px] font-mono tracking-wider uppercase mt-auto group-hover:underline">
-                    Nous rejoindre →
-                  </a>
-                )}
-              </div>
-            ))}
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
+                    style={{ backgroundColor: c.color }}
+                  >
+                    {c.init}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-sm tracking-tight text-[#0A0A0A] group-hover:text-[#FF4500] transition-colors duration-200">{c.name}</p>
+                    <p className="text-[#0A0A0A]/35 text-[10px] font-mono mt-1">{c.sector}</p>
+                  </div>
+                  {c.href && (
+                    <span className="text-[#0A0A0A]/20 group-hover:text-[#FF4500] text-[10px] font-mono tracking-wider uppercase transition-colors duration-200">
+                      {c.name === "Votre projet" ? "Nous rejoindre →" : "Voir →"}
+                    </span>
+                  )}
+                </Wrapper>
+              );
+            })}
           </div>
 
           {/* Trust stats */}
