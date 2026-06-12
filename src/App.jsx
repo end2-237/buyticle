@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navigation from "./nav";
@@ -9,45 +9,45 @@ import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Geometric letter — shapes clipped to letter outline ─── */
+/* ─── Shape colors by kind: circle=orange, square=teal, triangle=gold ─── */
+const SHAPE_COLORS = ["#FF4500", "#0E4A45", "#E8B84B"];
+
+/* ─── Geometric letter — water-fill clip effect ─── */
 const LETTER_WIDTHS = { B:0.70, U:0.74, Y:0.70, T:0.64, I:0.30, C:0.70, L:0.58, E:0.64 };
 export const LETTER_WIDTH_SUM = "BUYTICLE".split("").reduce((a, l) => a + LETTER_WIDTHS[l], 0);
 
-function GeoLetter({ letter, fontSize = 180 }) {
-  const uid = `gc-${letter}-${Math.random().toString(36).slice(2, 7)}`;
+function GeoLetter({ letter, fontSize = 180, letterIndex = 0 }) {
+  const uid = `gc-${letter}-${letterIndex}`;
   const w = fontSize * (LETTER_WIDTHS[letter] ?? 0.62);
   const h = fontSize * 1.08;
-  const S = Math.max(6, Math.round(fontSize * 0.05)); // small dense cells
+  const S = Math.max(5, Math.round(fontSize * 0.048));
   const cols = Math.ceil(w / S) + 1;
   const rows = Math.ceil(h / S) + 1;
 
   const shapes = [];
   let seed = letter.charCodeAt(0) * 7919;
-  const rnd = () => {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
+  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      // Random jitter, size and shape type — organic, non-grid look
-      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.5;
-      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.5;
+      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.45;
+      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.45;
       const kind = Math.floor(rnd() * 3);
-      const half = S * (0.34 + rnd() * 0.14); // fill cells as much as possible, still distinct
+      const half = S * (0.36 + rnd() * 0.12);
       const k = `${r}-${c}`;
-      const common = { className: "geo-shape", "data-cy": cy.toFixed(1), "data-h": h };
+      const fill = SHAPE_COLORS[kind];
       if (kind === 0) {
-        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} {...common} />);
+        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} fill={fill} />);
       } else if (kind === 1) {
         shapes.push(
           <rect key={k} x={cx - half} y={cy - half} width={half * 2} height={half * 2}
-            transform={`rotate(${Math.round((rnd() - 0.5) * 50)} ${cx} ${cy})`} {...common} />
+            transform={`rotate(${Math.round((rnd() - 0.5) * 45)} ${cx} ${cy})`} fill={fill} />
         );
       } else {
-        const p = `${cx},${cy - half * 1.15} ${cx - half * 1.1},${cy + half * 0.85} ${cx + half * 1.1},${cy + half * 0.85}`;
+        const p = `${cx},${cy - half * 1.1} ${cx - half * 1.05},${cy + half * 0.8} ${cx + half * 1.05},${cy + half * 0.8}`;
         shapes.push(
           <polygon key={k} points={p}
-            transform={`rotate(${Math.round((rnd() - 0.5) * 60)} ${cx} ${cy})`} {...common} />
+            transform={`rotate(${Math.round((rnd() - 0.5) * 55)} ${cx} ${cy})`} fill={fill} />
         );
       }
     }
@@ -60,22 +60,63 @@ function GeoLetter({ letter, fontSize = 180 }) {
       style={{ display: "inline-block", overflow: "visible", verticalAlign: "top" }}
     >
       <defs>
-        <clipPath id={uid}>
-          <text
-            x="0" y={fontSize * 0.84}
-            fontSize={fontSize}
-            fontWeight="900"
-            fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-            letterSpacing="0"
-          >
+        {/* Letter silhouette clip */}
+        <clipPath id={`${uid}-letter`}>
+          <text x="0" y={fontSize * 0.84} fontSize={fontSize} fontWeight="900"
+            fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" letterSpacing="0">
             {letter}
           </text>
         </clipPath>
+        {/* Rising water clip — animated via GSAP attr */}
+        <clipPath id={`${uid}-water`}>
+          <rect className="water-rect" x="-5" y={h} width={w + 10} height={h + 10} />
+        </clipPath>
       </defs>
-      <g clipPath={`url(#${uid})`} fill="#0A0A0A">
-        {shapes}
+
+      {/* Faint ghost letter (outline) visible before water fills */}
+      <text x="0" y={fontSize * 0.84} fontSize={fontSize} fontWeight="900"
+        fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" letterSpacing="0"
+        fill="none" stroke="#0A0A0A" strokeWidth="1.5" opacity="0.12">
+        {letter}
+      </text>
+
+      {/* Shapes clipped first by letter, then by rising water rect */}
+      <g clipPath={`url(#${uid}-letter)`}>
+        <g clipPath={`url(#${uid}-water)`}>
+          {shapes}
+        </g>
       </g>
     </svg>
+  );
+}
+
+/* ─── Professional loader ─── */
+function HeroLoader({ onDone }) {
+  const loaderRef = useRef(null);
+  const barRef = useRef(null);
+  const textRef = useRef(null);
+
+  useEffect(() => {
+    const tl = gsap.timeline({
+      onComplete: () => {
+        gsap.to(loaderRef.current, {
+          opacity: 0, duration: 0.5, ease: "power2.inOut",
+          onComplete: onDone,
+        });
+      },
+    });
+    tl.from(textRef.current, { opacity: 0, y: 10, duration: 0.4, ease: "power3.out" })
+      .to(barRef.current, { scaleX: 1, duration: 1.4, ease: "power2.inOut" }, 0.2)
+      .to(textRef.current, { opacity: 0.3, duration: 0.3 }, 1.3);
+  }, []);
+
+  return (
+    <div ref={loaderRef} className="fixed inset-0 z-[100] bg-[#EDECEA] flex flex-col items-center justify-center pointer-events-none">
+      <img ref={textRef} src={logo} alt="Buyticle" className="h-10 w-auto mb-10 opacity-0" />
+      <div className="w-40 h-px bg-[#0A0A0A]/10 overflow-hidden rounded-full">
+        <div ref={barRef} className="h-full bg-[#FF4500] origin-left" style={{ transform: "scaleX(0)" }} />
+      </div>
+    </div>
   );
 }
 
@@ -193,43 +234,41 @@ function AgencyCard({ p }) {
 
 export default function App() {
   const heroTagRef = useRef(null);
-  const heroTitleRef = useRef(null);
   const heroBadgeRef = useRef(null);
   const heroImgRef = useRef(null);
+  const [loaderDone, setLoaderDone] = useState(false);
 
-  useEffect(() => {
+  /* Water-fill animation — runs after loader fades out */
+  const startHeroAnim = () => {
+    setLoaderDone(true);
     const ctx = gsap.context(() => {
-      // Awwwards-style hero entrance
-      const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-      tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 });
+      // Tag + badge entrance
+      gsap.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5, ease: "power3.out" });
 
-      // Liquid pour: shapes fall and stack bottom-up inside the letter
-      // outlines. Single batched tween (not one tween per shape) so it
-      // stays smooth on low-end devices; rows are generated top→bottom,
-      // so stagger from:"end" fills from the bottom like a liquid.
-      gsap.from(".hero-title .geo-shape", {
-        y: (i, el) => -(parseFloat(el.dataset.cy) + 140 + ((i * 37) % 160)),
-        opacity: 0,
-        duration: 0.75,
-        ease: "bounce.out",
+      // Water rising inside each letter: animate the water-rect's y attribute
+      // from h (bottom) to -5 (above top) so shapes are progressively revealed.
+      // Each letter starts with a small stagger offset for a wave-like feel.
+      gsap.to(".water-rect", {
+        attr: { y: -10 },
+        duration: 2.8,
+        ease: "power1.inOut",
         force3D: true,
-        stagger: { each: 0.0012, from: "end" },
-        delay: 0.2,
+        stagger: 0.12,
+        delay: 0.1,
       });
 
-      tl.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.4")
-        .from(heroImgRef.current, { opacity: 0, y: 30, duration: 0.9, ease: "power3.out" }, "-=0.4");
+      // Tagline + image appear after water has risen ~60%
+      gsap.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.7, ease: "power3.out", delay: 1.8 });
+      gsap.from(heroImgRef.current,   { opacity: 0, y: 30, duration: 0.9, ease: "power3.out", delay: 2.1 });
+    });
+  };
 
-      // Hero image → fullscreen pin + zoom
+  /* Scroll animations — all scroll-triggered, independent of loader */
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Hero image zoom
       gsap.timeline({
-        scrollTrigger: {
-          trigger: ".hero-zoom",
-          start: "top top",
-          end: "+=140%",
-          scrub: 1,
-          pin: true,
-          anticipatePin: 1,
-        },
+        scrollTrigger: { trigger: ".hero-zoom", start: "top top", end: "+=140%", scrub: 1, pin: true, anticipatePin: 1 },
         defaults: { ease: "none" },
       })
         .to(".zoom-wrap", { width: "100vw", height: "100vh", borderRadius: 0 })
@@ -237,27 +276,19 @@ export default function App() {
         .to(".zoom-overlay", { opacity: 1 }, "<0.25")
         .to(".zoom-text", { opacity: 1, y: 0, ease: "power2.out" }, "<0.3");
 
-      // Manifesto: word-by-word reveal (teal section)
+      // Manifesto word-by-word
       gsap.to(".m-word", {
-        opacity: 1,
-        stagger: 0.06,
-        ease: "none",
-        scrollTrigger: {
-          trigger: ".manifesto",
-          start: "top 75%",
-          end: "bottom 40%",
-          scrub: 1,
-        },
+        opacity: 1, stagger: 0.06, ease: "none",
+        scrollTrigger: { trigger: ".manifesto", start: "top 75%", end: "bottom 40%", scrub: 1 },
       });
 
-      // Giant outline word drifts horizontally
+      // Drift word parallax
       gsap.to(".drift-word", {
-        xPercent: -30,
-        ease: "none",
+        xPercent: -30, ease: "none",
         scrollTrigger: { trigger: ".immersion", start: "top bottom", end: "bottom top", scrub: 1 },
       });
 
-      // Immersion cards rise
+      // Immersion cards
       gsap.from(".imm-card", {
         opacity: 0, y: 50, stagger: 0.15, duration: 0.8, ease: "power3.out",
         scrollTrigger: { trigger: ".imm-card", start: "top 85%" },
@@ -282,12 +313,12 @@ export default function App() {
         });
       });
     });
-
     return () => ctx.revert();
   }, []);
 
   return (
     <div className="bg-[#EDECEA] text-[#0A0A0A] overflow-x-hidden selection:bg-[#0A0A0A] selection:text-[#EDECEA]">
+      {!loaderDone && <HeroLoader onDone={startHeroAnim} />}
       <Navigation />
 
       {/* ══════════════════════════════════════
@@ -310,11 +341,9 @@ export default function App() {
             <span key={i} className="inline-block flex-shrink-0" style={{ lineHeight: 0 }}>
               <GeoLetter
                 letter={l}
+                letterIndex={i}
                 fontSize={Math.round(
-                  Math.max(
-                    40,
-                    ((typeof window !== "undefined" ? window.innerWidth : 1400) * 0.92) / LETTER_WIDTH_SUM
-                  )
+                  Math.max(40, ((typeof window !== "undefined" ? window.innerWidth : 1400) * 0.92) / LETTER_WIDTH_SUM)
                 )}
               />
             </span>
