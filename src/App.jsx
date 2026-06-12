@@ -209,7 +209,7 @@ export default function App() {
       {/* ══════════════════════════════════════
           HERO — awwwards style (centered)
       ══════════════════════════════════════ */}
-      <section className="relative pt-36 pb-0 px-6 md:px-14 text-center overflow-hidden">
+      <section className="relative pt-32 pb-0 px-6 md:px-14 text-center overflow-hidden">
 
         {/* Tag line — like "Site of the Day | Jun 3, 2026 | Score 7.23 of 10" */}
         <div ref={heroTagRef} className="flex items-center justify-center gap-3 mb-8">
@@ -231,7 +231,7 @@ export default function App() {
         </div>
 
         {/* Tagline badge */}
-        <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-6 mb-12">
+        <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-4 mb-4">
           <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Informatique</span>
           <span className="text-[#0A0A0A]/20">·</span>
           <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Design</span>
