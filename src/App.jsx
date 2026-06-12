@@ -179,11 +179,9 @@ function LiquidChannel() {
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
 
-      // Geometry: thin stream, short funnel, flare meets the image
+      // Geometry: thin stream, short funnel, no spread at the bottom
       const colHalf = Math.max(22, W * 0.028);           // thin channel
-      const frameHalf = W * 0.43;                         // image width (86vw)
       const funnelEnd = H * 0.22;
-      const flareStart = H * (0.74 - prog * 0.18);
 
       // Stream center sways slowly (viscous meander)
       const centerAt = (y) =>
@@ -194,11 +192,8 @@ function LiquidChannel() {
         if (y < funnelEnd) {
           const e = sstep(0, 1, y / funnelEnd);
           hw = (W / 2) * (1 - e) + colHalf * e;
-        } else if (y > flareStart) {
-          const e = sstep(0, 1, (y - flareStart) / Math.max(1, H - flareStart));
-          hw = colHalf + (frameHalf - colHalf) * (e * e); // accelerating spread (puddle)
         } else {
-          hw = colHalf;
+          hw = colHalf; // stays thin all the way to the image
         }
         // Downward-travelling surface waves (negative phase = waves flow down)
         // Amplitude damped by viscosity and small near funnel
@@ -219,8 +214,8 @@ function LiquidChannel() {
       ctx.moveTo(-2, 0);
       ctx.lineTo(W + 2, 0);
       for (let y = 0; y <= H; y += 5) ctx.lineTo(edge(y, 1), y);
-      ctx.lineTo(W * 0.93 + 2, H); // puddle base touches image edges
-      ctx.lineTo(W * 0.07 - 2, H);
+      ctx.lineTo(edge(H, 1), H); // thin stream touches the image, no spread
+      ctx.lineTo(edge(H, -1), H);
       for (let y = H; y >= 0; y -= 5) ctx.lineTo(edge(y, -1), y);
       ctx.closePath();
       ctx.fillStyle = "#FF4500";
@@ -244,9 +239,7 @@ function LiquidChannel() {
         sp.y += speed * 0.016;
         if (sp.y > 1.02) { sp.y = -0.02; sp.xo = (Math.random() * 2 - 1) * 0.85; }
         const y = sp.y * H;
-        const hw = y > flareStart
-          ? colHalf + (frameHalf - colHalf) * Math.pow(sstep(0, 1, (y - flareStart) / Math.max(1, H - flareStart)), 2)
-          : colHalf;
+        const hw = colHalf;
         const x = centerAt(Math.max(y, funnelEnd)) + sp.xo * hw * 0.8;
         if (y < funnelEnd * 0.5) continue;
         ctx.globalAlpha = sp.o;
