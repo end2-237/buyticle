@@ -99,12 +99,12 @@ export default function Navigation() {
 
           {/* Logo + animated label */}
           <a href="/" className="flex items-center gap-3 group z-10 flex-shrink-0">
-            <img src={logo} alt="Buyticle" className="h-9 w-auto flex-shrink-0 group-hover:opacity-75 transition-opacity duration-200" />
+            <img src={logo} alt="Buyticle" className={`h-9 w-auto flex-shrink-0 group-hover:opacity-75 transition-opacity duration-200 ${scrolled || exploreOpen ? "" : "brightness-0 invert"}`} />
             <div className="relative overflow-hidden h-6 hidden md:block" style={{ minWidth: "185px" }}>
-              <span ref={phraseRef} className="absolute inset-0 flex items-center text-[#0A0A0A]/40 text-xs font-mono tracking-[0.2em] uppercase whitespace-nowrap">
+              <span ref={phraseRef} className={`absolute inset-0 flex items-center text-xs font-mono tracking-[0.2em] uppercase whitespace-nowrap transition-colors duration-300 ${scrolled || exploreOpen ? "text-[#0A0A0A]/40" : "text-white/70"}`}>
                 Agence digitale · Douala
               </span>
-              <span ref={brandRef} className="absolute inset-0 flex items-center text-[#0A0A0A] font-black text-base tracking-tight whitespace-nowrap opacity-0" style={{ transform: "translateY(16px)" }}>
+              <span ref={brandRef} className={`absolute inset-0 flex items-center font-black text-base tracking-tight whitespace-nowrap opacity-0 transition-colors duration-300 ${scrolled || exploreOpen ? "text-[#0A0A0A]" : "text-white"}`} style={{ transform: "translateY(16px)" }}>
                 BUYTICLE
               </span>
             </div>
@@ -117,7 +117,11 @@ export default function Navigation() {
             <button
               onClick={() => setExploreOpen(!exploreOpen)}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                exploreOpen ? "bg-[#0A0A0A] text-[#EDECEA]" : "text-[#0A0A0A]/50 hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.06]"
+                exploreOpen
+                  ? "bg-[#0A0A0A] text-[#EDECEA]"
+                  : scrolled
+                    ? "text-[#0A0A0A]/50 hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.06]"
+                    : "text-white/80 hover:text-white hover:bg-white/[0.12]"
               }`}
             >
               Explorer
@@ -131,7 +135,11 @@ export default function Navigation() {
               <a key={l.label} href={l.href}
                 target={l.external ? "_blank" : undefined}
                 rel={l.external ? "noopener noreferrer" : undefined}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-[#0A0A0A]/50 hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.06] transition-all duration-200 relative"
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 relative ${
+                  scrolled || exploreOpen
+                    ? "text-[#0A0A0A]/50 hover:text-[#0A0A0A] hover:bg-[#0A0A0A]/[0.06]"
+                    : "text-white/80 hover:text-white hover:bg-white/[0.12]"
+                }`}
               >
                 {l.label}
                 {l.badge && (
@@ -194,7 +202,11 @@ export default function Navigation() {
           {/* Right: App CTA + burger */}
           <div className="flex items-center gap-3">
             <a href="https://play.google.com/apps/internaltest/4701420296100637084" target="_blank" rel="noopener noreferrer"
-              className="hidden md:flex items-center gap-2 border border-[#0A0A0A]/20 text-[#0A0A0A]/60 text-xs font-mono px-5 py-2.5 rounded-full hover:bg-[#0A0A0A] hover:text-[#EDECEA] hover:border-[#0A0A0A] transition-all duration-300"
+              className={`hidden md:flex items-center gap-2 text-xs font-mono px-5 py-2.5 rounded-full transition-all duration-300 ${
+                scrolled || exploreOpen
+                  ? "border border-[#0A0A0A]/20 text-[#0A0A0A]/60 hover:bg-[#0A0A0A] hover:text-[#EDECEA] hover:border-[#0A0A0A]"
+                  : "border border-white/40 text-white/80 hover:bg-white hover:text-[#FF4500]"
+              }`}
             >
               ↓ App Android
             </a>
@@ -202,9 +214,9 @@ export default function Navigation() {
             <button onClick={() => setMenuOpen(!menuOpen)}
               className="md:hidden flex flex-col justify-center gap-[5px] w-8 h-8 z-[60]" aria-label="Menu"
             >
-              <span className={`block h-px bg-[#0A0A0A] transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-[7px] w-6" : "w-6"}`} />
-              <span className={`block h-px bg-[#0A0A0A] transition-all duration-300 ${menuOpen ? "opacity-0 w-4" : "w-4"}`} />
-              <span className={`block h-px bg-[#0A0A0A] transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-[7px] w-6" : "w-6"}`} />
+              <span className={`block h-px transition-all duration-300 ${scrolled || menuOpen ? "bg-[#0A0A0A]" : "bg-white"} ${menuOpen ? "rotate-45 translate-y-[7px] w-6" : "w-6"}`} />
+              <span className={`block h-px transition-all duration-300 ${scrolled || menuOpen ? "bg-[#0A0A0A]" : "bg-white"} ${menuOpen ? "opacity-0 w-4" : "w-4"}`} />
+              <span className={`block h-px transition-all duration-300 ${scrolled || menuOpen ? "bg-[#0A0A0A]" : "bg-white"} ${menuOpen ? "-rotate-45 -translate-y-[7px] w-6" : "w-6"}`} />
             </button>
           </div>
         </div>
