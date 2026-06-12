@@ -21,20 +21,33 @@ function GeoLetter({ letter, fontSize = 180 }) {
   const rows = Math.ceil(h / S) + 1;
 
   const shapes = [];
+  let seed = letter.charCodeAt(0) * 7919;
+  const rnd = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const cx = c * S + S / 2;
-      const cy = r * S + S / 2;
-      const kind = (r * 5 + c * 11 + r * c) % 3;
+      // Random jitter, size and shape type — organic, non-grid look
+      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.7;
+      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.7;
+      const kind = Math.floor(rnd() * 3);
+      const half = S * (0.26 + rnd() * 0.24);
       const k = `${r}-${c}`;
-      const half = S * 0.38;
+      const common = { className: "geo-shape", "data-cy": cy.toFixed(1), "data-h": h };
       if (kind === 0) {
-        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} />);
+        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} {...common} />);
       } else if (kind === 1) {
-        shapes.push(<rect key={k} x={cx - half} y={cy - half} width={half * 2} height={half * 2} />);
+        shapes.push(
+          <rect key={k} x={cx - half} y={cy - half} width={half * 2} height={half * 2}
+            transform={`rotate(${Math.round((rnd() - 0.5) * 50)} ${cx} ${cy})`} {...common} />
+        );
       } else {
-        const p = `${cx},${cy - half * 1.1} ${cx - half * 1.1},${cy + half * 0.8} ${cx + half * 1.1},${cy + half * 0.8}`;
-        shapes.push(<polygon key={k} points={p} />);
+        const p = `${cx},${cy - half * 1.15} ${cx - half * 1.1},${cy + half * 0.85} ${cx + half * 1.1},${cy + half * 0.85}`;
+        shapes.push(
+          <polygon key={k} points={p}
+            transform={`rotate(${Math.round((rnd() - 0.5) * 60)} ${cx} ${cy})`} {...common} />
+        );
       }
     }
   }
@@ -189,26 +202,19 @@ export default function App() {
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
       tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 });
 
-      // Per-letter animation — each from a unique direction
-      const letterMoves = [
-        { x: -120, y: -80,  rotation: -25, scale: 0.5 }, // B
-        { x:    0, y:  140, rotation:   8, scale: 0.6 }, // U
-        { x:  100, y: -100, rotation:  20, scale: 0.4 }, // Y
-        { x: -160, y:   60, rotation: -15, scale: 0.7 }, // T
-        { x:    0, y: -120, rotation:  30, scale: 0.3 }, // I
-        { x:  140, y:  100, rotation: -20, scale: 0.5 }, // C
-        { x: -80,  y:  120, rotation:  12, scale: 0.6 }, // L
-        { x:  120, y: -60,  rotation: -30, scale: 0.4 }, // E
-      ];
-      // Letters fly in from unique directions — then stay
-      gsap.set(".hero-letter", { opacity: 0 });
-      letterMoves.forEach((m, i) => {
-        tl.fromTo(
-          `.hero-letter-${i}`,
-          { opacity: 0, x: m.x, y: m.y, rotation: m.rotation, scale: 0.4 },
-          { opacity: 1, x: 0, y: 0, rotation: 0, scale: 1, duration: 1.15, ease: "expo.out" },
-          0.12 + i * 0.06
-        );
+      // Liquid pour: shapes fall from above and stack bottom-up
+      // inside each invisible letter outline
+      document.querySelectorAll(".hero-title .geo-shape").forEach((el) => {
+        const cy = parseFloat(el.dataset.cy);
+        const h = parseFloat(el.dataset.h);
+        const fillOrder = (h - cy) / h; // 0 = bottom (fills first), 1 = top
+        gsap.from(el, {
+          y: -(cy + 120 + Math.random() * 200),
+          opacity: 0,
+          duration: 0.7 + Math.random() * 0.5,
+          ease: "bounce.out",
+          delay: 0.25 + fillOrder * 1.1 + Math.random() * 0.3,
+        });
       });
 
       tl.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.4")
@@ -298,20 +304,16 @@ export default function App() {
           <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
         </div>
 
-        {/* Geometric letter title */}
-        <div className="flex items-end justify-center gap-[0.5vw] flex-wrap leading-none">
-          {[
-            { l:"B", x:-130, y:-90,  r:-22 },
-            { l:"U", x:  0,  y: 150, r:  7 },
-            { l:"Y", x: 110, y:-110, r: 18 },
-            { l:"T", x:-150, y:  70, r:-14 },
-            { l:"I", x:  0,  y:-130, r: 28 },
-            { l:"C", x: 150, y: 110, r:-18 },
-            { l:"L", x:-90,  y: 130, r: 11 },
-            { l:"E", x: 120, y: -70, r:-26 },
-          ].map(({ l, x, y, r }, i) => (
-            <span key={i} className={`hero-letter hero-letter-${i} inline-block`} style={{ lineHeight: 0 }}>
-              <GeoLetter letter={l} fontSize={Math.round(window?.innerWidth < 768 ? 80 : 165)} />
+        {/* Geometric letter title — full-width branding */}
+        <div className="hero-title flex items-end justify-center gap-[0.3vw] flex-wrap leading-none">
+          {"BUYTICLE".split("").map((l, i) => (
+            <span key={i} className="inline-block" style={{ lineHeight: 0 }}>
+              <GeoLetter
+                letter={l}
+                fontSize={Math.round(
+                  Math.min(300, Math.max(64, (typeof window !== "undefined" ? window.innerWidth : 1400) / 4.9))
+                )}
+              />
             </span>
           ))}
         </div>
