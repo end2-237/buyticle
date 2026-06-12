@@ -318,8 +318,8 @@ function LiquidChannel() {
   }, []);
 
   return (
-    {/* Short channel; negative margin makes the puddle touch the image
-        (hero-zoom is h-screen with a 64vh centered image → 18vh gap above it) */}
+    // Short channel; negative margin makes the puddle touch the image
+    // (hero-zoom is h-screen with a 64vh centered image → 18vh gap above it)
     <div ref={wrapRef} className="relative z-10 pointer-events-none" style={{ height: "34vh", marginBottom: "-18vh" }}>
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
     </div>
