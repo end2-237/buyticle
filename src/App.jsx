@@ -67,9 +67,19 @@ function GeoLetter({ letter, fontSize = 180, letterIndex = 0 }) {
             {letter}
           </text>
         </clipPath>
-        {/* Rising water clip — animated via GSAP attr */}
+        {/* Rising wave clip — wavy top edge animated via GSAP translateY */}
         <clipPath id={`${uid}-water`}>
-          <rect className="water-rect" x="-5" y={h} width={w + 10} height={h + 10} />
+          <path
+            className="water-wave"
+            data-h={h}
+            d={`M -10 ${h * 0.045}
+                C ${w * 0.12} ${-h * 0.045} ${w * 0.30} ${h * 0.09} ${w * 0.50} ${h * 0.045}
+                C ${w * 0.70} ${-h * 0.005} ${w * 0.88} ${h * 0.075} ${w + 10} ${h * 0.045}
+                L ${w + 10} ${h * 2.2}
+                L -10 ${h * 2.2}
+                Z`}
+            style={{ transform: `translateY(${h * 1.1}px)` }}
+          />
         </clipPath>
       </defs>
 
@@ -245,15 +255,26 @@ export default function App() {
       // Tag + badge entrance
       gsap.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5, ease: "power3.out" });
 
-      // Water rising inside each letter: animate the water-rect's y attribute
-      // from h (bottom) to -5 (above top) so shapes are progressively revealed.
-      // Each letter starts with a small stagger offset for a wave-like feel.
-      gsap.to(".water-rect", {
-        attr: { y: -10 },
-        duration: 2.8,
-        ease: "power1.inOut",
+      // Wave rising: translate the wave path upward so the filled area
+      // progressively reveals shapes inside each letter from bottom to top.
+      gsap.to(".water-wave", {
+        y: (_, el) => -(parseFloat(el.dataset.h) * 2.2),
+        duration: 3.2,
+        ease: "sine.inOut",
         force3D: true,
-        stagger: 0.12,
+        stagger: 0.10,
+        delay: 0.1,
+      });
+
+      // Subtle horizontal wave oscillation while rising — gives liquid feel
+      gsap.to(".water-wave", {
+        x: "+=14",
+        duration: 0.9,
+        ease: "sine.inOut",
+        repeat: 8,
+        yoyo: true,
+        force3D: true,
+        stagger: 0.08,
         delay: 0.1,
       });
 
