@@ -136,6 +136,49 @@ export default function App() {
         .from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.5")
         .from(heroImgRef.current, { opacity: 0, y: 30, duration: 0.9, ease: "power3.out" }, "-=0.3");
 
+      // Hero image → fullscreen pin + zoom
+      gsap.timeline({
+        scrollTrigger: {
+          trigger: ".hero-zoom",
+          start: "top top",
+          end: "+=140%",
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+        },
+        defaults: { ease: "none" },
+      })
+        .to(".zoom-wrap", { width: "100vw", height: "100vh", borderRadius: 0 })
+        .to(".zoom-img", { scale: 1 }, "<")
+        .to(".zoom-overlay", { opacity: 1 }, "<0.25")
+        .to(".zoom-text", { opacity: 1, y: 0, ease: "power2.out" }, "<0.3");
+
+      // Manifesto: word-by-word reveal (teal section)
+      gsap.to(".m-word", {
+        opacity: 1,
+        stagger: 0.06,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".manifesto",
+          start: "top 75%",
+          end: "bottom 40%",
+          scrub: 1,
+        },
+      });
+
+      // Giant outline word drifts horizontally
+      gsap.to(".drift-word", {
+        xPercent: -30,
+        ease: "none",
+        scrollTrigger: { trigger: ".immersion", start: "top bottom", end: "bottom top", scrub: 1 },
+      });
+
+      // Immersion cards rise
+      gsap.from(".imm-card", {
+        opacity: 0, y: 50, stagger: 0.15, duration: 0.8, ease: "power3.out",
+        scrollTrigger: { trigger: ".imm-card", start: "top 85%" },
+      });
+
       // Project cards
       gsap.from(".proj-card", {
         opacity: 0, y: 50, stagger: 0.12, duration: 0.8, ease: "power3.out",
@@ -198,31 +241,80 @@ export default function App() {
           <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
         </div>
 
-        {/* Featured image — full width, fills bottom of hero */}
+      </section>
+
+      {/* ══════════════════════════════════════
+          HERO ZOOM — image expands to fullscreen on scroll
+      ══════════════════════════════════════ */}
+      <section className="hero-zoom relative h-screen overflow-hidden flex items-center justify-center">
         <div
           ref={heroImgRef}
-          className="relative w-full overflow-hidden rounded-t-2xl"
-          style={{ maxHeight: "75vh" }}
+          className="zoom-wrap relative overflow-hidden rounded-2xl"
+          style={{ width: "86vw", height: "64vh" }}
         >
           <img
             src="/hero-brand.jpg"
             alt="Buyticle Brand"
-            className="w-full h-full object-cover"
-            style={{ minHeight: "400px", maxHeight: "75vh" }}
-            onError={(e) => {
-              // Fallback gradient if image not yet added
-              e.currentTarget.style.display = "none";
-              e.currentTarget.parentElement.style.background =
-                "linear-gradient(135deg, #FF4500 0%, #FF6B35 40%, #FF8C5A 100%)";
-              e.currentTarget.parentElement.style.minHeight = "400px";
-              e.currentTarget.parentElement.innerHTML += `
-                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:white;">
-                  <p style="font-family:monospace;font-size:11px;letter-spacing:0.3em;text-transform:uppercase;opacity:0.7">
-                    Ajoutez public/hero-brand.jpg
-                  </p>
-                </div>`;
-            }}
+            className="zoom-img w-full h-full object-cover"
+            style={{ transform: "scale(1.15)" }}
           />
+          {/* Darkening overlay revealed while expanding */}
+          <div className="zoom-overlay absolute inset-0 bg-[#0A0A0A]/45 opacity-0" />
+
+          {/* Text inside the image */}
+          <div className="zoom-text absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0" style={{ transform: "translateY(40px)" }}>
+            <p className="text-white/60 font-mono text-[10px] md:text-xs tracking-[0.5em] uppercase mb-6">
+              ✦ Depuis Douala, pour le monde
+            </p>
+            <h2 className="text-white text-[clamp(36px,7vw,110px)] font-black tracking-[-0.03em] leading-[0.92]">
+              On construit le<br />
+              <span style={{ WebkitTextStroke: "2px #fff", color: "transparent" }}>digital africain</span>
+            </h2>
+            <p className="text-white/50 text-sm md:text-base max-w-md mt-8 leading-relaxed">
+              Des produits pensés, designés et développés au Cameroun — utilisés chaque jour par des milliers de personnes.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════
+          IMMERSION — complementary teal tone
+      ══════════════════════════════════════ */}
+      <section className="immersion relative bg-[#0E3331] text-[#EDECEA] overflow-hidden">
+        {/* Giant parallax outline word */}
+        <div className="pointer-events-none select-none absolute top-10 left-0 whitespace-nowrap">
+          <span
+            className="drift-word inline-block text-[clamp(90px,18vw,280px)] font-black tracking-[-0.04em] leading-none opacity-[0.07]"
+            style={{ WebkitTextStroke: "2px #EDECEA", color: "transparent" }}
+          >
+            CRÉATIVITÉ · TECHNOLOGIE · CRÉATIVITÉ · TECHNOLOGIE
+          </span>
+        </div>
+
+        <div className="max-w-[1400px] mx-auto px-6 md:px-14 py-40 relative z-10">
+          <p className="text-[#7FD1C0]/70 font-mono text-[10px] tracking-[0.4em] uppercase mb-12">✦ Manifesto</p>
+
+          {/* Word-by-word scroll reveal */}
+          <p className="manifesto text-[clamp(26px,4.2vw,64px)] font-black leading-[1.12] tracking-tight max-w-5xl">
+            {"Chaque pixel, chaque ligne de code, chaque produit que nous livrons porte une ambition : prouver que l'excellence digitale se fabrique aussi ici."
+              .split(" ")
+              .map((w, i) => (
+                <span key={i} className="m-word inline-block mr-[0.28em] opacity-20">{w}</span>
+              ))}
+          </p>
+
+          <div className="grid md:grid-cols-3 gap-10 mt-28">
+            {[
+              { t: "Vision", d: "Faire du Cameroun un hub de produits digitaux reconnus à l'international." },
+              { t: "Méthode", d: "Design d'abord, itérations rapides, obsession du détail et de la performance." },
+              { t: "Impact", d: "Des outils concrets qui servent les commerçants, créateurs et entreprises locales." },
+            ].map((b, i) => (
+              <div key={i} className="imm-card border-t border-[#EDECEA]/15 pt-6">
+                <p className="text-[#7FD1C0] font-mono text-[10px] tracking-[0.35em] uppercase mb-4">0{i + 1} — {b.t}</p>
+                <p className="text-[#EDECEA]/55 text-sm leading-relaxed">{b.d}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
