@@ -10,13 +10,14 @@ import logo from "./assets/buylogo2.png";
 gsap.registerPlugin(ScrollTrigger);
 
 /* ─── Geometric letter — shapes clipped to letter outline ─── */
-const LETTER_WIDTHS = { B:0.62, U:0.66, Y:0.60, T:0.58, I:0.24, C:0.60, L:0.52, E:0.58 };
+const LETTER_WIDTHS = { B:0.70, U:0.74, Y:0.70, T:0.64, I:0.30, C:0.70, L:0.58, E:0.64 };
+export const LETTER_WIDTH_SUM = "BUYTICLE".split("").reduce((a, l) => a + LETTER_WIDTHS[l], 0);
 
 function GeoLetter({ letter, fontSize = 180 }) {
   const uid = `gc-${letter}-${Math.random().toString(36).slice(2, 7)}`;
   const w = fontSize * (LETTER_WIDTHS[letter] ?? 0.62);
   const h = fontSize * 1.08;
-  const S = Math.round(fontSize * 0.072); // shape cell size ~13px at 180
+  const S = Math.max(6, Math.round(fontSize * 0.05)); // small dense cells
   const cols = Math.ceil(w / S) + 1;
   const rows = Math.ceil(h / S) + 1;
 
@@ -29,10 +30,10 @@ function GeoLetter({ letter, fontSize = 180 }) {
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       // Random jitter, size and shape type — organic, non-grid look
-      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.7;
-      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.7;
+      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.5;
+      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.5;
       const kind = Math.floor(rnd() * 3);
-      const half = S * (0.26 + rnd() * 0.24);
+      const half = S * (0.34 + rnd() * 0.14); // fill cells as much as possible, still distinct
       const k = `${r}-${c}`;
       const common = { className: "geo-shape", "data-cy": cy.toFixed(1), "data-h": h };
       if (kind === 0) {
@@ -65,7 +66,7 @@ function GeoLetter({ letter, fontSize = 180 }) {
             fontSize={fontSize}
             fontWeight="900"
             fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-            letterSpacing="-0.04em"
+            letterSpacing="0"
           >
             {letter}
           </text>
@@ -202,19 +203,18 @@ export default function App() {
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
       tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 });
 
-      // Liquid pour: shapes fall from above and stack bottom-up
-      // inside each invisible letter outline
-      document.querySelectorAll(".hero-title .geo-shape").forEach((el) => {
-        const cy = parseFloat(el.dataset.cy);
-        const h = parseFloat(el.dataset.h);
-        const fillOrder = (h - cy) / h; // 0 = bottom (fills first), 1 = top
-        gsap.from(el, {
-          y: -(cy + 120 + Math.random() * 200),
-          opacity: 0,
-          duration: 0.7 + Math.random() * 0.5,
-          ease: "bounce.out",
-          delay: 0.25 + fillOrder * 1.1 + Math.random() * 0.3,
-        });
+      // Liquid pour: shapes fall and stack bottom-up inside the letter
+      // outlines. Single batched tween (not one tween per shape) so it
+      // stays smooth on low-end devices; rows are generated top→bottom,
+      // so stagger from:"end" fills from the bottom like a liquid.
+      gsap.from(".hero-title .geo-shape", {
+        y: (i, el) => -(parseFloat(el.dataset.cy) + 140 + ((i * 37) % 160)),
+        opacity: 0,
+        duration: 0.75,
+        ease: "bounce.out",
+        force3D: true,
+        stagger: { each: 0.0012, from: "end" },
+        delay: 0.2,
       });
 
       tl.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.4")
@@ -304,14 +304,17 @@ export default function App() {
           <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
         </div>
 
-        {/* Geometric letter title — full-width branding */}
-        <div className="hero-title flex items-end justify-center gap-[0.3vw] flex-wrap leading-none">
+        {/* Geometric letter title — always one line, full-width branding */}
+        <div className="hero-title flex items-end justify-center flex-nowrap whitespace-nowrap leading-none overflow-visible">
           {"BUYTICLE".split("").map((l, i) => (
-            <span key={i} className="inline-block" style={{ lineHeight: 0 }}>
+            <span key={i} className="inline-block flex-shrink-0" style={{ lineHeight: 0 }}>
               <GeoLetter
                 letter={l}
                 fontSize={Math.round(
-                  Math.min(300, Math.max(64, (typeof window !== "undefined" ? window.innerWidth : 1400) / 4.9))
+                  Math.max(
+                    40,
+                    ((typeof window !== "undefined" ? window.innerWidth : 1400) * 0.92) / LETTER_WIDTH_SUM
+                  )
                 )}
               />
             </span>
