@@ -100,32 +100,84 @@ function GeoLetter({ letter, fontSize = 180, letterIndex = 0 }) {
   );
 }
 
-/* ─── Professional loader ─── */
+/* ─── Professional loader — waits for real asset readiness ─── */
 function HeroLoader({ onDone }) {
   const loaderRef = useRef(null);
   const barRef = useRef(null);
   const textRef = useRef(null);
+  const pctRef = useRef(null);
 
   useEffect(() => {
-    const tl = gsap.timeline({
-      onComplete: () => {
-        gsap.to(loaderRef.current, {
-          opacity: 0, duration: 0.5, ease: "power2.inOut",
-          onComplete: onDone,
-        });
+    let cancelled = false;
+    const progress = { v: 0 };
+    let target = 0;
+
+    // Smoothly tween the bar toward the latest real progress target
+    const render = gsap.to(progress, {
+      v: () => target,
+      duration: 0.6,
+      ease: "power2.out",
+      paused: true,
+      onUpdate: () => {
+        if (barRef.current) barRef.current.style.transform = `scaleX(${progress.v / 100})`;
+        if (pctRef.current) pctRef.current.textContent = `${Math.round(progress.v)}%`;
       },
     });
-    tl.from(textRef.current, { opacity: 0, y: 10, duration: 0.4, ease: "power3.out" })
-      .to(barRef.current, { scaleX: 1, duration: 1.4, ease: "power2.inOut" }, 0.2)
-      .to(textRef.current, { opacity: 0.3, duration: 0.3 }, 1.3);
+    const setTarget = (v) => { target = v; render.invalidate().restart(); };
+
+    gsap.from(textRef.current, { opacity: 0, y: 10, duration: 0.4, ease: "power3.out" });
+
+    // Real readiness checks:
+    const tasks = [
+      // 1. Fonts (the letter clip-paths depend on the loaded font metrics)
+      document.fonts ? document.fonts.ready : Promise.resolve(),
+      // 2. Hero image decoded
+      new Promise((res) => {
+        const img = new Image();
+        img.onload = res; img.onerror = res;
+        img.src = "/hero-brand.jpg";
+      }),
+      // 3. SVG letters mounted & painted (two rAF ticks after layout)
+      new Promise((res) => {
+        const check = () => {
+          const ready = document.querySelectorAll(".hero-title svg").length >= 8;
+          if (ready) requestAnimationFrame(() => requestAnimationFrame(res));
+          else setTimeout(check, 80);
+        };
+        check();
+      }),
+      // 4. Minimum display time so the loader never flashes
+      new Promise((res) => setTimeout(res, 1200)),
+    ];
+
+    let done = 0;
+    tasks.forEach((t) =>
+      t.then(() => {
+        if (cancelled) return;
+        done += 1;
+        setTarget((done / tasks.length) * 100);
+      })
+    );
+
+    Promise.all(tasks).then(() => {
+      if (cancelled) return;
+      setTarget(100);
+      gsap.to(loaderRef.current, {
+        opacity: 0, duration: 0.55, ease: "power2.inOut", delay: 0.45,
+        onComplete: onDone,
+      });
+    });
+
+    return () => { cancelled = true; render.kill(); };
   }, []);
 
   return (
     <div ref={loaderRef} className="fixed inset-0 z-[100] bg-[#EDECEA] flex flex-col items-center justify-center pointer-events-none">
-      <img ref={textRef} src={logo} alt="Buyticle" className="h-10 w-auto mb-10 opacity-0" />
-      <div className="w-40 h-px bg-[#0A0A0A]/10 overflow-hidden rounded-full">
+      <img ref={textRef} src={logo} alt="Buyticle" className="h-10 w-auto mb-10" />
+      <div className="w-44 h-px bg-[#0A0A0A]/10 overflow-hidden rounded-full">
         <div ref={barRef} className="h-full bg-[#FF4500] origin-left" style={{ transform: "scaleX(0)" }} />
       </div>
+      <p ref={pctRef} className="text-[#0A0A0A]/30 font-mono text-[10px] tracking-[0.35em] mt-5">0%</p>
     </div>
   );
 }
