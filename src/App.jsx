@@ -9,95 +9,112 @@ import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Shape colors by kind: circle=orange, square=teal, triangle=gold ─── */
-const SHAPE_COLORS = ["#FF4500", "#0E4A45", "#E8B84B"];
+/* ─── Lusion-style particle dunes — canvas, mouse-reactive ─── */
+function ParticleWaves() {
+  const canvasRef = useRef(null);
 
-/* ─── Geometric letter — water-fill clip effect ─── */
-const LETTER_WIDTHS = { B:0.70, U:0.74, Y:0.70, T:0.64, I:0.30, C:0.70, L:0.58, E:0.64 };
-export const LETTER_WIDTH_SUM = "BUYTICLE".split("").reduce((a, l) => a + LETTER_WIDTHS[l], 0);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    let W = 0, H = 0, raf = 0, parts = [];
+    const mouse = { x: -9999, y: -9999 };
+    const COUNT = window.innerWidth < 768 ? 380 : 800;
 
-function GeoLetter({ letter, fontSize = 180, letterIndex = 0 }) {
-  const uid = `gc-${letter}-${letterIndex}`;
-  const w = fontSize * (LETTER_WIDTHS[letter] ?? 0.62);
-  const h = fontSize * 1.08;
-  const S = Math.max(5, Math.round(fontSize * 0.048));
-  const cols = Math.ceil(w / S) + 1;
-  const rows = Math.ceil(h / S) + 1;
+    const duneY = (x) =>
+      H * 0.70 +
+      Math.sin(x * 0.004) * H * 0.05 +
+      Math.sin(x * 0.0013 + 2.1) * H * 0.11;
 
-  const shapes = [];
-  let seed = letter.charCodeAt(0) * 7919;
-  const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const cx = c * S + S / 2 + (rnd() - 0.5) * S * 0.45;
-      const cy = r * S + S / 2 + (rnd() - 0.5) * S * 0.45;
-      const kind = Math.floor(rnd() * 3);
-      const half = S * (0.36 + rnd() * 0.12);
-      const k = `${r}-${c}`;
-      const fill = SHAPE_COLORS[kind];
-      if (kind === 0) {
-        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} fill={fill} />);
-      } else if (kind === 1) {
-        shapes.push(
-          <rect key={k} x={cx - half} y={cy - half} width={half * 2} height={half * 2}
-            transform={`rotate(${Math.round((rnd() - 0.5) * 45)} ${cx} ${cy})`} fill={fill} />
-        );
-      } else {
-        const p = `${cx},${cy - half * 1.1} ${cx - half * 1.05},${cy + half * 0.8} ${cx + half * 1.05},${cy + half * 0.8}`;
-        shapes.push(
-          <polygon key={k} points={p}
-            transform={`rotate(${Math.round((rnd() - 0.5) * 55)} ${cx} ${cy})`} fill={fill} />
-        );
+    const initParts = () => {
+      parts = [];
+      let i = 0, guard = 0;
+      while (i < COUNT && guard < COUNT * 40) {
+        guard++;
+        const x = Math.random() * W;
+        const y = Math.random() * H;
+        const below = y > duneY(x);
+        // dense below the dune line, a few floaters above
+        if (!below && Math.random() > 0.045) continue;
+        i++;
+        parts.push({
+          bx: x, by: y,
+          kind: Math.floor(Math.random() * 4),
+          s: 1.4 + Math.random() * 2.4,
+          ph: Math.random() * Math.PI * 2,
+          sp: 0.35 + Math.random() * 0.75,
+          o: 0.45 + Math.random() * 0.55,
+        });
       }
-    }
-  }
+    };
 
-  return (
-    <svg
-      width={w} height={h}
-      viewBox={`0 0 ${w} ${h}`}
-      style={{ display: "inline-block", overflow: "visible", verticalAlign: "top" }}
-    >
-      <defs>
-        {/* Letter silhouette clip */}
-        <clipPath id={`${uid}-letter`}>
-          <text x="0" y={fontSize * 0.84} fontSize={fontSize} fontWeight="900"
-            fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" letterSpacing="0">
-            {letter}
-          </text>
-        </clipPath>
-        {/* Rising wave clip — wavy top edge animated via GSAP translateY */}
-        <clipPath id={`${uid}-water`}>
-          <path
-            className="water-wave"
-            data-h={h}
-            d={`M -10 ${h * 0.045}
-                C ${w * 0.12} ${-h * 0.045} ${w * 0.30} ${h * 0.09} ${w * 0.50} ${h * 0.045}
-                C ${w * 0.70} ${-h * 0.005} ${w * 0.88} ${h * 0.075} ${w + 10} ${h * 0.045}
-                L ${w + 10} ${h * 2.2}
-                L -10 ${h * 2.2}
-                Z`}
-            style={{ transform: `translateY(${h * 1.1}px)` }}
-          />
-        </clipPath>
-      </defs>
+    const resize = () => {
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      initParts();
+    };
 
-      {/* Faint ghost letter (outline) visible before water fills */}
-      <text x="0" y={fontSize * 0.84} fontSize={fontSize} fontWeight="900"
-        fontFamily="'Inter','Helvetica Neue',Arial,sans-serif" letterSpacing="0"
-        fill="none" stroke="#0A0A0A" strokeWidth="1.5" opacity="0.12">
-        {letter}
-      </text>
+    const draw = (tms) => {
+      const t = tms / 1000;
+      ctx.clearRect(0, 0, W, H);
+      ctx.fillStyle = "#FFFFFF";
+      for (const p of parts) {
+        // gentle wave drift
+        let x = p.bx + Math.sin(t * p.sp + p.ph) * 6;
+        let y = p.by + Math.cos(t * p.sp * 0.8 + p.ph) * 4 +
+                Math.sin(p.bx * 0.004 + t * 0.55) * 7;
+        // mouse repulsion (fluid feel)
+        const dx = x - mouse.x, dy = y - mouse.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < 19600) {
+          const d = Math.sqrt(d2) || 1;
+          const f = ((140 - d) / 140) * 42;
+          x += (dx / d) * f;
+          y += (dy / d) * f;
+        }
+        ctx.globalAlpha = p.o;
+        const s = p.s;
+        if (p.kind === 0) {
+          ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
+        } else if (p.kind === 1) {
+          ctx.fillRect(x - s, y - s, s * 2, s * 2);
+        } else if (p.kind === 2) {
+          ctx.beginPath();
+          ctx.moveTo(x, y - s * 1.2);
+          ctx.lineTo(x - s, y + s * 0.9);
+          ctx.lineTo(x + s, y + s * 0.9);
+          ctx.closePath(); ctx.fill();
+        } else {
+          ctx.fillRect(x - s, y - s * 0.3, s * 2, s * 0.6);
+          ctx.fillRect(x - s * 0.3, y - s, s * 0.6, s * 2);
+        }
+      }
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(draw);
+    };
 
-      {/* Shapes clipped first by letter, then by rising water rect */}
-      <g clipPath={`url(#${uid}-letter)`}>
-        <g clipPath={`url(#${uid}-water)`}>
-          {shapes}
-        </g>
-      </g>
-    </svg>
-  );
+    const onMove = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    resize();
+    raf = requestAnimationFrame(draw);
+    window.addEventListener("resize", resize);
+    canvas.parentElement.addEventListener("pointermove", onMove);
+    canvas.parentElement.addEventListener("pointerleave", onLeave);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      canvas.parentElement?.removeEventListener("pointermove", onMove);
+      canvas.parentElement?.removeEventListener("pointerleave", onLeave);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} className="hero-canvas absolute inset-0 w-full h-full" />;
 }
 
 /* ─── Professional loader — waits for real asset readiness ─── */
@@ -137,11 +154,11 @@ function HeroLoader({ onDone }) {
         img.onload = res; img.onerror = res;
         img.src = "/hero-brand.jpg";
       }),
-      // 3. SVG letters mounted & painted (two rAF ticks after layout)
+      // 3. Particle canvas mounted & painted (two rAF ticks after layout)
       new Promise((res) => {
         const check = () => {
-          const ready = document.querySelectorAll(".hero-title svg").length >= 8;
-          if (ready) requestAnimationFrame(() => requestAnimationFrame(res));
+          const cv = document.querySelector(".hero-canvas");
+          if (cv && cv.width > 0) requestAnimationFrame(() => requestAnimationFrame(res));
           else setTimeout(check, 80);
         };
         check();
@@ -307,32 +324,18 @@ export default function App() {
       // Tag + badge entrance
       gsap.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5, ease: "power3.out" });
 
-      // Wave rising: translate the wave path upward so the filled area
-      // progressively reveals shapes inside each letter from bottom to top.
-      gsap.to(".water-wave", {
-        y: (_, el) => -(parseFloat(el.dataset.h) * 2.2),
-        duration: 3.2,
-        ease: "sine.inOut",
-        force3D: true,
-        stagger: 0.10,
-        delay: 0.1,
-      });
+      // Title letters rise from below their line, slight stagger
+      gsap.fromTo(".hero-letter",
+        { yPercent: 110 },
+        { yPercent: 0, duration: 1.2, ease: "expo.out", stagger: 0.05, delay: 0.15 }
+      );
 
-      // Subtle horizontal wave oscillation while rising — gives liquid feel
-      gsap.to(".water-wave", {
-        x: "+=14",
-        duration: 0.9,
-        ease: "sine.inOut",
-        repeat: 8,
-        yoyo: true,
-        force3D: true,
-        stagger: 0.08,
-        delay: 0.1,
-      });
+      // Particle field fades in softly
+      gsap.from(".hero-canvas", { opacity: 0, duration: 1.6, ease: "power2.out", delay: 0.3 });
 
-      // Tagline + image appear after water has risen ~60%
-      gsap.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.7, ease: "power3.out", delay: 1.8 });
-      gsap.from(heroImgRef.current,   { opacity: 0, y: 30, duration: 0.9, ease: "power3.out", delay: 2.1 });
+      // Tagline + image
+      gsap.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.7, ease: "power3.out", delay: 1.0 });
+      gsap.from(heroImgRef.current,   { opacity: 0, y: 30, duration: 0.9, ease: "power3.out", delay: 1.2 });
     });
   };
 
@@ -395,43 +398,48 @@ export default function App() {
       <Navigation />
 
       {/* ══════════════════════════════════════
-          HERO — awwwards style (centered)
+          HERO — Lusion style: vivid bg + particle dunes
       ══════════════════════════════════════ */}
-      <section className="relative pt-32 pb-0 px-6 md:px-14 text-center overflow-hidden">
+      <section className="relative min-h-screen flex flex-col justify-center bg-[#FF4500] text-white text-center overflow-hidden px-6 md:px-14">
 
-        {/* Tag line — like "Site of the Day | Jun 3, 2026 | Score 7.23 of 10" */}
-        <div ref={heroTagRef} className="flex items-center justify-center gap-3 mb-8">
-          <span className="text-[#0A0A0A]/40 text-sm">Agence Digitale</span>
-          <span className="border border-[#0A0A0A]/20 text-[#0A0A0A] text-sm px-3 py-0.5 rounded font-medium">
+        {/* Particle field (canvas) */}
+        <ParticleWaves />
+
+        {/* Tag line */}
+        <div ref={heroTagRef} className="relative z-10 flex items-center justify-center gap-3 mb-8 pt-24">
+          <span className="text-white/60 text-sm">Agence Digitale</span>
+          <span className="border border-white/40 text-white text-sm px-3 py-0.5 rounded font-medium">
             Douala
           </span>
-          <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
+          <span className="text-white/60 text-sm">Est. 2025</span>
         </div>
 
-        {/* Geometric letter title — always one line, full-width branding */}
-        <div className="hero-title flex items-end justify-center flex-nowrap whitespace-nowrap leading-none overflow-visible">
+        {/* Massive solid title — one line, per-letter rise */}
+        <h1 className="hero-title relative z-10 font-black tracking-[-0.04em] leading-[0.85] whitespace-nowrap text-[clamp(56px,11.5vw,210px)] select-none">
           {"BUYTICLE".split("").map((l, i) => (
-            <span key={i} className="inline-block flex-shrink-0" style={{ lineHeight: 0 }}>
-              <GeoLetter
-                letter={l}
-                letterIndex={i}
-                fontSize={Math.round(
-                  Math.max(40, ((typeof window !== "undefined" ? window.innerWidth : 1400) * 0.92) / LETTER_WIDTH_SUM)
-                )}
-              />
+            <span key={i} className="inline-block overflow-hidden align-bottom">
+              <span className="hero-letter inline-block will-change-transform">{l}</span>
             </span>
           ))}
+        </h1>
+
+        {/* Scroll pill — like Lusion "continue to scroll" */}
+        <div className="relative z-10 mt-14 mb-10 flex justify-center">
+          <div className="flex items-center gap-3 border border-white/35 rounded-full px-6 py-3 text-white/80 text-[11px] font-mono tracking-[0.25em] uppercase backdrop-blur-sm">
+            <span className="inline-block animate-bounce">↓</span>
+            Continuez de scroller
+          </div>
         </div>
 
         {/* Tagline badge */}
-        <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-4 mb-4">
-          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Informatique</span>
-          <span className="text-[#0A0A0A]/20">·</span>
-          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Design</span>
-          <span className="text-[#0A0A0A]/20">·</span>
-          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Commerce</span>
-          <span className="text-[#0A0A0A]/20">·</span>
-          <span className="text-[#0A0A0A]/40 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
+        <div ref={heroBadgeRef} className="relative z-10 flex items-center justify-center gap-2 mt-2 mb-6">
+          <span className="text-white/55 text-sm font-mono tracking-wide">Informatique</span>
+          <span className="text-white/30">·</span>
+          <span className="text-white/55 text-sm font-mono tracking-wide">Design</span>
+          <span className="text-white/30">·</span>
+          <span className="text-white/55 text-sm font-mono tracking-wide">Commerce</span>
+          <span className="text-white/30">·</span>
+          <span className="text-white/55 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
         </div>
 
       </section>
