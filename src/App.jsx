@@ -21,28 +21,17 @@ function ParticleWaves() {
     const mouse = { x: -9999, y: -9999 };
     const COUNT = window.innerWidth < 768 ? 380 : 800;
 
-    const duneY = (x) =>
-      H * 0.70 +
-      Math.sin(x * 0.004) * H * 0.05 +
-      Math.sin(x * 0.0013 + 2.1) * H * 0.11;
-
     const initParts = () => {
       parts = [];
-      let i = 0, guard = 0;
-      while (i < COUNT && guard < COUNT * 40) {
-        guard++;
-        const x = Math.random() * W;
-        const y = Math.random() * H;
-        const below = y > duneY(x);
-        // dense below the dune line, a few floaters above
-        if (!below && Math.random() > 0.045) continue;
-        i++;
+      for (let i = 0; i < COUNT; i++) {
         parts.push({
-          bx: x, by: y,
+          bx: Math.random() * W,
+          by: Math.random() * H,
           kind: Math.floor(Math.random() * 4),
           s: 1.4 + Math.random() * 2.4,
           ph: Math.random() * Math.PI * 2,
           sp: 0.35 + Math.random() * 0.75,
+          fl: 6 + Math.random() * 18,      // slow downward flow (liquid feel)
           o: 0.45 + Math.random() * 0.55,
         });
       }
@@ -60,10 +49,11 @@ function ParticleWaves() {
       ctx.clearRect(0, 0, W, H);
       ctx.fillStyle = "#FFFFFF";
       for (const p of parts) {
-        // gentle wave drift
+        // gentle wave drift + continuous downward flow (wraps around)
         let x = p.bx + Math.sin(t * p.sp + p.ph) * 6;
-        let y = p.by + Math.cos(t * p.sp * 0.8 + p.ph) * 4 +
-                Math.sin(p.bx * 0.004 + t * 0.55) * 7;
+        let y = (p.by + t * p.fl) % (H + 20) - 10;
+        y += Math.cos(t * p.sp * 0.8 + p.ph) * 4 +
+             Math.sin(p.bx * 0.004 + t * 0.55) * 7;
         // mouse repulsion (fluid feel)
         const dx = x - mouse.x, dy = y - mouse.y;
         const d2 = dx * dx + dy * dy;
@@ -165,81 +155,130 @@ function LiquidChannel() {
       return t * t * (3 - 2 * t);
     };
 
+    // ── "Blender-like" liquid parameters ──
+    const VISC = 0.55;        // viscosity: lower = runnier, higher = thicker
+    const FLOW = 3.4;         // downward wave travel speed
+    let streamParts = [];     // small shapes carried by the stream
+
+    const initStream = () => {
+      streamParts = [];
+      for (let i = 0; i < 70; i++) {
+        streamParts.push({
+          xo: (Math.random() * 2 - 1) * 0.85,  // -1..1 across the column
+          y: Math.random(),                     // 0..1 along height
+          kind: Math.floor(Math.random() * 4),
+          s: 1.6 + Math.random() * 2.6,
+          o: 0.25 + Math.random() * 0.35,
+        });
+      }
+    };
+    initStream();
+
     const draw = (tms) => {
       const t = tms / 1000;
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
 
-      // Column geometry
-      const colHalf = Math.max(46, W * 0.055);          // stream half-width
-      const frameHalf = W * 0.43;                        // matches image (86vw)
-      const funnelEnd = H * 0.30;                        // funnel zone
-      const flareStart = H * (0.94 - prog * 0.36);       // flare rises as you scroll
+      // Geometry: thin stream, short funnel, flare meets the image
+      const colHalf = Math.max(22, W * 0.028);           // thin channel
+      const frameHalf = W * 0.43;                         // image width (86vw)
+      const funnelEnd = H * 0.22;
+      const flareStart = H * (0.74 - prog * 0.18);
+
+      // Stream center sways slowly (viscous meander)
+      const centerAt = (y) =>
+        cx + Math.sin(y * 0.004 - t * FLOW * 0.4) * colHalf * 0.9 * (y > funnelEnd ? 1 : y / funnelEnd);
 
       const edge = (y, side) => {
-        // base half-width along y
         let hw;
         if (y < funnelEnd) {
           const e = sstep(0, 1, y / funnelEnd);
           hw = (W / 2) * (1 - e) + colHalf * e;
         } else if (y > flareStart) {
           const e = sstep(0, 1, (y - flareStart) / Math.max(1, H - flareStart));
-          hw = colHalf + (frameHalf - colHalf) * e;
+          hw = colHalf + (frameHalf - colHalf) * (e * e); // accelerating spread (puddle)
         } else {
           hw = colHalf;
         }
-        // organic waviness (two sine layers, animated)
+        // Downward-travelling surface waves (negative phase = waves flow down)
+        // Amplitude damped by viscosity and small near funnel
+        const damp = (y < funnelEnd ? y / funnelEnd : 1) * VISC;
         let wave =
-          Math.sin(y * 0.018 + t * 2.2 + side * 1.7) * 7 +
-          Math.sin(y * 0.006 - t * 1.4 + side * 0.6) * 11;
-        // hover ripple: bulge near pointer
+          Math.sin(y * 0.030 - t * FLOW * 2.0 + side * 1.7) * 4.5 * damp +
+          Math.sin(y * 0.011 - t * FLOW + side * 0.6) * 8 * damp;
+        // hover ripple
         const dy = y - mouse.y;
-        const dxm = (cx + side * hw) - mouse.x;
+        const dxm = (centerAt(y) + side * hw) - mouse.x;
         const dist2 = dy * dy + dxm * dxm * 0.35;
-        if (dist2 < 36000) {
-          wave += side * (1 - dist2 / 36000) * 42;
-        }
-        return cx + side * (hw + wave * (y < funnelEnd ? y / funnelEnd : 1));
+        if (dist2 < 30000) wave += side * (1 - dist2 / 30000) * 30 * VISC;
+        return centerAt(y) + side * hw + side * wave;
       };
 
-      // Build liquid path
+      // Liquid body
       ctx.beginPath();
       ctx.moveTo(-2, 0);
       ctx.lineTo(W + 2, 0);
-      for (let y = 0; y <= H; y += 6) ctx.lineTo(edge(y, 1), y);   // right edge down
-      ctx.lineTo(edge(H, 1), H);
-      ctx.lineTo(edge(H, -1), H);
-      for (let y = H; y >= 0; y -= 6) ctx.lineTo(edge(y, -1), y);  // left edge up
+      for (let y = 0; y <= H; y += 5) ctx.lineTo(edge(y, 1), y);
+      ctx.lineTo(W * 0.93 + 2, H); // puddle base touches image edges
+      ctx.lineTo(W * 0.07 - 2, H);
+      for (let y = H; y >= 0; y -= 5) ctx.lineTo(edge(y, -1), y);
       ctx.closePath();
       ctx.fillStyle = "#FF4500";
       ctx.fill();
 
-      // Inner highlight stream (lighter, narrower) for depth
+      // Inner glossy streak following the meander
       ctx.beginPath();
-      for (let y = funnelEnd * 0.7; y <= H; y += 6) {
-        const x = cx + Math.sin(y * 0.02 + t * 2.6) * colHalf * 0.25 - colHalf * 0.18;
-        if (y === funnelEnd * 0.7) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      for (let y = funnelEnd * 0.8; y <= H; y += 5) {
+        const x = centerAt(y) - colHalf * 0.3 + Math.sin(y * 0.02 - t * FLOW * 1.6) * colHalf * 0.2;
+        if (y <= funnelEnd * 0.8 + 5) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
-      ctx.lineWidth = Math.max(8, colHalf * 0.3);
-      ctx.strokeStyle = "rgba(255,255,255,0.14)";
+      ctx.lineWidth = Math.max(5, colHalf * 0.26);
+      ctx.strokeStyle = "rgba(255,255,255,0.16)";
       ctx.stroke();
 
-      // Droplets falling beside the stream
-      if (Math.random() < 0.10 && drops.length < 26) {
+      // Small shapes carried by the flow — Poiseuille profile:
+      // center of the stream flows faster than the edges (real viscous flow)
+      ctx.fillStyle = "#FFFFFF";
+      for (const sp of streamParts) {
+        const speed = (0.10 + 0.16 * (1 - sp.xo * sp.xo)) / VISC; // per second, normalized
+        sp.y += speed * 0.016;
+        if (sp.y > 1.02) { sp.y = -0.02; sp.xo = (Math.random() * 2 - 1) * 0.85; }
+        const y = sp.y * H;
+        const hw = y > flareStart
+          ? colHalf + (frameHalf - colHalf) * Math.pow(sstep(0, 1, (y - flareStart) / Math.max(1, H - flareStart)), 2)
+          : colHalf;
+        const x = centerAt(Math.max(y, funnelEnd)) + sp.xo * hw * 0.8;
+        if (y < funnelEnd * 0.5) continue;
+        ctx.globalAlpha = sp.o;
+        const s = sp.s;
+        if (sp.kind === 0) { ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill(); }
+        else if (sp.kind === 1) ctx.fillRect(x - s, y - s, s * 2, s * 2);
+        else if (sp.kind === 2) {
+          ctx.beginPath(); ctx.moveTo(x, y - s * 1.2); ctx.lineTo(x - s, y + s * 0.9);
+          ctx.lineTo(x + s, y + s * 0.9); ctx.closePath(); ctx.fill();
+        } else {
+          ctx.fillRect(x - s, y - s * 0.3, s * 2, s * 0.6);
+          ctx.fillRect(x - s * 0.3, y - s, s * 0.6, s * 2);
+        }
+      }
+      ctx.globalAlpha = 1;
+
+      // Droplets detaching from the stream (gravity, stretching)
+      if (Math.random() < 0.08 && drops.length < 18) {
         drops.push({
-          x: cx + (Math.random() - 0.5) * colHalf * 3.4,
-          y: funnelEnd * (0.5 + Math.random() * 0.5),
-          r: 2 + Math.random() * 5,
-          vy: 1.5 + Math.random() * 2.5,
+          x: centerAt(funnelEnd) + (Math.random() < 0.5 ? -1 : 1) * colHalf * (1.3 + Math.random()),
+          y: funnelEnd * (0.6 + Math.random() * 0.4),
+          r: 1.5 + Math.random() * 3.5,
+          vy: 1.2 + Math.random() * 2,
         });
       }
       ctx.fillStyle = "#FF4500";
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i];
-        d.y += d.vy; d.vy += 0.12;
-        // slight elongation while falling = liquid drop look
+        d.y += d.vy; d.vy += 0.14 / VISC * 0.5;
+        const stretch = 1 + Math.min(1.2, d.vy * 0.12); // faster = more stretched
         ctx.beginPath();
-        ctx.ellipse(d.x, d.y, d.r * 0.75, d.r * 1.25, 0, 0, 6.2832);
+        ctx.ellipse(d.x, d.y, d.r / stretch, d.r * stretch, 0, 0, 6.2832);
         ctx.fill();
         if (d.y > H + 12) drops.splice(i, 1);
       }
@@ -257,8 +296,9 @@ function LiquidChannel() {
     resize();
     raf = requestAnimationFrame(draw);
     window.addEventListener("resize", resize);
-    canvas.addEventListener("pointermove", onMove);
-    canvas.addEventListener("pointerleave", onLeave);
+    // window-level so hover works even with pointer-events:none wrapper
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerleave", onLeave);
 
     const st = ScrollTrigger.create({
       trigger: wrapRef.current,
@@ -271,14 +311,16 @@ function LiquidChannel() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
-      canvas.removeEventListener("pointermove", onMove);
-      canvas.removeEventListener("pointerleave", onLeave);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
       st.kill();
     };
   }, []);
 
   return (
-    <div ref={wrapRef} className="relative" style={{ height: "55vh", marginBottom: "-6vh" }}>
+    {/* Short channel; negative margin makes the puddle touch the image
+        (hero-zoom is h-screen with a 64vh centered image → 18vh gap above it) */}
+    <div ref={wrapRef} className="relative z-10 pointer-events-none" style={{ height: "34vh", marginBottom: "-18vh" }}>
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
     </div>
   );
