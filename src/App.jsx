@@ -139,50 +139,148 @@ function ParticleWaves() {
   return <canvas ref={canvasRef} className="hero-canvas absolute inset-0 w-full h-full" />;
 }
 
-/* ─── Liquid channel — orange liquid drains from hero into image frame ─── */
+/* ─── Liquid channel — real pouring liquid (canvas), hover-reactive ─── */
 function LiquidChannel() {
-  const ref = useRef(null);
+  const wrapRef = useRef(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    let W = 0, H = 0, raf = 0;
+    let prog = 0; // scroll progress 0..1
+    const mouse = { x: -9999, y: -9999 };
+    const drops = [];
 
-    // Progress drives: 0→0.45 = channel narrows (full → thin strip)
-    //                  0.45→1  = channel widens back to frame the image
-    const update = (p) => {
-      let l, r;
-      if (p < 0.45) {
-        const t = p / 0.45;
-        // ease in
-        const e = t * t;
-        l = e * 40;
-        r = e * 40;
-      } else {
-        const t = (p - 0.45) / 0.55;
-        const e = 1 - (1 - t) * (1 - t);
-        l = 40 - e * 38;
-        r = 40 - e * 38;
-      }
-      el.style.clipPath = `inset(0 ${r}% 0 ${l}% round 0px)`;
+    const resize = () => {
+      W = canvas.clientWidth; H = canvas.clientHeight;
+      canvas.width = W * dpr; canvas.height = H * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
 
-    update(0);
+    // Smoothstep helper
+    const sstep = (a, b, x) => {
+      const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+
+    const draw = (tms) => {
+      const t = tms / 1000;
+      ctx.clearRect(0, 0, W, H);
+      const cx = W / 2;
+
+      // Column geometry
+      const colHalf = Math.max(46, W * 0.055);          // stream half-width
+      const frameHalf = W * 0.43;                        // matches image (86vw)
+      const funnelEnd = H * 0.30;                        // funnel zone
+      const flareStart = H * (0.94 - prog * 0.36);       // flare rises as you scroll
+
+      const edge = (y, side) => {
+        // base half-width along y
+        let hw;
+        if (y < funnelEnd) {
+          const e = sstep(0, 1, y / funnelEnd);
+          hw = (W / 2) * (1 - e) + colHalf * e;
+        } else if (y > flareStart) {
+          const e = sstep(0, 1, (y - flareStart) / Math.max(1, H - flareStart));
+          hw = colHalf + (frameHalf - colHalf) * e;
+        } else {
+          hw = colHalf;
+        }
+        // organic waviness (two sine layers, animated)
+        let wave =
+          Math.sin(y * 0.018 + t * 2.2 + side * 1.7) * 7 +
+          Math.sin(y * 0.006 - t * 1.4 + side * 0.6) * 11;
+        // hover ripple: bulge near pointer
+        const dy = y - mouse.y;
+        const dxm = (cx + side * hw) - mouse.x;
+        const dist2 = dy * dy + dxm * dxm * 0.35;
+        if (dist2 < 36000) {
+          wave += side * (1 - dist2 / 36000) * 42;
+        }
+        return cx + side * (hw + wave * (y < funnelEnd ? y / funnelEnd : 1));
+      };
+
+      // Build liquid path
+      ctx.beginPath();
+      ctx.moveTo(-2, 0);
+      ctx.lineTo(W + 2, 0);
+      for (let y = 0; y <= H; y += 6) ctx.lineTo(edge(y, 1), y);   // right edge down
+      ctx.lineTo(edge(H, 1), H);
+      ctx.lineTo(edge(H, -1), H);
+      for (let y = H; y >= 0; y -= 6) ctx.lineTo(edge(y, -1), y);  // left edge up
+      ctx.closePath();
+      ctx.fillStyle = "#FF4500";
+      ctx.fill();
+
+      // Inner highlight stream (lighter, narrower) for depth
+      ctx.beginPath();
+      for (let y = funnelEnd * 0.7; y <= H; y += 6) {
+        const x = cx + Math.sin(y * 0.02 + t * 2.6) * colHalf * 0.25 - colHalf * 0.18;
+        if (y === funnelEnd * 0.7) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.lineWidth = Math.max(8, colHalf * 0.3);
+      ctx.strokeStyle = "rgba(255,255,255,0.14)";
+      ctx.stroke();
+
+      // Droplets falling beside the stream
+      if (Math.random() < 0.10 && drops.length < 26) {
+        drops.push({
+          x: cx + (Math.random() - 0.5) * colHalf * 3.4,
+          y: funnelEnd * (0.5 + Math.random() * 0.5),
+          r: 2 + Math.random() * 5,
+          vy: 1.5 + Math.random() * 2.5,
+        });
+      }
+      ctx.fillStyle = "#FF4500";
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const d = drops[i];
+        d.y += d.vy; d.vy += 0.12;
+        // slight elongation while falling = liquid drop look
+        ctx.beginPath();
+        ctx.ellipse(d.x, d.y, d.r * 0.75, d.r * 1.25, 0, 0, 6.2832);
+        ctx.fill();
+        if (d.y > H + 12) drops.splice(i, 1);
+      }
+
+      raf = requestAnimationFrame(draw);
+    };
+
+    const onMove = (e) => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+      mouse.y = e.clientY - r.top;
+    };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+
+    resize();
+    raf = requestAnimationFrame(draw);
+    window.addEventListener("resize", resize);
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerleave", onLeave);
+
     const st = ScrollTrigger.create({
-      trigger: el,
+      trigger: wrapRef.current,
       start: "top bottom",
       end: "bottom top",
-      scrub: 0.8,
-      onUpdate: (self) => update(self.progress),
+      scrub: 0.6,
+      onUpdate: (self) => { prog = self.progress; },
     });
-    return () => st.kill();
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", resize);
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerleave", onLeave);
+      st.kill();
+    };
   }, []);
 
   return (
-    <div
-      ref={ref}
-      className="relative bg-[#FF4500]"
-      style={{ height: "50vh", clipPath: "inset(0 0% 0 0%)" }}
-    />
+    <div ref={wrapRef} className="relative" style={{ height: "55vh", marginBottom: "-6vh" }}>
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
+    </div>
   );
 }
 
