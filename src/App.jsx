@@ -9,6 +9,62 @@ import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
+/* ─── Geometric letter — shapes clipped to letter outline ─── */
+const LETTER_WIDTHS = { B:0.62, U:0.66, Y:0.60, T:0.58, I:0.24, C:0.60, L:0.52, E:0.58 };
+
+function GeoLetter({ letter, fontSize = 180 }) {
+  const uid = `gc-${letter}-${Math.random().toString(36).slice(2, 7)}`;
+  const w = fontSize * (LETTER_WIDTHS[letter] ?? 0.62);
+  const h = fontSize * 1.08;
+  const S = Math.round(fontSize * 0.072); // shape cell size ~13px at 180
+  const cols = Math.ceil(w / S) + 1;
+  const rows = Math.ceil(h / S) + 1;
+
+  const shapes = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const cx = c * S + S / 2;
+      const cy = r * S + S / 2;
+      const kind = (r * 5 + c * 11 + r * c) % 3;
+      const k = `${r}-${c}`;
+      const half = S * 0.38;
+      if (kind === 0) {
+        shapes.push(<circle key={k} cx={cx} cy={cy} r={half} />);
+      } else if (kind === 1) {
+        shapes.push(<rect key={k} x={cx - half} y={cy - half} width={half * 2} height={half * 2} />);
+      } else {
+        const p = `${cx},${cy - half * 1.1} ${cx - half * 1.1},${cy + half * 0.8} ${cx + half * 1.1},${cy + half * 0.8}`;
+        shapes.push(<polygon key={k} points={p} />);
+      }
+    }
+  }
+
+  return (
+    <svg
+      width={w} height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      style={{ display: "inline-block", overflow: "visible", verticalAlign: "top" }}
+    >
+      <defs>
+        <clipPath id={uid}>
+          <text
+            x="0" y={fontSize * 0.84}
+            fontSize={fontSize}
+            fontWeight="900"
+            fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
+            letterSpacing="-0.04em"
+          >
+            {letter}
+          </text>
+        </clipPath>
+      </defs>
+      <g clipPath={`url(#${uid})`} fill="#0A0A0A">
+        {shapes}
+      </g>
+    </svg>
+  );
+}
+
 /* ─── Screenshot via thum.io ─── */
 const thumb = (url) =>
   `https://image.thum.io/get/width/1200/crop/900/noanimate/${url}`;
@@ -144,23 +200,15 @@ export default function App() {
         { x: -80,  y:  120, rotation:  12, scale: 0.6 }, // L
         { x:  120, y: -60,  rotation: -30, scale: 0.4 }, // E
       ];
+      // Letters fly in from unique directions — then stay
       gsap.set(".hero-letter", { opacity: 0 });
       letterMoves.forEach((m, i) => {
         tl.fromTo(
           `.hero-letter-${i}`,
-          { opacity: 0, x: m.x, y: m.y, rotation: m.rotation, scale: m.scale, filter: "blur(12px)" },
-          { opacity: 1, x: 0, y: 0, rotation: 0, scale: 1, filter: "blur(0px)", duration: 1.1, ease: "expo.out" },
-          0.15 + i * 0.055
+          { opacity: 0, x: m.x, y: m.y, rotation: m.rotation, scale: 0.4 },
+          { opacity: 1, x: 0, y: 0, rotation: 0, scale: 1, duration: 1.15, ease: "expo.out" },
+          0.12 + i * 0.06
         );
-      });
-
-      // Scroll: letters scatter back out, each in its own direction
-      letterMoves.forEach((m, i) => {
-        gsap.to(`.hero-letter-${i}`, {
-          x: m.x * 0.55, y: m.y * 0.55, rotation: m.rotation * 0.5, opacity: 0,
-          ease: "none",
-          scrollTrigger: { trigger: ".hero-zoom", start: "top 95%", end: "top 25%", scrub: 0.8 },
-        });
       });
 
       tl.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.4")
@@ -250,18 +298,23 @@ export default function App() {
           <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
         </div>
 
-        {/* Massive centered title — per-letter animation */}
-        <h1 className="text-[clamp(72px,15vw,220px)] font-black tracking-[-0.04em] leading-[0.85] flex items-center justify-center flex-wrap">
-          {"BUYTICLE".split("").map((letter, i) => (
-            <span
-              key={i}
-              className={`hero-letter hero-letter-${i} inline-block`}
-              style={{ display: "inline-block" }}
-            >
-              {letter}
+        {/* Geometric letter title */}
+        <div className="flex items-end justify-center gap-[0.5vw] flex-wrap leading-none">
+          {[
+            { l:"B", x:-130, y:-90,  r:-22 },
+            { l:"U", x:  0,  y: 150, r:  7 },
+            { l:"Y", x: 110, y:-110, r: 18 },
+            { l:"T", x:-150, y:  70, r:-14 },
+            { l:"I", x:  0,  y:-130, r: 28 },
+            { l:"C", x: 150, y: 110, r:-18 },
+            { l:"L", x:-90,  y: 130, r: 11 },
+            { l:"E", x: 120, y: -70, r:-26 },
+          ].map(({ l, x, y, r }, i) => (
+            <span key={i} className={`hero-letter hero-letter-${i} inline-block`} style={{ lineHeight: 0 }}>
+              <GeoLetter letter={l} fontSize={Math.round(window?.innerWidth < 768 ? 80 : 165)} />
             </span>
           ))}
-        </h1>
+        </div>
 
         {/* Tagline badge */}
         <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-4 mb-4">
