@@ -91,6 +91,28 @@ function ParticleWaves() {
         }
       }
       ctx.globalAlpha = 1;
+
+      // ── Animated wave at the bottom of the hero ──
+      const wt = t * 0.7; // wave time — slower than particles
+      const amp  = H * 0.055;
+      const amp2 = H * 0.030;
+      ctx.beginPath();
+      ctx.moveTo(-10, H);
+      for (let px = 0; px <= W + 10; px += 4) {
+        const wy =
+          H * 0.82 +
+          Math.sin(px * 0.006 + wt) * amp +
+          Math.sin(px * 0.0023 - wt * 0.6) * amp2;
+        if (px === 0) ctx.moveTo(px, wy);
+        else ctx.lineTo(px, wy);
+      }
+      ctx.lineTo(W + 10, H);
+      ctx.lineTo(-10, H);
+      ctx.closePath();
+      // Draw a bright slightly transparent layer so wave is distinct from bg
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fill();
+
       raf = requestAnimationFrame(draw);
     };
 
@@ -115,6 +137,53 @@ function ParticleWaves() {
   }, []);
 
   return <canvas ref={canvasRef} className="hero-canvas absolute inset-0 w-full h-full" />;
+}
+
+/* ─── Liquid channel — orange liquid drains from hero into image frame ─── */
+function LiquidChannel() {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    // Progress drives: 0→0.45 = channel narrows (full → thin strip)
+    //                  0.45→1  = channel widens back to frame the image
+    const update = (p) => {
+      let l, r;
+      if (p < 0.45) {
+        const t = p / 0.45;
+        // ease in
+        const e = t * t;
+        l = e * 40;
+        r = e * 40;
+      } else {
+        const t = (p - 0.45) / 0.55;
+        const e = 1 - (1 - t) * (1 - t);
+        l = 40 - e * 38;
+        r = 40 - e * 38;
+      }
+      el.style.clipPath = `inset(0 ${r}% 0 ${l}% round 0px)`;
+    };
+
+    update(0);
+    const st = ScrollTrigger.create({
+      trigger: el,
+      start: "top bottom",
+      end: "bottom top",
+      scrub: 0.8,
+      onUpdate: (self) => update(self.progress),
+    });
+    return () => st.kill();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className="relative bg-[#FF4500]"
+      style={{ height: "50vh", clipPath: "inset(0 0% 0 0%)" }}
+    />
+  );
 }
 
 /* ─── Professional loader — waits for real asset readiness ─── */
@@ -442,13 +511,12 @@ export default function App() {
           <span className="text-white/55 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
         </div>
 
-        {/* Wave transition — orange → #EDECEA */}
-        <div className="absolute bottom-0 left-0 right-0 z-10 pointer-events-none" style={{ lineHeight: 0 }}>
-          <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full h-16 md:h-20">
-            <path d="M0,40 C240,80 480,0 720,40 C960,80 1200,0 1440,40 L1440,80 L0,80 Z" fill="#EDECEA" />
-          </svg>
-        </div>
       </section>
+
+      {/* ══════════════════════════════════════
+          LIQUID CHANNEL — orange flows to frame the image
+      ══════════════════════════════════════ */}
+      <LiquidChannel />
 
       {/* ══════════════════════════════════════
           HERO ZOOM — image expands to fullscreen on scroll
