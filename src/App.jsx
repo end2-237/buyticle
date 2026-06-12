@@ -131,10 +131,40 @@ export default function App() {
     const ctx = gsap.context(() => {
       // Awwwards-style hero entrance
       const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-      tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 })
-        .from(heroTitleRef.current, { y: "105%", duration: 1.1 }, "-=0.2")
-        .from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.5")
-        .from(heroImgRef.current, { opacity: 0, y: 30, duration: 0.9, ease: "power3.out" }, "-=0.3");
+      tl.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5 });
+
+      // Per-letter animation — each from a unique direction
+      const letterMoves = [
+        { x: -120, y: -80,  rotation: -25, scale: 0.5 }, // B
+        { x:    0, y:  140, rotation:   8, scale: 0.6 }, // U
+        { x:  100, y: -100, rotation:  20, scale: 0.4 }, // Y
+        { x: -160, y:   60, rotation: -15, scale: 0.7 }, // T
+        { x:    0, y: -120, rotation:  30, scale: 0.3 }, // I
+        { x:  140, y:  100, rotation: -20, scale: 0.5 }, // C
+        { x: -80,  y:  120, rotation:  12, scale: 0.6 }, // L
+        { x:  120, y: -60,  rotation: -30, scale: 0.4 }, // E
+      ];
+      gsap.set(".hero-letter", { opacity: 0 });
+      letterMoves.forEach((m, i) => {
+        tl.fromTo(
+          `.hero-letter-${i}`,
+          { opacity: 0, x: m.x, y: m.y, rotation: m.rotation, scale: m.scale, filter: "blur(12px)" },
+          { opacity: 1, x: 0, y: 0, rotation: 0, scale: 1, filter: "blur(0px)", duration: 1.1, ease: "expo.out" },
+          0.15 + i * 0.055
+        );
+      });
+
+      // Scroll: letters scatter back out, each in its own direction
+      letterMoves.forEach((m, i) => {
+        gsap.to(`.hero-letter-${i}`, {
+          x: m.x * 0.55, y: m.y * 0.55, rotation: m.rotation * 0.5, opacity: 0,
+          ease: "none",
+          scrollTrigger: { trigger: ".hero-zoom", start: "top 95%", end: "top 25%", scrub: 0.8 },
+        });
+      });
+
+      tl.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.6 }, "-=0.4")
+        .from(heroImgRef.current, { opacity: 0, y: 30, duration: 0.9, ease: "power3.out" }, "-=0.4");
 
       // Hero image → fullscreen pin + zoom
       gsap.timeline({
@@ -220,15 +250,18 @@ export default function App() {
           <span className="text-[#0A0A0A]/40 text-sm">Est. 2025</span>
         </div>
 
-        {/* Massive centered title */}
-        <div className="overflow-hidden">
-          <h1
-            ref={heroTitleRef}
-            className="text-[clamp(80px,16vw,240px)] font-black tracking-[-0.04em] leading-[0.85]"
-          >
-            BUYTICLE
-          </h1>
-        </div>
+        {/* Massive centered title — per-letter animation */}
+        <h1 className="text-[clamp(72px,15vw,220px)] font-black tracking-[-0.04em] leading-[0.85] flex items-center justify-center flex-wrap">
+          {"BUYTICLE".split("").map((letter, i) => (
+            <span
+              key={i}
+              className={`hero-letter hero-letter-${i} inline-block`}
+              style={{ display: "inline-block" }}
+            >
+              {letter}
+            </span>
+          ))}
+        </h1>
 
         {/* Tagline badge */}
         <div ref={heroBadgeRef} className="flex items-center justify-center gap-2 mt-4 mb-4">
