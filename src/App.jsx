@@ -155,10 +155,11 @@ function LiquidChannel() {
       return t * t * (3 - 2 * t);
     };
 
-    // ── Waterfall / cascade parameters ──
-    const FLOW = 6.5;         // fast downward wave speed — cascade feeling
-    const GRAV = 0.38;        // gravitational acceleration for particles
+    // ── Uniform flow parameters — identical to the background stream ──
+    const FLOW = 6.5;         // ripple speed
+    const VEL  = 340;         // px/s — constant velocity (same débit everywhere)
     let streamParts = [];
+    let last = 0;
 
     const initStream = () => {
       streamParts = [];
@@ -166,7 +167,6 @@ function LiquidChannel() {
         streamParts.push({
           xo: (Math.random() * 2 - 1) * 0.82,  // lateral offset within stream
           y: Math.random(),                      // 0..1 vertical position
-          vy: 0.004 + Math.random() * 0.008,    // starts slow, accelerates with gravity
           s: 2 + Math.random() * 4.5,
           o: 0.18 + Math.random() * 0.35,
         });
@@ -176,24 +176,24 @@ function LiquidChannel() {
 
     const draw = (tms) => {
       const t = tms / 1000;
+      const dt = last ? Math.min(0.05, (tms - last) / 1000) : 0.016;
+      last = tms;
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
 
-      // Wide cascade — narrows slightly from top to bottom (acceleration = thinner stream)
-      const colTop  = Math.max(80, W * 0.14);   // wide at top (source)
-      const colBot  = Math.max(55, W * 0.08);   // narrower at bottom (accelerated, faster)
+      // Constant channel width (same as background) — funnel only at the very top
+      const colBot  = Math.max(55, W * 0.08);
       const funnelEnd = H * 0.16;
 
       const colHalf = (y) => {
         if (y < funnelEnd) {
           const e = sstep(0, 1, y / funnelEnd);
-          return (W / 2) * (1 - e) + colTop * e;
+          return (W / 2) * (1 - e) + colBot * e;
         }
-        const prog = sstep(funnelEnd, H, y);
-        return colTop + (colBot - colTop) * prog; // tapers as it accelerates
+        return colBot; // constant width all the way down — uniform débit
       };
 
-      // Very slight lateral sway — cascade flows mostly straight down
+      // Very slight lateral sway — flows mostly straight down
       const centerAt = (y) =>
         cx + Math.sin(y * 0.003 - t * 0.6) * colBot * 0.15 * (y > funnelEnd ? 1 : y / funnelEnd);
 
@@ -244,14 +244,13 @@ function LiquidChannel() {
       ctx.strokeStyle = "rgba(255,255,255,0.12)";
       ctx.stroke();
 
-      // Particles accelerated by gravity — elongated teardrop shapes
+      // Teardrop particles — constant velocity, same shape as background
       ctx.fillStyle = "rgba(255,255,255,0.9)";
+      const stretch = 1 + Math.min(3.5, (VEL / 1000) * 1.2);
       for (const sp of streamParts) {
-        sp.vy += GRAV * 0.00005;           // gravity pull
-        sp.y  += sp.vy;
+        sp.y += (VEL * dt) / H;            // constant velocity in fraction/frame
         if (sp.y > 1.04) {
           sp.y  = -0.02;
-          sp.vy = 0.004 + Math.random() * 0.006;
           sp.xo = (Math.random() * 2 - 1) * 0.82;
         }
         const y  = sp.y * H;
@@ -259,8 +258,6 @@ function LiquidChannel() {
         const x  = centerAt(Math.max(y, funnelEnd)) + sp.xo * ch * 0.78;
         if (y < funnelEnd * 0.4) continue;
         ctx.globalAlpha = sp.o * Math.min(1, (y - funnelEnd * 0.4) / 30);
-        const speed  = sp.vy * H;
-        const stretch = 1 + Math.min(3.5, speed * 0.12); // fast = elongated teardrop
         const s = sp.s;
         ctx.beginPath();
         ctx.ellipse(x, y, s / stretch, s * stretch, 0, 0, 6.2832);
@@ -344,12 +341,31 @@ function BackgroundStream() {
   useEffect(() => {
     const canvas = bgCanvasRef.current;
     const ctx = canvas.getContext("2d");
-    let W = 0, H = 0, raf;
+    let W = 0, H = 0, raf, last = 0;
+
+    // Same flow identity as the hero cascade — uniform everywhere
+    const FLOW = 6.5;          // same ripple speed
+    const VEL  = 340;          // px/s — same constant velocity (uniform débit)
+    let parts = [];
+
+    const initParts = () => {
+      const n = Math.max(40, Math.round(H / 28));   // same density as cascade
+      parts = [];
+      for (let i = 0; i < n; i++) {
+        parts.push({
+          xo: (Math.random() * 2 - 1) * 0.82,
+          y:  Math.random() * H,
+          s:  2 + Math.random() * 4.5,
+          o:  0.18 + Math.random() * 0.35,
+        });
+      }
+    };
 
     const resize = () => {
       const r = canvas.parentElement.getBoundingClientRect();
       W = canvas.width = Math.max(1, Math.floor(r.width));
       H = canvas.height = Math.max(1, Math.floor(r.height));
+      initParts();
     };
     resize();
     const ro = new ResizeObserver(resize);
@@ -357,41 +373,70 @@ function BackgroundStream() {
 
     const draw = (tms) => {
       const t = tms / 1000;
+      const dt = last ? Math.min(0.05, (tms - last) / 1000) : 0.016;
+      last = tms;
       ctx.clearRect(0, 0, W, H);
 
-      const half = Math.max(16, W * 0.016);          // thin background stream
-      const poolY = H - Math.max(80, H * 0.015);     // pool sits at page end
+      // Same channel width as the cascade bottom — constant the whole way down
+      const half = Math.max(55, W * 0.08);
+      const poolY = H - Math.max(90, H * 0.02);
 
-      // Slow wide meander across the page
+      // Gentle meander, constant amplitude (no taper → same débit everywhere)
       const centerAt = (y) =>
         W / 2 +
-        Math.sin(y * 0.0014 + 1.2) * W * 0.30 +
-        Math.sin(y * 0.0006 + 0.4) * W * 0.08;
+        Math.sin(y * 0.0012 + 1.2) * W * 0.22 +
+        Math.sin(y * 0.0005 + 0.4) * W * 0.06;
 
       const edge = (y, side) => {
+        // Same tight high-freq ripples as the cascade
         const wave =
-          Math.sin(y * 0.028 - t * 8 + side * 1.8) * 2.4 +
-          Math.sin(y * 0.007 - t * 3.5 + side * 0.7) * 4;
+          Math.sin(y * 0.055 - t * FLOW * 2.4 + side * 2.1) * half * 0.05 +
+          Math.sin(y * 0.018 - t * FLOW * 1.1 + side * 0.8) * half * 0.08;
         return centerAt(y) + side * half + side * wave;
       };
 
+      // Liquid body
       ctx.fillStyle = "#FF4500";
       ctx.beginPath();
       ctx.moveTo(centerAt(0) - half, 0);
-      for (let y = 0; y <= poolY; y += 6) ctx.lineTo(edge(y, 1), y);
-      for (let y = poolY; y >= 0; y -= 6) ctx.lineTo(edge(y, -1), y);
+      for (let y = 0; y <= poolY; y += 5) ctx.lineTo(edge(y, 1), y);
+      for (let y = poolY; y >= 0; y -= 5) ctx.lineTo(edge(y, -1), y);
       ctx.closePath();
       ctx.fill();
 
+      // Bright highlight streak (same as cascade)
+      ctx.beginPath();
+      for (let y = 0; y <= poolY; y += 5) {
+        const x = centerAt(y) + Math.sin(y * 0.04 - t * FLOW * 2) * half * 0.12;
+        if (y === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.lineWidth = Math.max(4, half * 0.18);
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
+      ctx.stroke();
+
+      // Same teardrop particles, same constant velocity (uniform speed)
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
+      const stretch = 1 + Math.min(3.5, (VEL / 1000) * 1.2);
+      for (const sp of parts) {
+        sp.y += VEL * dt;
+        if (sp.y > poolY) { sp.y -= poolY; sp.xo = (Math.random() * 2 - 1) * 0.82; }
+        const x = centerAt(sp.y) + sp.xo * half * 0.78;
+        ctx.globalAlpha = sp.o;
+        ctx.beginPath();
+        ctx.ellipse(x, sp.y, sp.s / stretch, sp.s * stretch, 0, 0, 6.2832);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
       // Final pool — the stream ends here
       const px = centerAt(poolY);
-      const pw = half * 7 + Math.sin(t * 1.8) * 5;
-      const ph = half * 1.7;
+      const pw = half * 1.9 + Math.sin(t * 1.8) * 5;
+      const ph = half * 0.5;
+      ctx.fillStyle = "#FF4500";
       ctx.beginPath();
       ctx.ellipse(px, poolY, pw, ph, 0, 0, 6.2832);
       ctx.fill();
 
-      // Expanding ripple ring on the pool
       const rp = (t % 2.6) / 2.6;
       ctx.strokeStyle = `rgba(255,69,0,${0.45 * (1 - rp)})`;
       ctx.lineWidth = 2;
