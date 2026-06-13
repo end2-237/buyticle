@@ -83,9 +83,16 @@ function ParticleWaves() {
       ctx.globalAlpha = 1;
 
       // ── Animated wave at the bottom of the hero ──
-      const wt = t * 0.7; // wave time — slower than particles
+      // Gradient: orange at wave-top → #EDECEA at canvas-bottom (matches next section)
+      const wt = t * 0.7;
       const amp  = H * 0.055;
       const amp2 = H * 0.030;
+      const waveTopY = H * 0.82 - amp - amp2; // approximate highest point of wave
+
+      const waveGrad = ctx.createLinearGradient(0, waveTopY, 0, H);
+      waveGrad.addColorStop(0,   "#FF4500");   // matches hero background exactly
+      waveGrad.addColorStop(1,   "#EDECEA");   // matches the next section bg
+
       ctx.beginPath();
       ctx.moveTo(-10, H);
       for (let px = 0; px <= W + 10; px += 4) {
@@ -99,8 +106,7 @@ function ParticleWaves() {
       ctx.lineTo(W + 10, H);
       ctx.lineTo(-10, H);
       ctx.closePath();
-      // Draw a bright slightly transparent layer so wave is distinct from bg
-      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillStyle = waveGrad;
       ctx.fill();
 
       raf = requestAnimationFrame(draw);
