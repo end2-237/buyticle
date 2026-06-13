@@ -155,20 +155,20 @@ function LiquidChannel() {
       return t * t * (3 - 2 * t);
     };
 
-    // ── "Blender-like" liquid parameters ──
-    const VISC = 0.72;        // viscosity: higher = thicker, heavier
-    const FLOW = 2.8;         // downward wave travel speed (slower = heavier fluid)
-    let streamParts = [];     // small shapes carried by the stream
+    // ── Waterfall / cascade parameters ──
+    const FLOW = 6.5;         // fast downward wave speed — cascade feeling
+    const GRAV = 0.38;        // gravitational acceleration for particles
+    let streamParts = [];
 
     const initStream = () => {
       streamParts = [];
-      for (let i = 0; i < 120; i++) {
+      for (let i = 0; i < 140; i++) {
         streamParts.push({
-          xo: (Math.random() * 2 - 1) * 0.9,
-          y: Math.random(),
-          kind: Math.floor(Math.random() * 4),
-          s: 2.5 + Math.random() * 5,
-          o: 0.22 + Math.random() * 0.38,
+          xo: (Math.random() * 2 - 1) * 0.82,  // lateral offset within stream
+          y: Math.random(),                      // 0..1 vertical position
+          vy: 0.004 + Math.random() * 0.008,    // starts slow, accelerates with gravity
+          s: 2 + Math.random() * 4.5,
+          o: 0.18 + Math.random() * 0.35,
         });
       }
     };
@@ -179,102 +179,119 @@ function LiquidChannel() {
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
 
-      // Geometry: wide heavy stream, short funnel, stays wide all the way down
-      const colHalf = Math.max(60, W * 0.11);            // wide channel — large volume
-      const funnelEnd = H * 0.18;
+      // Wide cascade — narrows slightly from top to bottom (acceleration = thinner stream)
+      const colTop  = Math.max(80, W * 0.14);   // wide at top (source)
+      const colBot  = Math.max(55, W * 0.08);   // narrower at bottom (accelerated, faster)
+      const funnelEnd = H * 0.16;
 
-      // Stream center sways slowly (viscous meander)
-      const centerAt = (y) =>
-        cx + Math.sin(y * 0.004 - t * FLOW * 0.4) * colHalf * 0.9 * (y > funnelEnd ? 1 : y / funnelEnd);
-
-      const edge = (y, side) => {
-        let hw;
+      const colHalf = (y) => {
         if (y < funnelEnd) {
           const e = sstep(0, 1, y / funnelEnd);
-          hw = (W / 2) * (1 - e) + colHalf * e;
-        } else {
-          hw = colHalf; // stays thin all the way to the image
+          return (W / 2) * (1 - e) + colTop * e;
         }
-        // Downward-travelling surface waves (negative phase = waves flow down)
-        // Amplitude damped by viscosity and small near funnel
-        const damp = (y < funnelEnd ? y / funnelEnd : 1) * VISC;
-        let wave =
-          Math.sin(y * 0.022 - t * FLOW * 2.0 + side * 1.7) * colHalf * 0.18 * damp +
-          Math.sin(y * 0.009 - t * FLOW + side * 0.6) * colHalf * 0.28 * damp;
+        const prog = sstep(funnelEnd, H, y);
+        return colTop + (colBot - colTop) * prog; // tapers as it accelerates
+      };
+
+      // Very slight lateral sway — cascade flows mostly straight down
+      const centerAt = (y) =>
+        cx + Math.sin(y * 0.003 - t * 0.6) * colBot * 0.15 * (y > funnelEnd ? 1 : y / funnelEnd);
+
+      const edge = (y, side) => {
+        const hw = colHalf(y);
+        // Fast ripples on surface — tight, high-freq for turbulent water feel
+        const damp = y < funnelEnd ? y / funnelEnd : 1;
+        const wave =
+          Math.sin(y * 0.055 - t * FLOW * 2.4 + side * 2.1) * hw * 0.05 * damp +
+          Math.sin(y * 0.018 - t * FLOW * 1.1 + side * 0.8) * hw * 0.08 * damp;
         // hover ripple
         const dy = y - mouse.y;
         const dxm = (centerAt(y) + side * hw) - mouse.x;
         const dist2 = dy * dy + dxm * dxm * 0.35;
-        if (dist2 < 30000) wave += side * (1 - dist2 / 30000) * 30 * VISC;
-        return centerAt(y) + side * hw + side * wave;
+        const hoverW = dist2 < 25000 ? side * (1 - dist2 / 25000) * 22 : 0;
+        return centerAt(y) + side * hw + side * wave + hoverW;
       };
 
       // Liquid body
       ctx.beginPath();
       ctx.moveTo(-2, 0);
       ctx.lineTo(W + 2, 0);
-      for (let y = 0; y <= H; y += 5) ctx.lineTo(edge(y, 1), y);
-      ctx.lineTo(edge(H, 1), H); // thin stream touches the image, no spread
+      for (let y = 0; y <= H; y += 4) ctx.lineTo(edge(y, 1), y);
+      ctx.lineTo(edge(H, 1), H);
       ctx.lineTo(edge(H, -1), H);
-      for (let y = H; y >= 0; y -= 5) ctx.lineTo(edge(y, -1), y);
+      for (let y = H; y >= 0; y -= 4) ctx.lineTo(edge(y, -1), y);
       ctx.closePath();
       ctx.fillStyle = "#FF4500";
       ctx.fill();
 
-      // Inner glossy streak following the meander
+      // Bright highlight streak (foam / light refraction on fast water)
       ctx.beginPath();
-      for (let y = funnelEnd * 0.8; y <= H; y += 5) {
-        const x = centerAt(y) - colHalf * 0.3 + Math.sin(y * 0.02 - t * FLOW * 1.6) * colHalf * 0.2;
-        if (y <= funnelEnd * 0.8 + 5) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      for (let y = funnelEnd; y <= H; y += 4) {
+        const x = centerAt(y) + Math.sin(y * 0.04 - t * FLOW * 2) * colBot * 0.12;
+        if (y <= funnelEnd + 4) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
-      ctx.lineWidth = Math.max(5, colHalf * 0.26);
-      ctx.strokeStyle = "rgba(255,255,255,0.16)";
+      ctx.lineWidth = Math.max(4, colBot * 0.18);
+      ctx.strokeStyle = "rgba(255,255,255,0.22)";
       ctx.stroke();
 
-      // Small shapes carried by the flow — Poiseuille profile:
-      // center of the stream flows faster than the edges (real viscous flow)
-      ctx.fillStyle = "#FFFFFF";
+      // Secondary narrower streak (deep center of cascade)
+      ctx.beginPath();
+      for (let y = funnelEnd; y <= H; y += 4) {
+        const x = centerAt(y) + Math.sin(y * 0.035 - t * FLOW * 1.7 + 1.2) * colBot * 0.06;
+        if (y <= funnelEnd + 4) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.lineWidth = Math.max(2, colBot * 0.07);
+      ctx.strokeStyle = "rgba(255,255,255,0.12)";
+      ctx.stroke();
+
+      // Particles accelerated by gravity — elongated teardrop shapes
+      ctx.fillStyle = "rgba(255,255,255,0.9)";
       for (const sp of streamParts) {
-        const speed = (0.10 + 0.16 * (1 - sp.xo * sp.xo)) / VISC; // per second, normalized
-        sp.y += speed * 0.016;
-        if (sp.y > 1.02) { sp.y = -0.02; sp.xo = (Math.random() * 2 - 1) * 0.85; }
-        const y = sp.y * H;
-        const hw = colHalf;
-        const x = centerAt(Math.max(y, funnelEnd)) + sp.xo * hw * 0.8;
-        if (y < funnelEnd * 0.5) continue;
-        ctx.globalAlpha = sp.o;
-        const s = sp.s;
-        if (sp.kind === 0) { ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill(); }
-        else if (sp.kind === 1) ctx.fillRect(x - s, y - s, s * 2, s * 2);
-        else if (sp.kind === 2) {
-          ctx.beginPath(); ctx.moveTo(x, y - s * 1.2); ctx.lineTo(x - s, y + s * 0.9);
-          ctx.lineTo(x + s, y + s * 0.9); ctx.closePath(); ctx.fill();
-        } else {
-          ctx.fillRect(x - s, y - s * 0.3, s * 2, s * 0.6);
-          ctx.fillRect(x - s * 0.3, y - s, s * 0.6, s * 2);
+        sp.vy += GRAV * 0.00005;           // gravity pull
+        sp.y  += sp.vy;
+        if (sp.y > 1.04) {
+          sp.y  = -0.02;
+          sp.vy = 0.004 + Math.random() * 0.006;
+          sp.xo = (Math.random() * 2 - 1) * 0.82;
         }
+        const y  = sp.y * H;
+        const ch = colHalf(Math.max(y, funnelEnd));
+        const x  = centerAt(Math.max(y, funnelEnd)) + sp.xo * ch * 0.78;
+        if (y < funnelEnd * 0.4) continue;
+        ctx.globalAlpha = sp.o * Math.min(1, (y - funnelEnd * 0.4) / 30);
+        const speed  = sp.vy * H;
+        const stretch = 1 + Math.min(3.5, speed * 0.12); // fast = elongated teardrop
+        const s = sp.s;
+        ctx.beginPath();
+        ctx.ellipse(x, y, s / stretch, s * stretch, 0, 0, 6.2832);
+        ctx.fill();
       }
       ctx.globalAlpha = 1;
 
-      // Droplets detaching from the stream (gravity, stretching)
-      if (Math.random() < 0.08 && drops.length < 18) {
+      // Splash droplets at the bottom — lateral spray like a real waterfall base
+      if (Math.random() < 0.18 && drops.length < 30) {
+        const bx = centerAt(H) + (Math.random() * 2 - 1) * colBot * 0.7;
         drops.push({
-          x: centerAt(funnelEnd) + (Math.random() < 0.5 ? -1 : 1) * colHalf * (1.3 + Math.random()),
-          y: funnelEnd * (0.6 + Math.random() * 0.4),
-          r: 1.5 + Math.random() * 3.5,
-          vy: 1.2 + Math.random() * 2,
+          x: bx,
+          y: H - 4,
+          vx: (Math.random() * 2 - 1) * 4.5,
+          vy: -(2 + Math.random() * 4),  // upward spray
+          r: 1.2 + Math.random() * 3,
         });
       }
-      ctx.fillStyle = "#FF4500";
+      ctx.fillStyle = "#FF6020";
       for (let i = drops.length - 1; i >= 0; i--) {
         const d = drops[i];
-        d.y += d.vy; d.vy += 0.14 / VISC * 0.5;
-        const stretch = 1 + Math.min(1.2, d.vy * 0.12); // faster = more stretched
+        d.x += d.vx; d.y += d.vy; d.vy += 0.28; // gravity pulls spray back down
+        const speed   = Math.abs(d.vy);
+        const stretch = 1 + Math.min(1.5, speed * 0.08);
+        ctx.globalAlpha = Math.max(0, 1 - d.y / H * 1.1) * 0.7;
         ctx.beginPath();
         ctx.ellipse(d.x, d.y, d.r / stretch, d.r * stretch, 0, 0, 6.2832);
         ctx.fill();
-        if (d.y > H + 12) drops.splice(i, 1);
+        if (d.y > H + 8 || d.y < H - H * 0.6) drops.splice(i, 1);
       }
+      ctx.globalAlpha = 1;
 
       raf = requestAnimationFrame(draw);
     };
