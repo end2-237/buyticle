@@ -336,6 +336,79 @@ function LiquidChannel() {
   );
 }
 
+/* ─── Background stream — the liquid keeps flowing behind the light
+   sections all the way down, ending in a pool at the bottom of the page ─── */
+function BackgroundStream() {
+  const bgCanvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = bgCanvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let W = 0, H = 0, raf;
+
+    const resize = () => {
+      const r = canvas.parentElement.getBoundingClientRect();
+      W = canvas.width = Math.max(1, Math.floor(r.width));
+      H = canvas.height = Math.max(1, Math.floor(r.height));
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas.parentElement);
+
+    const draw = (tms) => {
+      const t = tms / 1000;
+      ctx.clearRect(0, 0, W, H);
+
+      const half = Math.max(16, W * 0.016);          // thin background stream
+      const poolY = H - Math.max(80, H * 0.015);     // pool sits at page end
+
+      // Slow wide meander across the page
+      const centerAt = (y) =>
+        W / 2 +
+        Math.sin(y * 0.0014 + 1.2) * W * 0.30 +
+        Math.sin(y * 0.0006 + 0.4) * W * 0.08;
+
+      const edge = (y, side) => {
+        const wave =
+          Math.sin(y * 0.028 - t * 8 + side * 1.8) * 2.4 +
+          Math.sin(y * 0.007 - t * 3.5 + side * 0.7) * 4;
+        return centerAt(y) + side * half + side * wave;
+      };
+
+      ctx.fillStyle = "#FF4500";
+      ctx.beginPath();
+      ctx.moveTo(centerAt(0) - half, 0);
+      for (let y = 0; y <= poolY; y += 6) ctx.lineTo(edge(y, 1), y);
+      for (let y = poolY; y >= 0; y -= 6) ctx.lineTo(edge(y, -1), y);
+      ctx.closePath();
+      ctx.fill();
+
+      // Final pool — the stream ends here
+      const px = centerAt(poolY);
+      const pw = half * 7 + Math.sin(t * 1.8) * 5;
+      const ph = half * 1.7;
+      ctx.beginPath();
+      ctx.ellipse(px, poolY, pw, ph, 0, 0, 6.2832);
+      ctx.fill();
+
+      // Expanding ripple ring on the pool
+      const rp = (t % 2.6) / 2.6;
+      ctx.strokeStyle = `rgba(255,69,0,${0.45 * (1 - rp)})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(px, poolY, pw * (1 + rp * 0.9), ph * (1 + rp * 0.9), 0, 0, 6.2832);
+      ctx.stroke();
+
+      raf = requestAnimationFrame(draw);
+    };
+    raf = requestAnimationFrame(draw);
+
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+  }, []);
+
+  return <canvas ref={bgCanvasRef} className="absolute inset-0 w-full h-full" />;
+}
+
 /* ─── Professional loader — waits for real asset readiness ─── */
 function HeroLoader({ onDone }) {
   const loaderRef = useRef(null);
@@ -702,6 +775,13 @@ export default function App() {
         </div>
       </section>
 
+      {/* The liquid keeps running behind the light sections until the page end */}
+      <div className="relative">
+      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
+        <BackgroundStream />
+      </div>
+      <div className="relative z-10">
+
       {/* ══════════════════════════════════════
           IMMERSION — complementary teal tone
       ══════════════════════════════════════ */}
@@ -806,7 +886,7 @@ export default function App() {
       {/* ══════════════════════════════════════
           SERVICES
       ══════════════════════════════════════ */}
-      <section className="svc-section py-28 px-6 md:px-14 bg-[#E8E5E1] border-y border-[#0A0A0A]/10">
+      <section className="svc-section py-28 px-6 md:px-14 border-y border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
             <div className="md:col-span-2 pt-1">
@@ -847,7 +927,7 @@ export default function App() {
       {/* ══════════════════════════════════════
           CLIENTS
       ══════════════════════════════════════ */}
-      <section id="apropos" className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10 bg-[#EDECEA]">
+      <section id="apropos" className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
             <div className="md:col-span-2 pt-1">
@@ -1042,6 +1122,9 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      </div>
+      </div>
 
       <Footer />
       <BackToTop />
