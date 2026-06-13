@@ -129,331 +129,6 @@ function ParticleWaves() {
   return <canvas ref={canvasRef} className="hero-canvas absolute inset-0 w-full h-full" />;
 }
 
-/* ─── Liquid channel — real pouring liquid (canvas), hover-reactive ─── */
-function LiquidChannel() {
-  const wrapRef = useRef(null);
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    let W = 0, H = 0, raf = 0;
-    let prog = 0; // scroll progress 0..1
-    const mouse = { x: -9999, y: -9999 };
-    const drops = [];
-
-    const resize = () => {
-      W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = W * dpr; canvas.height = H * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    };
-
-    // Smoothstep helper
-    const sstep = (a, b, x) => {
-      const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
-      return t * t * (3 - 2 * t);
-    };
-
-    // ── Uniform flow parameters — identical to the background stream ──
-    const FLOW = 6.5;         // ripple speed
-    const VEL  = 340;         // px/s — constant velocity (same débit everywhere)
-    let streamParts = [];
-    let last = 0;
-
-    const initStream = () => {
-      streamParts = [];
-      for (let i = 0; i < 140; i++) {
-        streamParts.push({
-          xo: (Math.random() * 2 - 1) * 0.82,  // lateral offset within stream
-          y: Math.random(),                      // 0..1 vertical position
-          s: 2 + Math.random() * 4.5,
-          o: 0.18 + Math.random() * 0.35,
-        });
-      }
-    };
-    initStream();
-
-    const draw = (tms) => {
-      const t = tms / 1000;
-      const dt = last ? Math.min(0.05, (tms - last) / 1000) : 0.016;
-      last = tms;
-      ctx.clearRect(0, 0, W, H);
-      const cx = W / 2;
-
-      // Constant channel width (same as background) — funnel only at the very top
-      const colBot  = Math.max(55, W * 0.08);
-      const funnelEnd = H * 0.16;
-
-      const colHalf = (y) => {
-        if (y < funnelEnd) {
-          const e = sstep(0, 1, y / funnelEnd);
-          return (W / 2) * (1 - e) + colBot * e;
-        }
-        return colBot; // constant width all the way down — uniform débit
-      };
-
-      // Very slight lateral sway — flows mostly straight down
-      const centerAt = (y) =>
-        cx + Math.sin(y * 0.003 - t * 0.6) * colBot * 0.15 * (y > funnelEnd ? 1 : y / funnelEnd);
-
-      const edge = (y, side) => {
-        const hw = colHalf(y);
-        // Fast ripples on surface — tight, high-freq for turbulent water feel
-        const damp = y < funnelEnd ? y / funnelEnd : 1;
-        const wave =
-          Math.sin(y * 0.055 - t * FLOW * 2.4 + side * 2.1) * hw * 0.05 * damp +
-          Math.sin(y * 0.018 - t * FLOW * 1.1 + side * 0.8) * hw * 0.08 * damp;
-        // hover ripple
-        const dy = y - mouse.y;
-        const dxm = (centerAt(y) + side * hw) - mouse.x;
-        const dist2 = dy * dy + dxm * dxm * 0.35;
-        const hoverW = dist2 < 25000 ? side * (1 - dist2 / 25000) * 22 : 0;
-        return centerAt(y) + side * hw + side * wave + hoverW;
-      };
-
-      // Liquid body
-      ctx.beginPath();
-      ctx.moveTo(-2, 0);
-      ctx.lineTo(W + 2, 0);
-      for (let y = 0; y <= H; y += 4) ctx.lineTo(edge(y, 1), y);
-      ctx.lineTo(edge(H, 1), H);
-      ctx.lineTo(edge(H, -1), H);
-      for (let y = H; y >= 0; y -= 4) ctx.lineTo(edge(y, -1), y);
-      ctx.closePath();
-      ctx.fillStyle = "#FF4500";
-      ctx.fill();
-
-      // Bright highlight streak (foam / light refraction on fast water)
-      ctx.beginPath();
-      for (let y = funnelEnd; y <= H; y += 4) {
-        const x = centerAt(y) + Math.sin(y * 0.04 - t * FLOW * 2) * colBot * 0.12;
-        if (y <= funnelEnd + 4) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.lineWidth = Math.max(4, colBot * 0.18);
-      ctx.strokeStyle = "rgba(255,255,255,0.22)";
-      ctx.stroke();
-
-      // Secondary narrower streak (deep center of cascade)
-      ctx.beginPath();
-      for (let y = funnelEnd; y <= H; y += 4) {
-        const x = centerAt(y) + Math.sin(y * 0.035 - t * FLOW * 1.7 + 1.2) * colBot * 0.06;
-        if (y <= funnelEnd + 4) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.lineWidth = Math.max(2, colBot * 0.07);
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
-      ctx.stroke();
-
-      // Teardrop particles — constant velocity, same shape as background
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      const stretch = 1 + Math.min(3.5, (VEL / 1000) * 1.2);
-      for (const sp of streamParts) {
-        sp.y += (VEL * dt) / H;            // constant velocity in fraction/frame
-        if (sp.y > 1.04) {
-          sp.y  = -0.02;
-          sp.xo = (Math.random() * 2 - 1) * 0.82;
-        }
-        const y  = sp.y * H;
-        const ch = colHalf(Math.max(y, funnelEnd));
-        const x  = centerAt(Math.max(y, funnelEnd)) + sp.xo * ch * 0.78;
-        if (y < funnelEnd * 0.4) continue;
-        ctx.globalAlpha = sp.o * Math.min(1, (y - funnelEnd * 0.4) / 30);
-        const s = sp.s;
-        ctx.beginPath();
-        ctx.ellipse(x, y, s / stretch, s * stretch, 0, 0, 6.2832);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-
-      // Splash droplets at the bottom — lateral spray like a real waterfall base
-      if (Math.random() < 0.18 && drops.length < 30) {
-        const bx = centerAt(H) + (Math.random() * 2 - 1) * colBot * 0.7;
-        drops.push({
-          x: bx,
-          y: H - 4,
-          vx: (Math.random() * 2 - 1) * 4.5,
-          vy: -(2 + Math.random() * 4),  // upward spray
-          r: 1.2 + Math.random() * 3,
-        });
-      }
-      ctx.fillStyle = "#FF6020";
-      for (let i = drops.length - 1; i >= 0; i--) {
-        const d = drops[i];
-        d.x += d.vx; d.y += d.vy; d.vy += 0.28; // gravity pulls spray back down
-        const speed   = Math.abs(d.vy);
-        const stretch = 1 + Math.min(1.5, speed * 0.08);
-        ctx.globalAlpha = Math.max(0, 1 - d.y / H * 1.1) * 0.7;
-        ctx.beginPath();
-        ctx.ellipse(d.x, d.y, d.r / stretch, d.r * stretch, 0, 0, 6.2832);
-        ctx.fill();
-        if (d.y > H + 8 || d.y < H - H * 0.6) drops.splice(i, 1);
-      }
-      ctx.globalAlpha = 1;
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    const onMove = (e) => {
-      const r = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - r.left;
-      mouse.y = e.clientY - r.top;
-    };
-    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
-
-    resize();
-    raf = requestAnimationFrame(draw);
-    window.addEventListener("resize", resize);
-    // window-level so hover works even with pointer-events:none wrapper
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerleave", onLeave);
-
-    const st = ScrollTrigger.create({
-      trigger: wrapRef.current,
-      start: "top bottom",
-      end: "bottom top",
-      scrub: 0.6,
-      onUpdate: (self) => { prog = self.progress; },
-    });
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerleave", onLeave);
-      st.kill();
-    };
-  }, []);
-
-  return (
-    // Short channel; negative margin makes the puddle touch the image
-    // (hero-zoom is h-screen with a 64vh centered image → 18vh gap above it)
-    <div ref={wrapRef} className="relative z-10 pointer-events-none" style={{ height: "34vh", marginBottom: "-18vh" }}>
-      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
-    </div>
-  );
-}
-
-/* ─── Background stream — the liquid keeps flowing behind the light
-   sections all the way down, ending in a pool at the bottom of the page ─── */
-function BackgroundStream() {
-  const bgCanvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = bgCanvasRef.current;
-    const ctx = canvas.getContext("2d");
-    let W = 0, H = 0, raf, last = 0;
-
-    // Same flow identity as the hero cascade — uniform everywhere
-    const FLOW = 6.5;          // same ripple speed
-    const VEL  = 340;          // px/s — same constant velocity (uniform débit)
-    let parts = [];
-
-    const initParts = () => {
-      const n = Math.max(40, Math.round(H / 28));   // same density as cascade
-      parts = [];
-      for (let i = 0; i < n; i++) {
-        parts.push({
-          xo: (Math.random() * 2 - 1) * 0.82,
-          y:  Math.random() * H,
-          s:  2 + Math.random() * 4.5,
-          o:  0.18 + Math.random() * 0.35,
-        });
-      }
-    };
-
-    const resize = () => {
-      const r = canvas.parentElement.getBoundingClientRect();
-      W = canvas.width = Math.max(1, Math.floor(r.width));
-      H = canvas.height = Math.max(1, Math.floor(r.height));
-      initParts();
-    };
-    resize();
-    const ro = new ResizeObserver(resize);
-    ro.observe(canvas.parentElement);
-
-    const draw = (tms) => {
-      const t = tms / 1000;
-      const dt = last ? Math.min(0.05, (tms - last) / 1000) : 0.016;
-      last = tms;
-      ctx.clearRect(0, 0, W, H);
-
-      // Same channel width as the cascade bottom — constant the whole way down
-      const half = Math.max(55, W * 0.08);
-      const poolY = H - Math.max(90, H * 0.02);
-
-      // Gentle meander, constant amplitude (no taper → same débit everywhere)
-      const centerAt = (y) =>
-        W / 2 +
-        Math.sin(y * 0.0012 + 1.2) * W * 0.22 +
-        Math.sin(y * 0.0005 + 0.4) * W * 0.06;
-
-      const edge = (y, side) => {
-        // Same tight high-freq ripples as the cascade
-        const wave =
-          Math.sin(y * 0.055 - t * FLOW * 2.4 + side * 2.1) * half * 0.05 +
-          Math.sin(y * 0.018 - t * FLOW * 1.1 + side * 0.8) * half * 0.08;
-        return centerAt(y) + side * half + side * wave;
-      };
-
-      // Liquid body
-      ctx.fillStyle = "#FF4500";
-      ctx.beginPath();
-      ctx.moveTo(centerAt(0) - half, 0);
-      for (let y = 0; y <= poolY; y += 5) ctx.lineTo(edge(y, 1), y);
-      for (let y = poolY; y >= 0; y -= 5) ctx.lineTo(edge(y, -1), y);
-      ctx.closePath();
-      ctx.fill();
-
-      // Bright highlight streak (same as cascade)
-      ctx.beginPath();
-      for (let y = 0; y <= poolY; y += 5) {
-        const x = centerAt(y) + Math.sin(y * 0.04 - t * FLOW * 2) * half * 0.12;
-        if (y === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.lineWidth = Math.max(4, half * 0.18);
-      ctx.strokeStyle = "rgba(255,255,255,0.22)";
-      ctx.stroke();
-
-      // Same teardrop particles, same constant velocity (uniform speed)
-      ctx.fillStyle = "rgba(255,255,255,0.9)";
-      const stretch = 1 + Math.min(3.5, (VEL / 1000) * 1.2);
-      for (const sp of parts) {
-        sp.y += VEL * dt;
-        if (sp.y > poolY) { sp.y -= poolY; sp.xo = (Math.random() * 2 - 1) * 0.82; }
-        const x = centerAt(sp.y) + sp.xo * half * 0.78;
-        ctx.globalAlpha = sp.o;
-        ctx.beginPath();
-        ctx.ellipse(x, sp.y, sp.s / stretch, sp.s * stretch, 0, 0, 6.2832);
-        ctx.fill();
-      }
-      ctx.globalAlpha = 1;
-
-      // Final pool — the stream ends here
-      const px = centerAt(poolY);
-      const pw = half * 1.9 + Math.sin(t * 1.8) * 5;
-      const ph = half * 0.5;
-      ctx.fillStyle = "#FF4500";
-      ctx.beginPath();
-      ctx.ellipse(px, poolY, pw, ph, 0, 0, 6.2832);
-      ctx.fill();
-
-      const rp = (t % 2.6) / 2.6;
-      ctx.strokeStyle = `rgba(255,69,0,${0.45 * (1 - rp)})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.ellipse(px, poolY, pw * (1 + rp * 0.9), ph * (1 + rp * 0.9), 0, 0, 6.2832);
-      ctx.stroke();
-
-      raf = requestAnimationFrame(draw);
-    };
-    raf = requestAnimationFrame(draw);
-
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, []);
-
-  return <canvas ref={bgCanvasRef} className="absolute inset-0 w-full h-full" />;
-}
-
 /* ─── Professional loader — waits for real asset readiness ─── */
 function HeroLoader({ onDone }) {
   const loaderRef = useRef(null);
@@ -782,11 +457,6 @@ export default function App() {
       </section>
 
       {/* ══════════════════════════════════════
-          LIQUID CHANNEL — orange flows to frame the image
-      ══════════════════════════════════════ */}
-      <LiquidChannel />
-
-      {/* ══════════════════════════════════════
           HERO ZOOM — image expands to fullscreen on scroll
       ══════════════════════════════════════ */}
       <section className="hero-zoom relative h-screen overflow-hidden flex items-center justify-center">
@@ -819,13 +489,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
-      {/* The liquid keeps running behind the light sections until the page end */}
-      <div className="relative">
-      <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden="true">
-        <BackgroundStream />
-      </div>
-      <div className="relative z-10">
 
       {/* ══════════════════════════════════════
           IMMERSION — complementary teal tone
@@ -931,7 +594,7 @@ export default function App() {
       {/* ══════════════════════════════════════
           SERVICES
       ══════════════════════════════════════ */}
-      <section className="svc-section py-28 px-6 md:px-14 border-y border-[#0A0A0A]/10">
+      <section className="svc-section py-28 px-6 md:px-14 bg-[#E8E5E1] border-y border-[#0A0A0A]/10">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
             <div className="md:col-span-2 pt-1">
@@ -972,7 +635,7 @@ export default function App() {
       {/* ══════════════════════════════════════
           CLIENTS
       ══════════════════════════════════════ */}
-      <section id="apropos" className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10">
+      <section id="apropos" className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10 bg-[#EDECEA]">
         <div className="max-w-[1400px] mx-auto">
           <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
             <div className="md:col-span-2 pt-1">
@@ -1167,9 +830,6 @@ export default function App() {
           </div>
         </div>
       </section>
-
-      </div>
-      </div>
 
       <Footer />
       <BackToTop />
