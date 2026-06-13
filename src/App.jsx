@@ -156,19 +156,19 @@ function LiquidChannel() {
     };
 
     // ── "Blender-like" liquid parameters ──
-    const VISC = 0.55;        // viscosity: lower = runnier, higher = thicker
-    const FLOW = 3.4;         // downward wave travel speed
+    const VISC = 0.72;        // viscosity: higher = thicker, heavier
+    const FLOW = 2.8;         // downward wave travel speed (slower = heavier fluid)
     let streamParts = [];     // small shapes carried by the stream
 
     const initStream = () => {
       streamParts = [];
-      for (let i = 0; i < 70; i++) {
+      for (let i = 0; i < 120; i++) {
         streamParts.push({
-          xo: (Math.random() * 2 - 1) * 0.85,  // -1..1 across the column
-          y: Math.random(),                     // 0..1 along height
+          xo: (Math.random() * 2 - 1) * 0.9,
+          y: Math.random(),
           kind: Math.floor(Math.random() * 4),
-          s: 1.6 + Math.random() * 2.6,
-          o: 0.25 + Math.random() * 0.35,
+          s: 2.5 + Math.random() * 5,
+          o: 0.22 + Math.random() * 0.38,
         });
       }
     };
@@ -179,9 +179,9 @@ function LiquidChannel() {
       ctx.clearRect(0, 0, W, H);
       const cx = W / 2;
 
-      // Geometry: thin stream, short funnel, no spread at the bottom
-      const colHalf = Math.max(22, W * 0.028);           // thin channel
-      const funnelEnd = H * 0.22;
+      // Geometry: wide heavy stream, short funnel, stays wide all the way down
+      const colHalf = Math.max(60, W * 0.11);            // wide channel — large volume
+      const funnelEnd = H * 0.18;
 
       // Stream center sways slowly (viscous meander)
       const centerAt = (y) =>
@@ -199,8 +199,8 @@ function LiquidChannel() {
         // Amplitude damped by viscosity and small near funnel
         const damp = (y < funnelEnd ? y / funnelEnd : 1) * VISC;
         let wave =
-          Math.sin(y * 0.030 - t * FLOW * 2.0 + side * 1.7) * 4.5 * damp +
-          Math.sin(y * 0.011 - t * FLOW + side * 0.6) * 8 * damp;
+          Math.sin(y * 0.022 - t * FLOW * 2.0 + side * 1.7) * colHalf * 0.18 * damp +
+          Math.sin(y * 0.009 - t * FLOW + side * 0.6) * colHalf * 0.28 * damp;
         // hover ripple
         const dy = y - mouse.y;
         const dxm = (centerAt(y) + side * hw) - mouse.x;
