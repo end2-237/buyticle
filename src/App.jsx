@@ -18,7 +18,17 @@ function ParticleWaves() {
     const ctx = canvas.getContext("2d");
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     let W = 0, H = 0, raf = 0, parts = [];
-    const mouse = { x: -9999, y: -9999 };
+    const mouse = { x: -9999, y: -9999, vx: 0, vy: 0, px: -9999, py: -9999 };
+
+    // ── Spring physics for the wave surface ──
+    // Each column has a height displacement (y), velocity (v), and acceleration
+    const COLS   = 120;           // number of spring nodes
+    const K      = 0.022;         // spring stiffness (restore to rest)
+    const DAMP   = 0.935;         // damping (energy loss per frame)
+    const SPREAD = 0.28;          // how much each node pulls its neighbors
+    let springs  = [];            // { y: displacement, v: velocity }
+    const initSprings = () => { springs = Array.from({ length: COLS }, () => ({ y: 0, v: 0 })); };
+
     const COUNT = window.innerWidth < 768 ? 380 : 800;
 
     const initParts = () => {
@@ -31,7 +41,7 @@ function ParticleWaves() {
           s: 1.4 + Math.random() * 2.4,
           ph: Math.random() * Math.PI * 2,
           sp: 0.35 + Math.random() * 0.75,
-          fl: 6 + Math.random() * 18,      // slow downward flow (liquid feel)
+          fl: 6 + Math.random() * 18,
           o: 0.45 + Math.random() * 0.55,
         });
       }
@@ -42,39 +52,35 @@ function ParticleWaves() {
       canvas.width = W * dpr; canvas.height = H * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       initParts();
+      initSprings();
     };
 
     const draw = (tms) => {
       const t = tms / 1000;
       ctx.clearRect(0, 0, W, H);
+
+      // ── Particles ──
       ctx.fillStyle = "#FFFFFF";
       for (const p of parts) {
-        // gentle wave drift + continuous downward flow (wraps around)
         let x = p.bx + Math.sin(t * p.sp + p.ph) * 6;
         let y = (p.by + t * p.fl) % (H + 20) - 10;
         y += Math.cos(t * p.sp * 0.8 + p.ph) * 4 +
              Math.sin(p.bx * 0.004 + t * 0.55) * 7;
-        // mouse repulsion (fluid feel)
         const dx = x - mouse.x, dy = y - mouse.y;
         const d2 = dx * dx + dy * dy;
         if (d2 < 19600) {
           const d = Math.sqrt(d2) || 1;
           const f = ((140 - d) / 140) * 42;
-          x += (dx / d) * f;
-          y += (dy / d) * f;
+          x += (dx / d) * f; y += (dy / d) * f;
         }
         ctx.globalAlpha = p.o;
         const s = p.s;
-        if (p.kind === 0) {
-          ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
-        } else if (p.kind === 1) {
-          ctx.fillRect(x - s, y - s, s * 2, s * 2);
-        } else if (p.kind === 2) {
+        if (p.kind === 0) { ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill(); }
+        else if (p.kind === 1) { ctx.fillRect(x - s, y - s, s * 2, s * 2); }
+        else if (p.kind === 2) {
           ctx.beginPath();
-          ctx.moveTo(x, y - s * 1.2);
-          ctx.lineTo(x - s, y + s * 0.9);
-          ctx.lineTo(x + s, y + s * 0.9);
-          ctx.closePath(); ctx.fill();
+          ctx.moveTo(x, y - s * 1.2); ctx.lineTo(x - s, y + s * 0.9);
+          ctx.lineTo(x + s, y + s * 0.9); ctx.closePath(); ctx.fill();
         } else {
           ctx.fillRect(x - s, y - s * 0.3, s * 2, s * 0.6);
           ctx.fillRect(x - s * 0.3, y - s, s * 0.6, s * 2);
@@ -82,42 +88,84 @@ function ParticleWaves() {
       }
       ctx.globalAlpha = 1;
 
-      // ── Animated wave at the bottom of the hero ──
-      // Gradient: orange at wave-top → #EDECEA at canvas-bottom (matches next section)
-      const wt = t * 0.7;
+      // ── Spring physics update ──
+      // Mouse disturbs the wave when it's near the wave region
+      const BASE = H * 0.82;
+      if (mouse.x >= 0 && mouse.x < W && mouse.y > BASE - H * 0.18) {
+        const col = Math.floor((mouse.x / W) * COLS);
+        const speed = Math.sqrt(mouse.vx * mouse.vx + mouse.vy * mouse.vy);
+        const push  = Math.min(60, speed * 0.8) * (mouse.vy > 0 ? 1 : -0.4);
+        const radius = Math.max(3, Math.round(COLS * 0.07));
+        for (let c = Math.max(0, col - radius); c <= Math.min(COLS - 1, col + radius); c++) {
+          const dist = Math.abs(c - col) / radius;
+          springs[c].v += push * (1 - dist * dist); // gaussian-ish push
+        }
+      }
+      // Spring update: restore + neighbor coupling
+      for (let i = 0; i < COLS; i++) {
+        const s = springs[i];
+        s.v += -K * s.y;                                           // restore to rest
+        if (i > 0)        s.v += SPREAD * (springs[i - 1].y - s.y); // left neighbor
+        if (i < COLS - 1) s.v += SPREAD * (springs[i + 1].y - s.y); // right neighbor
+        s.v *= DAMP;
+        s.y += s.v;
+      }
+
+      // Natural background sines (always present, independent of mouse)
+      const wt   = t * 0.7;
       const amp  = H * 0.055;
       const amp2 = H * 0.030;
-      const waveTopY = H * 0.82 - amp - amp2; // approximate highest point of wave
 
-      const waveGrad = ctx.createLinearGradient(0, waveTopY, 0, H);
-      waveGrad.addColorStop(0,   "#FF4500");   // matches hero background exactly
-      waveGrad.addColorStop(1,   "#EDECEA");   // matches the next section bg
+      // Sample wave height at each column (springs + sines combined)
+      const waveY = (col, px) => {
+        const sine = Math.sin(px * 0.006 + wt) * amp + Math.sin(px * 0.0023 - wt * 0.6) * amp2;
+        return BASE + sine + springs[Math.min(COLS - 1, Math.max(0, col))].y;
+      };
 
+      // ── Draw wave (2 layers for depth) ──
+      const waveTopY = BASE - amp - amp2 - 65; // headroom for springs
+
+      // Back layer — slightly higher, more transparent
+      const gradBack = ctx.createLinearGradient(0, waveTopY, 0, H);
+      gradBack.addColorStop(0,   "rgba(255,69,0,0.45)");
+      gradBack.addColorStop(0.5, "rgba(255,69,0,0.20)");
+      gradBack.addColorStop(1,   "#EDECEA");
       ctx.beginPath();
-      ctx.moveTo(-10, H);
-      for (let px = 0; px <= W + 10; px += 4) {
-        const wy =
-          H * 0.82 +
-          Math.sin(px * 0.006 + wt) * amp +
-          Math.sin(px * 0.0023 - wt * 0.6) * amp2;
-        if (px === 0) ctx.moveTo(px, wy);
-        else ctx.lineTo(px, wy);
+      for (let i = 0; i <= COLS; i++) {
+        const px = (i / COLS) * W;
+        const wy = waveY(i, px) - H * 0.040 + Math.sin(px * 0.004 + wt * 1.3) * amp * 0.5;
+        if (i === 0) ctx.moveTo(px, wy); else ctx.lineTo(px, wy);
       }
-      ctx.lineTo(W + 10, H);
-      ctx.lineTo(-10, H);
-      ctx.closePath();
-      ctx.fillStyle = waveGrad;
-      ctx.fill();
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+      ctx.fillStyle = gradBack; ctx.fill();
+
+      // Front layer — main wave, full orange → #EDECEA transition
+      const gradFront = ctx.createLinearGradient(0, waveTopY + H * 0.04, 0, H);
+      gradFront.addColorStop(0,   "#FF4500");
+      gradFront.addColorStop(0.6, "#FF4500");
+      gradFront.addColorStop(1,   "#EDECEA");
+      ctx.beginPath();
+      for (let i = 0; i <= COLS; i++) {
+        const px = (i / COLS) * W;
+        const wy = waveY(i, px);
+        if (i === 0) ctx.moveTo(px, wy); else ctx.lineTo(px, wy);
+      }
+      ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
+      ctx.fillStyle = gradFront; ctx.fill();
 
       raf = requestAnimationFrame(draw);
     };
 
     const onMove = (e) => {
       const r = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - r.left;
-      mouse.y = e.clientY - r.top;
+      const nx = e.clientX - r.left;
+      const ny = e.clientY - r.top;
+      mouse.vx = nx - mouse.px;
+      mouse.vy = ny - mouse.py;
+      mouse.px = mouse.x; mouse.py = mouse.y;
+      mouse.x = nx; mouse.y = ny;
     };
-    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
+    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; mouse.vx = 0; mouse.vy = 0; };
 
     resize();
     raf = requestAnimationFrame(draw);
