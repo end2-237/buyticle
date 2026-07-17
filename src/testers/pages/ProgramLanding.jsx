@@ -84,15 +84,17 @@ export default function ProgramLanding() {
 
       {/* ── HERO (cinematic video background) ── */}
       <section className="hero-sec relative overflow-hidden bg-[#0A0A0A] text-white">
-        <div ref={heroArt} className="hero-art absolute inset-0 -z-0">
+        <div ref={heroArt} className="hero-art absolute inset-0 -z-10">
           <video className="w-full h-full object-cover" autoPlay loop muted playsInline preload="auto" poster="">
             <source src="/hero-testers.mp4" type="video/mp4" />
           </video>
         </div>
-        {/* Cinematic tint + vignette + fade to page bg for a smooth section transition */}
-        <div className="pointer-events-none absolute inset-0 bg-[#0A0A0A]/68" />
-        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% 20%, transparent 30%, rgba(10,10,10,0.55) 100%)" }} />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-b from-transparent to-[#EDECEA]" />
+        {/* Transparent grey "wall" that mutes the video for legibility */}
+        <div className="pointer-events-none absolute inset-0 bg-[#15171d]/55" />
+        {/* Extra darkening at the very top so the transparent nav stays readable */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-black/55 to-transparent" />
+        {/* Smooth fade into the light section below */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-60 bg-gradient-to-b from-transparent to-[#EDECEA]" />
 
         <div className="relative z-10 max-w-[920px] mx-auto px-5 pt-10 pb-24 md:pt-16 md:pb-32 text-center">
           <div className="hero-badge inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-4 py-1.5 text-[12px] font-semibold text-white/85 mb-7">
