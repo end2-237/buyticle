@@ -5,7 +5,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProgramNav } from "../TesterNav";
 import { Btn, StatusBadge } from "../ui";
 import { Icon, appIcon, WhatsAppIcon } from "../icons";
-import Program3D from "../Program3D";
 import { getTests, REWARDS, WHATSAPP_GROUP } from "../store";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -27,26 +26,38 @@ export default function ProgramLanding() {
         .from(".hero-sub", { y: 16, opacity: 0, duration: 0.6 }, "-=0.4")
         .from(".hero-cta", { y: 16, opacity: 0, duration: 0.6 }, "-=0.35")
         .from(".hero-stat", { y: 20, opacity: 0, duration: 0.55, stagger: 0.08 }, "-=0.35");
-      gsap.from(".hero-art", { opacity: 0, scale: 0.85, duration: 1.4, ease: "power2.out" });
+      gsap.from(".hero-art", { opacity: 0, scale: 1.12, duration: 1.6, ease: "power2.out" });
 
-      // Parallax drift on the 3D art as you scroll the hero
+      // Cinematic parallax: video drifts + slight zoom, fades as you leave the hero
       gsap.to(".hero-art", {
-        yPercent: 18, ease: "none",
+        yPercent: 16, scale: 1.12, ease: "none",
         scrollTrigger: { trigger: ".hero-sec", start: "top top", end: "bottom top", scrub: 1 },
       });
+      gsap.to(".hero-cue", {
+        autoAlpha: 0, y: 20, ease: "none",
+        scrollTrigger: { trigger: ".hero-sec", start: "top top", end: "30% top", scrub: true },
+      });
 
-      // Reveal-on-scroll — play once, never leave content hidden
+      // Depth parallax on the decorative texture layers
+      gsap.utils.toArray(".lp-par").forEach((el, i) => {
+        gsap.to(el, {
+          yPercent: i % 2 ? -12 : 12, ease: "none",
+          scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: 1 },
+        });
+      });
+
+      // Cinematic reveal — rise + fade + subtle scale, plays once
       gsap.utils.toArray(".lp-reveal").forEach((el) => {
-        gsap.fromTo(el, { y: 40, autoAlpha: 0 }, {
-          y: 0, autoAlpha: 1, duration: 0.8, ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 92%", once: true },
+        gsap.fromTo(el, { y: 60, autoAlpha: 0, scale: 0.96 }, {
+          y: 0, autoAlpha: 1, scale: 1, duration: 1, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 90%", once: true },
         });
       });
       // Staggered cards
       gsap.utils.toArray(".lp-stagger").forEach((grid) => {
-        gsap.fromTo(grid.children, { y: 40, autoAlpha: 0 }, {
-          y: 0, autoAlpha: 1, duration: 0.7, ease: "power3.out", stagger: 0.08,
-          scrollTrigger: { trigger: grid, start: "top 90%", once: true },
+        gsap.fromTo(grid.children, { y: 50, autoAlpha: 0, scale: 0.96 }, {
+          y: 0, autoAlpha: 1, scale: 1, duration: 0.8, ease: "power3.out", stagger: 0.09,
+          scrollTrigger: { trigger: grid, start: "top 88%", once: true },
         });
       });
 
@@ -60,41 +71,50 @@ export default function ProgramLanding() {
 
   return (
     <div ref={root} className="font-jakarta relative min-h-screen bg-[#EDECEA] text-[#0A0A0A] overflow-hidden">
-      {/* Decorative background textures — grid in some zones, dots in others */}
+      {/* Decorative background — varied textures + soft colour blobs to avoid monotony */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute left-0 right-0 top-[92vh] h-[620px] tp-grid tp-mask-fade opacity-70" />
-        <div className="absolute left-0 right-0 top-[195vh] h-[620px] tp-dots tp-mask-fade opacity-60" />
-        <div className="absolute left-0 right-0 top-[300vh] h-[520px] tp-grid tp-mask-fade opacity-50" />
+        <div className="lp-par absolute left-0 right-0 top-[90vh] h-[640px] tp-grid tp-mask-fade opacity-70" />
+        <div className="lp-par absolute -left-40 top-[110vh] w-[520px] h-[520px] rounded-full bg-[#FF4500]/10 blur-[90px]" />
+        <div className="lp-par absolute left-0 right-0 top-[168vh] h-[640px] tp-dots tp-mask-fade opacity-60" />
+        <div className="lp-par absolute -right-40 top-[200vh] w-[560px] h-[560px] rounded-full bg-[#7A5AF8]/10 blur-[100px]" />
+        <div className="lp-par absolute left-0 right-0 top-[250vh] h-[560px] tp-diag tp-mask-fade opacity-60" />
+        <div className="lp-par absolute left-0 right-0 top-[315vh] h-[560px] tp-cross tp-mask-fade opacity-50" />
       </div>
       <ProgramNav />
 
-      {/* ── HERO (Kortix-style + themed 3D object) ── */}
-      <section className="hero-sec relative overflow-hidden">
-        <div ref={heroArt} className="hero-art absolute inset-0 -z-0 flex items-center justify-center">
-          <Program3D className="w-full h-full max-w-[1100px]" opacity={0.8} />
+      {/* ── HERO (cinematic video background) ── */}
+      <section className="hero-sec relative overflow-hidden bg-[#0A0A0A] text-white">
+        <div ref={heroArt} className="hero-art absolute inset-0 -z-0">
+          <video className="w-full h-full object-cover" autoPlay loop muted playsInline preload="auto" poster="">
+            <source src="/hero-testers.mp4" type="video/mp4" />
+          </video>
         </div>
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#EDECEA]/60 via-[#EDECEA]/30 to-[#EDECEA]" />
-        <div className="relative z-10 max-w-[900px] mx-auto px-5 pt-8 pb-14 md:pt-12 md:pb-20 text-center">
-          <div className="hero-badge inline-flex items-center gap-2 bg-white border border-[#0A0A0A]/10 rounded-full px-4 py-1.5 text-[12px] font-semibold text-[#0A0A0A]/70 shadow-sm mb-6">
+        {/* Cinematic tint + vignette + fade to page bg for a smooth section transition */}
+        <div className="pointer-events-none absolute inset-0 bg-[#0A0A0A]/68" />
+        <div className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% 20%, transparent 30%, rgba(10,10,10,0.55) 100%)" }} />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-56 bg-gradient-to-b from-transparent to-[#EDECEA]" />
+
+        <div className="relative z-10 max-w-[920px] mx-auto px-5 pt-10 pb-24 md:pt-16 md:pb-32 text-center">
+          <div className="hero-badge inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-4 py-1.5 text-[12px] font-semibold text-white/85 mb-7">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500]" /> Programme communautaire · Douala, Cameroun
           </div>
-          <h1 className="font-extrabold tracking-[-0.03em] leading-[0.92] text-[clamp(34px,6.5vw,72px)]">
+          <h1 className="font-extrabold tracking-[-0.03em] leading-[0.92] text-[clamp(36px,6.8vw,76px)]">
             <span className="block overflow-hidden"><span className="hero-line inline-block">
               <span className="text-[#FF4500]">Testez.</span>{" "}
-              <span className="text-[#0A0A0A]/40">Signalez.</span>{" "}
-              <span className="text-[#0A0A0A]">Gagnez.</span>
+              <span className="text-white/45">Signalez.</span>{" "}
+              <span className="text-white">Gagnez.</span>
             </span></span>
-            <span className="block overflow-hidden"><span className="hero-line inline-block">Les apps Buyticle,</span></span>
-            <span className="block overflow-hidden"><span className="hero-line inline-block">avant tout le monde.</span></span>
+            <span className="block overflow-hidden"><span className="hero-line inline-block text-white">Les apps Buyticle,</span></span>
+            <span className="block overflow-hidden"><span className="hero-line inline-block text-white">avant tout le monde.</span></span>
           </h1>
-          <p className="hero-sub text-[#0A0A0A]/55 text-sm md:text-base max-w-xl mx-auto mt-5 leading-relaxed">
+          <p className="hero-sub text-white/65 text-sm md:text-base max-w-xl mx-auto mt-6 leading-relaxed">
             Rejoignez la communauté de testeurs Buyticle. Essayez nos applications en avant-première,
             remontez les bugs, proposez des idées — et cumulez des récompenses.
           </p>
 
-          {/* CTA input-like row (Kortix) */}
-          <div className="hero-cta mt-7 max-w-lg mx-auto">
-            <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#0A0A0A]/10 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.3)] p-2">
+          {/* CTA input-like row */}
+          <div className="hero-cta mt-8 max-w-lg mx-auto">
+            <div className="flex items-center gap-2 bg-white rounded-2xl border border-white/20 shadow-[0_30px_70px_-25px_rgba(0,0,0,0.7)] p-2">
               <span className="pl-3 text-sm text-[#0A0A0A]/40 flex-1 text-left hidden sm:block">
                 Entrez dans le programme testeurs…
               </span>
@@ -102,7 +122,7 @@ export default function ProgramLanding() {
                 Devenir testeur <Icon name="arrow-right" size={16} />
               </Btn>
             </div>
-            <div className="flex items-center justify-center gap-6 mt-4 text-[12px] text-[#0A0A0A]/45">
+            <div className="flex items-center justify-center gap-6 mt-5 text-[12px] text-white/55">
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Gratuit</span>
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Sans engagement</span>
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Récompensé</span>
@@ -110,18 +130,26 @@ export default function ProgramLanding() {
           </div>
 
           {/* stat strip */}
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-10">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-12">
             {[
               { n: `${tests.reduce((s, t) => s + t.participants, 0)}+`, l: "Testeurs actifs" },
               { n: `${active.length}`, l: "Programmes en cours" },
               { n: `${tests.length}`, l: "Apps à tester" },
             ].map((s) => (
-              <div key={s.l} className="hero-stat bg-white/70 backdrop-blur-sm rounded-2xl border border-[#0A0A0A]/8 py-3.5">
-                <div className="text-2xl font-extrabold text-[#0A0A0A]">{s.n}</div>
-                <div className="text-[11px] text-[#0A0A0A]/45 mt-1">{s.l}</div>
+              <div key={s.l} className="hero-stat bg-white/10 backdrop-blur-md rounded-2xl border border-white/15 py-3.5">
+                <div className="text-2xl font-extrabold text-white">{s.n}</div>
+                <div className="text-[11px] text-white/55 mt-1">{s.l}</div>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* scroll cue */}
+        <div className="hero-cue absolute left-1/2 -translate-x-1/2 bottom-6 z-10 flex flex-col items-center gap-1.5 text-white/50">
+          <span className="text-[10px] font-mono tracking-[0.3em] uppercase">Scroll</span>
+          <span className="w-5 h-8 rounded-full border border-white/30 flex items-start justify-center p-1">
+            <span className="w-1 h-1.5 rounded-full bg-white/60 animate-bounce" />
+          </span>
         </div>
       </section>
 
@@ -191,8 +219,8 @@ export default function ProgramLanding() {
         </div>
       </section>
 
-      {/* ── APPS À TESTER ── */}
-      <section id="apps" className="bg-white border-y border-[#0A0A0A]/8 py-16 md:py-24">
+      {/* ── APPS À TESTER (floating rounded slab — cinematic layer) ── */}
+      <section id="apps" className="relative z-10 bg-white rounded-[42px] md:rounded-[64px] mx-3 md:mx-6 -mt-4 py-16 md:py-24 shadow-[0_40px_100px_-50px_rgba(0,0,0,0.35)]">
         <div className="max-w-[1120px] mx-auto px-5">
           <div className="lp-reveal flex items-end justify-between mb-10">
             <div>

@@ -23,6 +23,15 @@
   background-image: radial-gradient(rgba(10,10,10,0.10) 1.2px, transparent 1.2px);
   background-size: 24px 24px;
 }
+.tp-diag {
+  background-image: repeating-linear-gradient(45deg, rgba(10,10,10,0.05) 0 1px, transparent 1px 15px);
+}
+.tp-cross {
+  background-image:
+    linear-gradient(rgba(255,69,0,0.10) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,69,0,0.10) 1px, transparent 1px);
+  background-size: 80px 80px;
+}
 .tp-mask-fade {
   -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
           mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
