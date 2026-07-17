@@ -4,7 +4,7 @@ import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
 import { Icon } from "../icons";
 import AuthSlider from "../AuthSlider";
-import { authError } from "../store";
+import { authError, loginWithGoogle } from "../store";
 import logo from "../../assets/buylogo2.png";
 
 export default function Login() {
@@ -28,7 +28,14 @@ export default function Login() {
     } catch (e2) { setErr(authError(e2)); setBusy(false); }
   };
 
-  const oauth = () => setInfo("Connexion sociale bientôt disponible — utilisez votre email pour l'instant.");
+  const doGoogle = async () => {
+    setErr(""); setInfo("");
+    try {
+      await loginWithGoogle();
+      navigate(loc.state?.from || "/testers/dashboard");
+    } catch (e2) { setErr(authError(e2)); }
+  };
+  const appleSoon = () => setInfo("Connexion Apple bientôt disponible — utilisez Google ou votre email.");
 
   return (
     <div className="font-jakarta min-h-screen bg-white flex p-3 md:p-4">
@@ -41,11 +48,11 @@ export default function Login() {
 
           {/* Social */}
           <div className="mt-5 space-y-2.5">
-            <button onClick={oauth} className="w-full flex items-center justify-center gap-3 border border-[#0A0A0A]/12 rounded-xl py-2.5 text-sm font-medium hover:bg-[#0A0A0A]/[0.03] transition">
+            <button onClick={doGoogle} className="w-full flex items-center justify-center gap-3 border border-[#0A0A0A]/12 rounded-xl py-2.5 text-sm font-medium hover:bg-[#0A0A0A]/[0.03] transition">
               <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.5 6.1 29.5 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.5-5.2l-6.2-5.3C29.2 35.1 26.7 36 24 36c-5.3 0-9.7-3.1-11.3-7.9l-6.5 5C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4 5.5l6.2 5.3C41.4 36 44 30.5 44 24c0-1.3-.1-2.3-.4-3.5z"/></svg>
               Continuer avec Google
             </button>
-            <button onClick={oauth} className="w-full flex items-center justify-center gap-3 border border-[#0A0A0A]/12 rounded-xl py-2.5 text-sm font-medium hover:bg-[#0A0A0A]/[0.03] transition">
+            <button onClick={appleSoon} className="w-full flex items-center justify-center gap-3 border border-[#0A0A0A]/12 rounded-xl py-2.5 text-sm font-medium hover:bg-[#0A0A0A]/[0.03] transition">
               <svg width="16" height="18" viewBox="0 0 24 24" fill="#0A0A0A"><path d="M17.05 12.04c-.03-2.5 2.05-3.7 2.14-3.76-1.17-1.71-2.99-1.95-3.64-1.97-1.55-.16-3.02.91-3.8.91-.79 0-1.99-.89-3.27-.86-1.68.02-3.24.98-4.1 2.48-1.75 3.04-.45 7.54 1.25 10.01.83 1.21 1.82 2.57 3.12 2.52 1.25-.05 1.72-.81 3.23-.81 1.51 0 1.93.81 3.25.78 1.34-.02 2.19-1.23 3.01-2.45.95-1.4 1.34-2.76 1.36-2.83-.03-.01-2.61-1-2.64-3.97zM14.53 4.5c.69-.83 1.15-1.99 1.02-3.14-.99.04-2.19.66-2.9 1.49-.64.73-1.2 1.9-1.05 3.02 1.1.09 2.24-.56 2.93-1.37z"/></svg>
               Continuer avec Apple
             </button>

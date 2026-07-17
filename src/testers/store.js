@@ -9,6 +9,7 @@ import {
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+  GoogleAuthProvider, signInWithPopup,
 } from "firebase/auth";
 
 export const WHATSAPP_NUMBER = "237696995879";
@@ -117,6 +118,11 @@ export async function registerUser({ email, phone, whatsapp, password }) {
 export async function loginUser({ email, password }) {
   return signInWithEmailAndPassword(auth, String(email).trim().toLowerCase(), password);
 }
+export async function loginWithGoogle() {
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+  return signInWithPopup(auth, provider);
+}
 export async function logoutUser() { return signOut(auth); }
 
 export function authError(e) {
@@ -129,6 +135,10 @@ export function authError(e) {
     "auth/user-not-found": "Aucun compte trouvé avec cet email.",
     "auth/too-many-requests": "Trop de tentatives. Réessayez dans un instant.",
     "auth/network-request-failed": "Problème de connexion. Vérifiez votre réseau.",
+    "auth/popup-closed-by-user": "Connexion Google annulée.",
+    "auth/popup-blocked": "La fenêtre Google a été bloquée par le navigateur.",
+    "auth/operation-not-allowed": "La connexion Google n'est pas activée sur ce projet.",
+    "auth/unauthorized-domain": "Ce domaine n'est pas autorisé pour la connexion Google.",
   };
   return map[e?.code] || "Une erreur est survenue. Réessayez.";
 }

@@ -1,7 +1,7 @@
-import { getAuth } from "firebase/auth"; 
+import { getAuth } from "firebase/auth";
 import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
+import { getAnalytics, isSupported } from "firebase/analytics";
+import { initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Configuration Firebase
@@ -17,11 +17,13 @@ const firebaseConfig = {
 
 // Initialiser Firebase
 const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 
-// Initialiser Auth et Firestore
-const auth = getAuth(app); 
-const db = getFirestore(app);
+// Analytics — only when supported (avoids noisy errors on some networks)
+isSupported().then((ok) => { if (ok) { try { getAnalytics(app); } catch { /* ignore */ } } });
+
+// Initialiser Auth et Firestore (long-polling auto-detect = fiable derrière les proxys)
+const auth = getAuth(app);
+const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true });
 const storage = getStorage(app);
 
 // Exporter les connexions

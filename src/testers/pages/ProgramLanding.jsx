@@ -54,8 +54,9 @@ export default function ProgramLanding() {
           scrollTrigger: { trigger: el, start: "top 90%", once: true },
         });
       });
-      // Staggered cards
+      // Staggered cards (only grids that already have children at mount)
       gsap.utils.toArray(".lp-stagger").forEach((grid) => {
+        if (!grid.children.length) return;
         gsap.fromTo(grid.children, { y: 50, autoAlpha: 0, scale: 0.96 }, {
           y: 0, autoAlpha: 1, scale: 1, duration: 0.8, ease: "power3.out", stagger: 0.09,
           scrollTrigger: { trigger: grid, start: "top 88%", once: true },
@@ -69,6 +70,23 @@ export default function ProgramLanding() {
     }, root);
     return () => { clearTimeout(refreshTimer); ctx.revert(); };
   }, []);
+
+  // Reveal the app cards once Firestore has delivered them
+  const appsRevealed = useRef(false);
+  useEffect(() => {
+    if (appsRevealed.current || !tests.length) return;
+    const cards = root.current?.querySelectorAll(".app-card");
+    if (!cards || !cards.length) return;
+    appsRevealed.current = true;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(cards, { y: 50, autoAlpha: 0, scale: 0.96 }, {
+        y: 0, autoAlpha: 1, scale: 1, duration: 0.8, ease: "power3.out", stagger: 0.09,
+        scrollTrigger: { trigger: "#apps", start: "top 85%", once: true },
+      });
+      ScrollTrigger.refresh();
+    }, root);
+    return () => ctx.revert();
+  }, [tests.length]);
 
   return (
     <div ref={root} className="font-jakarta relative min-h-screen bg-[#EDECEA] text-[#0A0A0A] overflow-hidden">
@@ -232,9 +250,9 @@ export default function ProgramLanding() {
             </div>
             <span className="text-[#0A0A0A]/30 text-sm font-mono hidden md:block">{tests.length} programmes</span>
           </div>
-          <div className="lp-stagger grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="apps-grid grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tests.map((t) => (
-              <div key={t.id} className="group rounded-3xl border border-[#0A0A0A]/10 bg-white overflow-hidden hover:border-[#FF4500]/40 hover:shadow-xl transition">
+              <div key={t.id} className="app-card group rounded-3xl border border-[#0A0A0A]/10 bg-white overflow-hidden hover:border-[#FF4500]/40 hover:shadow-xl transition">
                 <div className="relative h-40 overflow-hidden" style={{ background: `${t.color}1a` }}>
                   {t.cover && (
                     <img src={t.cover} alt={t.app} loading="lazy"
