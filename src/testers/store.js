@@ -40,7 +40,7 @@ const SEED_TESTS = [
     platform: "Android",
     version: "v2.4.0-beta",
     color: "#FF4500",
-    emoji: "🛍️",
+    icon: "shopping-bag",
     status: "en_cours",
     startDate: "2026-06-01",
     endDate: "2026-07-15",
@@ -66,7 +66,7 @@ const SEED_TESTS = [
     platform: "Web · Mobile",
     version: "v1.2.0",
     color: "#F2A900",
-    emoji: "🧺",
+    icon: "shopping-cart",
     status: "en_cours",
     startDate: "2026-06-10",
     endDate: "2026-07-05",
@@ -91,7 +91,7 @@ const SEED_TESTS = [
     platform: "Web",
     version: "v0.9.0-rc",
     color: "#7A5AF8",
-    emoji: "🚀",
+    icon: "layers",
     status: "a_venir",
     startDate: "2026-07-20",
     endDate: "2026-08-20",
@@ -116,7 +116,7 @@ const SEED_TESTS = [
     platform: "Web",
     version: "v1.0.0",
     color: "#00B4D8",
-    emoji: "🌿",
+    icon: "leaf",
     status: "termine",
     startDate: "2026-04-01",
     endDate: "2026-05-01",
@@ -140,7 +140,7 @@ const SEED_TESTS = [
     platform: "Web",
     version: "v2.1.0",
     color: "#E94560",
-    emoji: "👟",
+    icon: "shirt",
     status: "en_cours",
     startDate: "2026-06-05",
     endDate: "2026-07-10",
@@ -161,12 +161,12 @@ const SEED_TESTS = [
 
 /* Static rewards / advantages of the program */
 export const REWARDS = [
-  { icon: "🎁", title: "Points & récompenses", text: "Cumulez des points à chaque test validé, échangeables contre des cadeaux Buyticle." },
-  { icon: "⚡", title: "Accès anticipé", text: "Essayez les apps et fonctionnalités avant tout le monde, en avant-première." },
-  { icon: "🏅", title: "Badges & niveaux", text: "Progressez de Testeur Débutant à Testeur Élite selon votre contribution." },
-  { icon: "📜", title: "Certificat officiel", text: "Recevez un certificat de testeur Buyticle valorisable sur votre CV." },
-  { icon: "💬", title: "Communauté privée", text: "Rejoignez le groupe WhatsApp des testeurs et échangez avec l'équipe produit." },
-  { icon: "💸", title: "Primes bug critique", text: "Une prime en argent pour chaque bug critique découvert et confirmé." },
+  { icon: "gift", title: "Points & récompenses", text: "Cumulez des points à chaque test validé, échangeables contre des cadeaux Buyticle." },
+  { icon: "zap", title: "Accès anticipé", text: "Essayez les apps et fonctionnalités avant tout le monde, en avant-première." },
+  { icon: "award", title: "Badges & niveaux", text: "Progressez de Testeur Débutant à Testeur Élite selon votre contribution." },
+  { icon: "scroll", title: "Certificat officiel", text: "Recevez un certificat de testeur Buyticle valorisable sur votre CV." },
+  { icon: "message-circle", title: "Communauté privée", text: "Rejoignez le groupe WhatsApp des testeurs et échangez avec l'équipe produit." },
+  { icon: "banknote", title: "Primes bug critique", text: "Une prime en argent pour chaque bug critique découvert et confirmé." },
 ];
 
 /* ─── Init ─── */

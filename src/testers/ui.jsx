@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import logo from "../assets/buylogo2.png";
+import { Icon } from "./icons";
 
 /* Palette */
 export const T = {
@@ -15,7 +16,7 @@ export function BuyMark({ className = "", to = "/testers" }) {
   return (
     <Link to={to} className={`flex items-center gap-2.5 group ${className}`}>
       <img src={logo} alt="Buyticle" className="h-8 w-auto" />
-      <span className="font-black tracking-tight text-[#0A0A0A] group-hover:text-[#FF4500] transition-colors">
+      <span className="font-extrabold tracking-tight text-[#0A0A0A] group-hover:text-[#FF4500] transition-colors">
         BUYTICLE
       </span>
     </Link>
@@ -73,12 +74,12 @@ export function StatusBadge({ status }) {
 
 export function VerdictBadge({ verdict }) {
   const map = {
-    valide: { t: "Validé", c: "bg-emerald-500/12 text-emerald-600", i: "✓" },
-    bug: { t: "Bug", c: "bg-red-500/12 text-red-600", i: "!" },
-    suggestion: { t: "Suggestion", c: "bg-amber-500/14 text-amber-600", i: "✦" },
+    valide: { t: "Validé", c: "bg-emerald-500/12 text-emerald-600", i: "check-circle" },
+    bug: { t: "Bug", c: "bg-red-500/12 text-red-600", i: "bug" },
+    suggestion: { t: "Suggestion", c: "bg-amber-500/14 text-amber-600", i: "lightbulb" },
   };
   const m = map[verdict] || map.suggestion;
-  return <span className={`inline-flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full ${m.c}`}>{m.i} {m.t}</span>;
+  return <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${m.c}`}><Icon name={m.i} size={13} /> {m.t}</span>;
 }
 
 /* ─── Utilities ─── */

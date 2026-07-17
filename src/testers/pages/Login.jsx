@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
+import { Icon } from "../icons";
 import slide1 from "../../assets/services_bg.jpg";
 import slide2 from "../../assets/bgmosaic.jpg";
 import slide3 from "../../assets/image1.webp";
@@ -56,12 +57,12 @@ export default function Login() {
   const oauth = () => setInfo("Connexion sociale bientôt disponible — utilisez votre email pour l'instant.");
 
   return (
-    <div className="min-h-screen bg-white flex p-3 md:p-4">
+    <div className="font-jakarta min-h-screen bg-white flex p-3 md:p-4">
       {/* Left — form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-10 lg:px-20 py-8 overflow-y-auto">
         <div className="w-full max-w-sm mx-auto">
           <SunMark />
-          <h1 className="text-[32px] font-black text-center mt-4 text-[#0A0A0A]">Bon retour !</h1>
+          <h1 className="text-[32px] font-extrabold text-center mt-4 text-[#0A0A0A]">Bon retour !</h1>
           <p className="text-center text-[#0A0A0A]/45 text-sm mt-1.5">Connectez-vous pour reprendre là où vous vous êtes arrêté.</p>
 
           {/* Social */}
@@ -98,7 +99,7 @@ export default function Login() {
               </div>
               <div className="relative">
                 <input className={inputCls} type={show ? "text" : "password"} placeholder="Entrez votre mot de passe" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete="current-password" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40">{show ? "🙈" : "👁"}</button>
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 hover:text-[#0A0A0A]/70" aria-label="Afficher le mot de passe"><Icon name={show ? "eye-off" : "eye"} size={18} /></button>
               </div>
             </div>
             <button type="submit" className="w-full rounded-xl bg-[#0A0A0A] text-white py-3.5 text-sm font-bold hover:bg-[#FF4500] transition">Se connecter</button>
@@ -131,7 +132,7 @@ export default function Login() {
                 className={`h-1.5 rounded-full transition-all duration-500 ${i === slide ? "w-8 bg-white" : "w-4 bg-white/40"}`} aria-label={`Slide ${i + 1}`} />
             ))}
           </div>
-          <h2 className="text-3xl font-black leading-tight max-w-md">{SLIDES[slide].title}</h2>
+          <h2 className="text-3xl font-extrabold leading-tight max-w-md">{SLIDES[slide].title}</h2>
           <p className="text-white/70 text-sm mt-3 max-w-md leading-relaxed">{SLIDES[slide].text}</p>
         </div>
       </div>

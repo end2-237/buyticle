@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BuyMark, Btn } from "./ui";
+import { Icon } from "./icons";
 import { useAuth } from "./AuthContext";
 
 /* ─── Public program nav (Kortix-style) ─── */
@@ -76,7 +77,7 @@ export function DashboardShell({ children }) {
   const doLogout = () => { logout(); navigate("/testers"); };
 
   return (
-    <div className="min-h-screen bg-[#EDECEA] text-[#0A0A0A]">
+    <div className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A]">
       <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-[#0A0A0A]/8">
         <div className="max-w-[1280px] mx-auto px-4 md:px-6 h-[68px] flex items-center justify-between gap-4">
           <div className="flex items-center gap-8">
@@ -91,11 +92,11 @@ export function DashboardShell({ children }) {
             </nav>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
-            <button className="hidden sm:grid place-items-center w-10 h-10 rounded-full hover:bg-[#0A0A0A]/[0.05] transition" aria-label="Recherche">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m21 21-4.3-4.3" /></svg>
+            <button className="hidden sm:grid place-items-center w-10 h-10 rounded-full text-[#0A0A0A]/60 hover:bg-[#0A0A0A]/[0.05] transition" aria-label="Recherche">
+              <Icon name="search" size={18} />
             </button>
-            <button className="grid place-items-center w-10 h-10 rounded-full hover:bg-[#0A0A0A]/[0.05] transition relative" aria-label="Notifications">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+            <button className="grid place-items-center w-10 h-10 rounded-full text-[#0A0A0A]/60 hover:bg-[#0A0A0A]/[0.05] transition relative" aria-label="Notifications">
+              <Icon name="bell" size={18} />
               <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-[#FF4500]" />
             </button>
             <div className="relative">

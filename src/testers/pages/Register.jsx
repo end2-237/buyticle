@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { BuyMark, Btn, Field, inputCls } from "../ui";
+import { Icon } from "../icons";
 import { REWARDS } from "../store";
 
 export default function Register() {
@@ -32,12 +33,12 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-[#EDECEA]">
+    <div className="font-jakarta min-h-screen grid lg:grid-cols-2 bg-[#EDECEA]">
       {/* Left — form */}
       <div className="flex flex-col px-5 sm:px-10 lg:px-16 py-8 overflow-y-auto">
         <BuyMark />
         <div className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto py-10">
-          <h1 className="text-3xl font-black tracking-tight">Devenir testeur</h1>
+          <h1 className="text-3xl font-extrabold tracking-tight">Devenir testeur</h1>
           <p className="text-[#0A0A0A]/50 mt-2 text-sm">Créez votre compte pour rejoindre le programme communautaire Buyticle.</p>
 
           {err && <div className="mt-5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">{err}</div>}
@@ -57,7 +58,7 @@ export default function Register() {
             <Field label="Mot de passe">
               <div className="relative">
                 <input className={inputCls} type={show ? "text" : "password"} placeholder="Au moins 6 caractères" value={f.password} onChange={set("password")} autoComplete="new-password" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 text-xs">{show ? "🙈" : "👁"}</button>
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 hover:text-[#0A0A0A]/70" aria-label="Afficher le mot de passe"><Icon name={show ? "eye-off" : "eye"} size={18} /></button>
               </div>
             </Field>
             <Field label="Confirmer le mot de passe">
@@ -86,11 +87,11 @@ export default function Register() {
         <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-[#FF4500]/20 blur-2xl" />
         <div className="relative max-w-sm">
           <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-4">◆ Programme testeurs</p>
-          <h2 className="text-4xl font-black leading-tight">Testez les apps Buyticle. Soyez récompensé.</h2>
+          <h2 className="text-4xl font-extrabold leading-tight">Testez les apps Buyticle. Soyez récompensé.</h2>
           <div className="mt-10 space-y-5">
             {REWARDS.slice(0, 4).map((r) => (
               <div key={r.title} className="flex gap-4">
-                <div className="text-2xl">{r.icon}</div>
+                <span className="grid place-items-center w-10 h-10 rounded-xl bg-white/10 text-[#FF4500] shrink-0"><Icon name={r.icon} size={20} /></span>
                 <div>
                   <div className="font-bold">{r.title}</div>
                   <div className="text-white/50 text-sm">{r.text}</div>

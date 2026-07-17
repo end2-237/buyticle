@@ -50,7 +50,7 @@ export default function Onboarding() {
   const pct = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <div className="min-h-screen bg-[#EDECEA] text-[#0A0A0A] flex flex-col">
+    <div className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A] flex flex-col">
       <header className="px-5 md:px-10 py-6 flex items-center justify-between">
         <BuyMark />
         <span className="text-sm text-[#0A0A0A]/40">Étape {step + 1} / {STEPS.length}</span>
@@ -69,7 +69,7 @@ export default function Onboarding() {
 
           <div className="bg-white rounded-3xl border border-[#0A0A0A]/8 p-7 md:p-9 shadow-[0_30px_60px_-40px_rgba(0,0,0,0.3)]">
             <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-2">◆ {STEPS[step].key}</p>
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight">{STEPS[step].title}</h1>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{STEPS[step].title}</h1>
             <p className="text-[#0A0A0A]/50 text-sm mt-1.5">{STEPS[step].sub}</p>
 
             {err && <div className="mt-5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">{err}</div>}
