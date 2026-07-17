@@ -82,6 +82,7 @@ export default function Navigation() {
     { label: "Projets",  href: "/#projets" },
     { label: "Services", href: "/services", badge: null },
     { label: "Eetra",    href: "https://eetra.buyticle.com/", badge: "New", external: true },
+    { label: "Testeurs", href: "/testers", badge: "Nouveau" },
     { label: "Contact",  href: "/contact" },
   ];
 
