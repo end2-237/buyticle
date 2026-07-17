@@ -45,11 +45,6 @@ export default function Community() {
 
   return (
     <DashboardShell>
-      <div className="mb-6">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Tests communautaires</h1>
-        <p className="text-[#0A0A0A]/50 text-sm mt-1">Choisissez un test, partagez votre résultat et consultez les retours de la communauté — comme un espace de revue collaboratif.</p>
-      </div>
-
       <div className="grid grid-cols-12 gap-4">
         {/* Left — test list */}
         <aside className="col-span-12 lg:col-span-4 rounded-3xl bg-white border border-[#0A0A0A]/8 p-4 h-fit lg:sticky lg:top-24">

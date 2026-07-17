@@ -37,13 +37,13 @@ export default function Register() {
       {/* Left — form */}
       <div className="flex flex-col px-5 sm:px-10 lg:px-16 py-8 overflow-y-auto">
         <BuyMark />
-        <div className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto py-10">
-          <h1 className="text-3xl font-extrabold tracking-tight">Devenir testeur</h1>
-          <p className="text-[#0A0A0A]/50 mt-2 text-sm">Créez votre compte pour rejoindre le programme communautaire Buyticle.</p>
+        <div className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto py-6">
+          <h1 className="text-2xl font-extrabold tracking-tight">Devenir testeur</h1>
+          <p className="text-[#0A0A0A]/50 mt-1.5 text-sm">Créez votre compte pour rejoindre le programme communautaire Buyticle.</p>
 
-          {err && <div className="mt-5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">{err}</div>}
+          {err && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5">{err}</div>}
 
-          <form onSubmit={submit} className="mt-6 space-y-4">
+          <form onSubmit={submit} className="mt-5 space-y-3">
             <Field label="Adresse email">
               <input className={inputCls} type="email" placeholder="vous@exemple.com" value={f.email} onChange={set("email")} autoComplete="email" />
             </Field>

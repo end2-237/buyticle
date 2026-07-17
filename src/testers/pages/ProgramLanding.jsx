@@ -1,50 +1,96 @@
+import { useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProgramNav } from "../TesterNav";
 import { Btn, StatusBadge } from "../ui";
 import { Icon, appIcon, WhatsAppIcon } from "../icons";
 import Program3D from "../Program3D";
 import { getTests, REWARDS, WHATSAPP_GROUP } from "../store";
 
+gsap.registerPlugin(ScrollTrigger);
+
 export default function ProgramLanding() {
   const tests = getTests();
   const active = tests.filter((t) => t.status !== "termine");
   const featured = tests.find((t) => t.id === "prog-buyticle") || tests[0];
+  const root = useRef(null);
+  const heroArt = useRef(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // Hero intro timeline
+      const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
+      tl.from(".hero-badge", { y: 14, opacity: 0, duration: 0.5 })
+        .from(".hero-line", { yPercent: 115, opacity: 0, duration: 0.9, stagger: 0.08 }, "-=0.2")
+        .from(".hero-sub", { y: 16, opacity: 0, duration: 0.6 }, "-=0.4")
+        .from(".hero-cta", { y: 16, opacity: 0, duration: 0.6 }, "-=0.35")
+        .from(".hero-stat", { y: 20, opacity: 0, duration: 0.55, stagger: 0.08 }, "-=0.35");
+      gsap.from(".hero-art", { opacity: 0, scale: 0.85, duration: 1.4, ease: "power2.out" });
+
+      // Parallax drift on the 3D art as you scroll the hero
+      gsap.to(".hero-art", {
+        yPercent: 18, ease: "none",
+        scrollTrigger: { trigger: ".hero-sec", start: "top top", end: "bottom top", scrub: 1 },
+      });
+
+      // Reveal-on-scroll for every section block
+      gsap.utils.toArray(".lp-reveal").forEach((el) => {
+        gsap.from(el, {
+          y: 40, opacity: 0, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 88%" },
+        });
+      });
+      // Staggered cards
+      gsap.utils.toArray(".lp-stagger").forEach((grid) => {
+        gsap.from(grid.children, {
+          y: 40, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08,
+          scrollTrigger: { trigger: grid, start: "top 85%" },
+        });
+      });
+    }, root);
+    return () => ctx.revert();
+  }, []);
 
   return (
-    <div className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A]">
+    <div ref={root} className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A]">
       <ProgramNav />
 
-      {/* ── HERO (Kortix-style + faint 3D object) ── */}
-      <section className="relative overflow-hidden">
-        <Program3D className="absolute inset-0 -z-0" opacity={0.35} />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-transparent via-[#EDECEA]/40 to-[#EDECEA]" />
-        <div className="relative z-10 max-w-[900px] mx-auto px-5 pt-20 pb-24 md:pt-28 md:pb-32 text-center">
-          <div className="inline-flex items-center gap-2 bg-white border border-[#0A0A0A]/10 rounded-full px-4 py-1.5 text-[12px] font-semibold text-[#0A0A0A]/70 shadow-sm mb-8">
+      {/* ── HERO (Kortix-style + themed 3D object) ── */}
+      <section className="hero-sec relative overflow-hidden">
+        <div ref={heroArt} className="hero-art absolute inset-0 -z-0 flex items-center justify-center">
+          <Program3D className="w-full h-full max-w-[1100px]" opacity={0.8} />
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#EDECEA]/60 via-[#EDECEA]/30 to-[#EDECEA]" />
+        <div className="relative z-10 max-w-[900px] mx-auto px-5 pt-8 pb-14 md:pt-12 md:pb-20 text-center">
+          <div className="hero-badge inline-flex items-center gap-2 bg-white border border-[#0A0A0A]/10 rounded-full px-4 py-1.5 text-[12px] font-semibold text-[#0A0A0A]/70 shadow-sm mb-6">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500]" /> Programme communautaire · Douala, Cameroun
           </div>
-          <h1 className="font-extrabold tracking-[-0.03em] leading-[0.95] text-[clamp(40px,8vw,84px)]">
-            <span className="text-[#FF4500]">Testez.</span>{" "}
-            <span className="text-[#0A0A0A]/40">Signalez.</span>{" "}
-            <span className="text-[#0A0A0A]">Gagnez.</span>
-            <br />
-            Les apps Buyticle,<br className="hidden md:block" /> avant tout le monde.
+          <h1 className="font-extrabold tracking-[-0.03em] leading-[0.92] text-[clamp(34px,6.5vw,72px)]">
+            <span className="block overflow-hidden"><span className="hero-line inline-block">
+              <span className="text-[#FF4500]">Testez.</span>{" "}
+              <span className="text-[#0A0A0A]/40">Signalez.</span>{" "}
+              <span className="text-[#0A0A0A]">Gagnez.</span>
+            </span></span>
+            <span className="block overflow-hidden"><span className="hero-line inline-block">Les apps Buyticle,</span></span>
+            <span className="block overflow-hidden"><span className="hero-line inline-block">avant tout le monde.</span></span>
           </h1>
-          <p className="text-[#0A0A0A]/55 text-base md:text-lg max-w-xl mx-auto mt-7 leading-relaxed">
+          <p className="hero-sub text-[#0A0A0A]/55 text-sm md:text-base max-w-xl mx-auto mt-5 leading-relaxed">
             Rejoignez la communauté de testeurs Buyticle. Essayez nos applications en avant-première,
             remontez les bugs, proposez des idées — et cumulez des récompenses.
           </p>
 
           {/* CTA input-like row (Kortix) */}
-          <div className="mt-10 max-w-lg mx-auto">
+          <div className="hero-cta mt-7 max-w-lg mx-auto">
             <div className="flex items-center gap-2 bg-white rounded-2xl border border-[#0A0A0A]/10 shadow-[0_20px_50px_-25px_rgba(0,0,0,0.3)] p-2">
               <span className="pl-3 text-sm text-[#0A0A0A]/40 flex-1 text-left hidden sm:block">
                 Entrez dans le programme testeurs…
               </span>
               <Btn to="/testers/register" variant="orange" className="flex-1 sm:flex-none">
-                Devenir testeur →
+                Devenir testeur <Icon name="arrow-right" size={16} />
               </Btn>
             </div>
-            <div className="flex items-center justify-center gap-6 mt-6 text-[12px] text-[#0A0A0A]/45">
+            <div className="flex items-center justify-center gap-6 mt-4 text-[12px] text-[#0A0A0A]/45">
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Gratuit</span>
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Sans engagement</span>
               <span className="inline-flex items-center gap-1"><Icon name="check" size={13} className="text-[#FF4500]" /> Récompensé</span>
@@ -52,13 +98,13 @@ export default function ProgramLanding() {
           </div>
 
           {/* stat strip */}
-          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-14">
+          <div className="grid grid-cols-3 gap-3 max-w-lg mx-auto mt-10">
             {[
               { n: `${tests.reduce((s, t) => s + t.participants, 0)}+`, l: "Testeurs actifs" },
               { n: `${active.length}`, l: "Programmes en cours" },
               { n: `${tests.length}`, l: "Apps à tester" },
             ].map((s) => (
-              <div key={s.l} className="bg-white/70 rounded-2xl border border-[#0A0A0A]/8 py-4">
+              <div key={s.l} className="hero-stat bg-white/70 backdrop-blur-sm rounded-2xl border border-[#0A0A0A]/8 py-3.5">
                 <div className="text-2xl font-extrabold text-[#0A0A0A]">{s.n}</div>
                 <div className="text-[11px] text-[#0A0A0A]/45 mt-1">{s.l}</div>
               </div>
@@ -69,7 +115,7 @@ export default function ProgramLanding() {
 
       {/* ── PROGRAMME EN COURS (featured, Kortix "in action" style) ── */}
       <section id="programme" className="max-w-[1120px] mx-auto px-5 py-16 md:py-24">
-        <div className="text-center mb-12">
+        <div className="lp-reveal text-center mb-12">
           <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-3">◆ Buyticle en test</p>
           <h2 className="text-[clamp(28px,5vw,48px)] font-extrabold tracking-[-0.02em] leading-tight">
             Le programme en cours, expliqué.
@@ -79,7 +125,7 @@ export default function ProgramLanding() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="lp-stagger grid md:grid-cols-2 gap-5">
           {/* Featured dark card */}
           <div className="relative rounded-3xl overflow-hidden p-8 text-white min-h-[380px] flex flex-col justify-between"
             style={{ background: "linear-gradient(150deg,#141414,#2a1206)" }}>
@@ -136,14 +182,14 @@ export default function ProgramLanding() {
       {/* ── APPS À TESTER ── */}
       <section id="apps" className="bg-white border-y border-[#0A0A0A]/8 py-16 md:py-24">
         <div className="max-w-[1120px] mx-auto px-5">
-          <div className="flex items-end justify-between mb-10">
+          <div className="lp-reveal flex items-end justify-between mb-10">
             <div>
               <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-3">◆ Le catalogue</p>
               <h2 className="text-[clamp(26px,4.5vw,42px)] font-extrabold tracking-[-0.02em]">Les apps à tester</h2>
             </div>
             <span className="text-[#0A0A0A]/30 text-sm font-mono hidden md:block">{tests.length} programmes</span>
           </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="lp-stagger grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tests.map((t) => (
               <div key={t.id} className="group rounded-3xl border border-[#0A0A0A]/10 bg-[#EDECEA] p-6 hover:border-[#FF4500]/40 hover:shadow-lg transition">
                 <div className="flex items-start justify-between">
@@ -165,14 +211,14 @@ export default function ProgramLanding() {
 
       {/* ── RÉCOMPENSES ── */}
       <section id="recompenses" className="max-w-[1120px] mx-auto px-5 py-16 md:py-24">
-        <div className="text-center mb-12">
+        <div className="lp-reveal text-center mb-12">
           <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-3">◆ Vos avantages</p>
           <h2 className="text-[clamp(28px,5vw,48px)] font-extrabold tracking-[-0.02em]">Pourquoi devenir testeur ?</h2>
           <p className="text-[#0A0A0A]/50 max-w-xl mx-auto mt-4">
             Le programme récompense chaque contribution. Plus vous testez, plus vous gagnez.
           </p>
         </div>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="lp-stagger grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {REWARDS.map((r) => (
             <div key={r.title} className="rounded-3xl border border-[#0A0A0A]/10 bg-white p-7 hover:-translate-y-1 transition">
               <span className="grid place-items-center w-12 h-12 rounded-2xl bg-[#FF4500]/10 text-[#FF4500]"><Icon name={r.icon} size={24} /></span>
@@ -185,7 +231,7 @@ export default function ProgramLanding() {
 
       {/* ── FINAL CTA ── */}
       <section className="max-w-[1120px] mx-auto px-5 pb-24">
-        <div className="rounded-[32px] p-10 md:p-16 text-center text-white relative overflow-hidden"
+        <div className="lp-reveal rounded-[32px] p-10 md:p-16 text-center text-white relative overflow-hidden"
           style={{ background: "linear-gradient(140deg,#FF4500,#ff7a3d)" }}>
           <div className="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-white/10" />
           <h2 className="text-[clamp(28px,5vw,52px)] font-extrabold tracking-[-0.02em] relative">Prêt à tester le futur ?</h2>

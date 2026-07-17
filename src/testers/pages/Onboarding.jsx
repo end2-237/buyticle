@@ -51,15 +51,15 @@ export default function Onboarding() {
 
   return (
     <div className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A] flex flex-col">
-      <header className="px-5 md:px-10 py-6 flex items-center justify-between">
+      <header className="px-5 md:px-10 py-4 flex items-center justify-between">
         <BuyMark />
         <span className="text-sm text-[#0A0A0A]/40">Étape {step + 1} / {STEPS.length}</span>
       </header>
 
-      <div className="flex-1 flex items-center justify-center px-5 py-6">
+      <div className="flex-1 flex items-center justify-center px-5 py-3">
         <div className="w-full max-w-xl">
           {/* Progress */}
-          <div className="flex gap-2 mb-8">
+          <div className="flex gap-2 mb-5">
             {STEPS.map((s, i) => (
               <div key={s.key} className="flex-1 h-1.5 rounded-full bg-[#0A0A0A]/8 overflow-hidden">
                 <div className="h-full bg-[#FF4500] transition-all duration-500" style={{ width: i <= step ? "100%" : "0%" }} />
@@ -67,14 +67,14 @@ export default function Onboarding() {
             ))}
           </div>
 
-          <div className="bg-white rounded-3xl border border-[#0A0A0A]/8 p-7 md:p-9 shadow-[0_30px_60px_-40px_rgba(0,0,0,0.3)]">
-            <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-2">◆ {STEPS[step].key}</p>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">{STEPS[step].title}</h1>
-            <p className="text-[#0A0A0A]/50 text-sm mt-1.5">{STEPS[step].sub}</p>
+          <div className="bg-white rounded-3xl border border-[#0A0A0A]/8 p-6 md:p-7 shadow-[0_30px_60px_-40px_rgba(0,0,0,0.3)]">
+            <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-1.5">◆ {STEPS[step].key}</p>
+            <h1 className="text-xl md:text-2xl font-extrabold tracking-tight">{STEPS[step].title}</h1>
+            <p className="text-[#0A0A0A]/50 text-[13px] mt-1">{STEPS[step].sub}</p>
 
-            {err && <div className="mt-5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3">{err}</div>}
+            {err && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5">{err}</div>}
 
-            <div className="mt-6 space-y-4">
+            <div className="mt-5 space-y-3.5">
               {/* STEP 1 — Identité */}
               {step === 0 && (
                 <>
@@ -189,7 +189,7 @@ export default function Onboarding() {
               )}
             </div>
 
-            <div className="flex items-center justify-between mt-8">
+            <div className="flex items-center justify-between mt-6">
               <button onClick={back} disabled={step === 0}
                 className="text-sm font-medium text-[#0A0A0A]/50 hover:text-[#0A0A0A] disabled:opacity-0 transition">← Retour</button>
               <Btn as="button" onClick={next} variant="orange">
@@ -198,7 +198,7 @@ export default function Onboarding() {
             </div>
           </div>
 
-          <p className="text-center text-xs text-[#0A0A0A]/35 mt-5">Bienvenue {user?.email} — vos réponses restent confidentielles.</p>
+          <p className="text-center text-xs text-[#0A0A0A]/35 mt-3">Bienvenue {user?.email} — vos réponses restent confidentielles.</p>
         </div>
       </div>
     </div>

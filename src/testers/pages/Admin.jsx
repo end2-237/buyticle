@@ -31,11 +31,7 @@ export default function Admin() {
 
   return (
     <DashboardShell>
-      <div className="mb-6 flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Espace administrateur</h1>
-          <p className="text-[#0A0A0A]/50 text-sm mt-1">Gérez les testeurs, leurs retours et les programmes de test.</p>
-        </div>
+      <div className="mb-5 flex justify-end">
         <div className="flex items-center gap-1 bg-[#0A0A0A]/[0.04] rounded-full p-1">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setEditing(null); }}
