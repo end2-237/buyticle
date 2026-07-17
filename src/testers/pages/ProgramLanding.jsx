@@ -83,8 +83,8 @@ export default function ProgramLanding() {
       <ProgramNav />
 
       {/* ── HERO (cinematic video background) ── */}
-      <section className="hero-sec relative overflow-hidden bg-[#0A0A0A] text-white">
-        <div ref={heroArt} className="hero-art absolute inset-0 -z-10">
+      <section className="hero-sec isolate relative overflow-hidden bg-[#0A0A0A] text-white">
+        <div ref={heroArt} className="hero-art absolute inset-0 z-0">
           <video className="w-full h-full object-cover" autoPlay loop muted playsInline preload="auto" poster="">
             <source src="/hero-testers.mp4" type="video/mp4" />
           </video>
