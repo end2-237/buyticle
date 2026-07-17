@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BuyMark, Btn } from "./ui";
 import { Icon } from "./icons";
 import { useAuth } from "./AuthContext";
+import logo from "../assets/buylogo2.png";
 
 /* ─── Public program nav (Kortix-style) ─── */
 export function ProgramNav() {
@@ -17,7 +18,12 @@ export function ProgramNav() {
   return (
     <header className="sticky top-0 z-40 bg-[#EDECEA]/80 backdrop-blur-xl border-b border-[#0A0A0A]/8">
       <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
-        <BuyMark />
+        <Link to="/testers" className="flex items-center gap-3 group">
+          <img src={logo} alt="Buyticle" className="h-8 w-auto group-hover:opacity-75 transition-opacity" />
+          <span className="hidden sm:block text-xs font-mono tracking-[0.2em] uppercase text-[#0A0A0A]/50">
+            Agence digitale · Douala
+          </span>
+        </Link>
         <nav className="hidden md:flex items-center gap-8">
           {links.map((l) =>
             l.to ? (

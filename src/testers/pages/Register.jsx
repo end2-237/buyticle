@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../AuthContext";
-import { BuyMark, Btn, Field, inputCls } from "../ui";
+import { inputCls } from "../ui";
 import { Icon } from "../icons";
-import { REWARDS } from "../store";
+import AuthSlider from "../AuthSlider";
+import logo from "../../assets/buylogo2.png";
 
 export default function Register() {
   const { register } = useAuth();
@@ -27,80 +28,67 @@ export default function Register() {
     try {
       register({ email: f.email, phone: f.phone, whatsapp: f.whatsapp || f.phone, password: f.password });
       navigate("/testers/onboarding");
-    } catch (e2) {
-      setErr(e2.message); setBusy(false);
-    }
+    } catch (e2) { setErr(e2.message); setBusy(false); }
   };
 
   return (
-    <div className="font-jakarta min-h-screen grid lg:grid-cols-2 bg-[#EDECEA]">
-      {/* Left — form */}
-      <div className="flex flex-col px-5 sm:px-10 lg:px-16 py-8 overflow-y-auto">
-        <BuyMark />
-        <div className="flex-1 flex flex-col justify-center max-w-md w-full mx-auto py-6">
-          <h1 className="text-2xl font-extrabold tracking-tight">Devenir testeur</h1>
-          <p className="text-[#0A0A0A]/50 mt-1.5 text-sm">Créez votre compte pour rejoindre le programme communautaire Buyticle.</p>
+    <div className="font-jakarta min-h-screen bg-white flex p-3 md:p-4">
+      {/* Left — form (mirrors the login layout) */}
+      <div className="flex-1 flex flex-col justify-center px-4 sm:px-10 lg:px-20 py-5">
+        <div className="w-full max-w-sm mx-auto">
+          <img src={logo} alt="Buyticle" className="h-11 w-auto mx-auto" />
+          <h1 className="text-[26px] font-extrabold text-center mt-4 text-[#0A0A0A]">Devenir testeur</h1>
+          <p className="text-center text-[#0A0A0A]/45 text-[13px] mt-1">Créez votre compte pour rejoindre le programme communautaire Buyticle.</p>
 
-          {err && <div className="mt-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5">{err}</div>}
+          {err && <div className="mt-5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5">{err}</div>}
 
-          <form onSubmit={submit} className="mt-5 space-y-3">
-            <Field label="Adresse email">
+          <form onSubmit={submit} className="mt-6 space-y-3">
+            <div>
+              <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">Adresse email</label>
               <input className={inputCls} type="email" placeholder="vous@exemple.com" value={f.email} onChange={set("email")} autoComplete="email" />
-            </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Téléphone">
-                <input className={inputCls} type="tel" placeholder="+237 6XX XXX XXX" value={f.phone} onChange={set("phone")} />
-              </Field>
-              <Field label="WhatsApp" hint="Laissez vide = même numéro">
-                <input className={inputCls} type="tel" placeholder="+237 6XX XXX XXX" value={f.whatsapp} onChange={set("whatsapp")} />
-              </Field>
             </div>
-            <Field label="Mot de passe">
-              <div className="relative">
-                <input className={inputCls} type={show ? "text" : "password"} placeholder="Au moins 6 caractères" value={f.password} onChange={set("password")} autoComplete="new-password" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 hover:text-[#0A0A0A]/70" aria-label="Afficher le mot de passe"><Icon name={show ? "eye-off" : "eye"} size={18} /></button>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">Téléphone</label>
+                <input className={inputCls} type="tel" placeholder="+237 6XX…" value={f.phone} onChange={set("phone")} />
               </div>
-            </Field>
-            <Field label="Confirmer le mot de passe">
-              <input className={inputCls} type={show ? "text" : "password"} placeholder="Répétez le mot de passe" value={f.confirm} onChange={set("confirm")} autoComplete="new-password" />
-            </Field>
+              <div>
+                <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">WhatsApp</label>
+                <input className={inputCls} type="tel" placeholder="+237 6XX…" value={f.whatsapp} onChange={set("whatsapp")} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">Mot de passe</label>
+                <div className="relative">
+                  <input className={inputCls} type={show ? "text" : "password"} placeholder="6+ caractères" value={f.password} onChange={set("password")} autoComplete="new-password" />
+                  <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 hover:text-[#0A0A0A]/70" aria-label="Afficher le mot de passe"><Icon name={show ? "eye-off" : "eye"} size={17} /></button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[13px] font-bold text-[#0A0A0A] mb-1.5">Confirmer</label>
+                <input className={inputCls} type={show ? "text" : "password"} placeholder="Répéter" value={f.confirm} onChange={set("confirm")} autoComplete="new-password" />
+              </div>
+            </div>
 
-            <label className="flex items-start gap-2.5 text-[13px] text-[#0A0A0A]/60 cursor-pointer">
+            <label className="flex items-start gap-2.5 text-[12px] text-[#0A0A0A]/60 cursor-pointer pt-1">
               <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} className="mt-0.5 accent-[#FF4500] w-4 h-4" />
-              <span>J'accepte les <a href="#" className="underline">conditions du programme</a> et la <a href="#" className="underline">politique de confidentialité</a>.</span>
+              <span>J'accepte les <a href="#" className="underline">conditions</a> et la <a href="#" className="underline">politique de confidentialité</a>.</span>
             </label>
 
-            <Btn as="button" type="submit" variant="orange" className="w-full" disabled={busy}>
-              {busy ? "Création…" : "Créer mon compte →"}
-            </Btn>
+            <button type="submit" disabled={busy} className="w-full rounded-xl bg-[#0A0A0A] text-white py-3 text-sm font-bold hover:bg-[#FF4500] transition disabled:opacity-50">
+              {busy ? "Création…" : "Créer mon compte"}
+            </button>
           </form>
 
-          <p className="text-center text-sm text-[#0A0A0A]/50 mt-6">
-            Déjà testeur ? <Link to="/testers/login" className="font-semibold text-[#0A0A0A] underline">Se connecter</Link>
+          <p className="text-center text-sm text-[#0A0A0A]/50 mt-4">
+            Déjà testeur ? <Link to="/testers/login" className="font-bold text-[#0A0A0A] underline underline-offset-2">Se connecter</Link>
           </p>
         </div>
       </div>
 
-      {/* Right — benefits panel */}
-      <div className="hidden lg:flex flex-col justify-center p-16 text-white relative overflow-hidden"
-        style={{ background: "linear-gradient(150deg,#141414,#2a1206)" }}>
-        <div className="absolute -right-20 -top-20 w-72 h-72 rounded-full bg-[#FF4500]/20 blur-2xl" />
-        <div className="relative max-w-sm">
-          <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.3em] uppercase mb-4">◆ Programme testeurs</p>
-          <h2 className="text-4xl font-extrabold leading-tight">Testez les apps Buyticle. Soyez récompensé.</h2>
-          <div className="mt-10 space-y-5">
-            {REWARDS.slice(0, 4).map((r) => (
-              <div key={r.title} className="flex gap-4">
-                <span className="grid place-items-center w-10 h-10 rounded-xl bg-white/10 text-[#FF4500] shrink-0"><Icon name={r.icon} size={20} /></span>
-                <div>
-                  <div className="font-bold">{r.title}</div>
-                  <div className="text-white/50 text-sm">{r.text}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Right — image slider (same as login) */}
+      <AuthSlider />
     </div>
   );
 }

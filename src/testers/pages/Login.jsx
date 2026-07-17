@@ -1,34 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
 import { Icon } from "../icons";
-import slide1 from "../../assets/services_bg.jpg";
-import slide2 from "../../assets/bgmosaic.jpg";
-import slide3 from "../../assets/image1.webp";
-
-/* Buyticle sun mark (Freshy-style radial logo, orange) */
-function SunMark() {
-  return (
-    <svg width="52" height="52" viewBox="0 0 100 100" className="mx-auto">
-      <g stroke="#FF4500" strokeWidth="6" strokeLinecap="round">
-        {Array.from({ length: 13 }).map((_, i) => {
-          const a = (Math.PI * (i / 12)) - Math.PI;
-          const r1 = i % 2 === 0 ? 26 : 30, r2 = i % 2 === 0 ? 44 : 40;
-          return <line key={i} x1={50 + Math.cos(a) * r1} y1={70 + Math.sin(a) * r1}
-            x2={50 + Math.cos(a) * r2} y2={70 + Math.sin(a) * r2} />;
-        })}
-      </g>
-      <path d="M18 70 A32 32 0 0 1 82 70" fill="none" stroke="#FF4500" strokeWidth="6" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-const SLIDES = [
-  { img: slide1, title: "Découvrez votre prochaine mission", text: "Testez en avant-première les applications Buyticle et façonnez les produits de demain." },
-  { img: slide2, title: "Une communauté qui construit", text: "Rejoignez des centaines de testeurs à travers l'Afrique et partagez vos retours." },
-  { img: slide3, title: "Vos retours, récompensés", text: "Chaque bug signalé et chaque idée compte — et vous rapporte des points." },
-];
+import AuthSlider from "../AuthSlider";
+import logo from "../../assets/buylogo2.png";
 
 export default function Login() {
   const { login } = useAuth();
@@ -38,12 +14,6 @@ export default function Login() {
   const [show, setShow] = useState(false);
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
-  const [slide, setSlide] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => setSlide((s) => (s + 1) % SLIDES.length), 5000);
-    return () => clearInterval(id);
-  }, []);
 
   const submit = (e) => {
     e.preventDefault();
@@ -61,8 +31,8 @@ export default function Login() {
       {/* Left — form */}
       <div className="flex-1 flex flex-col justify-center px-4 sm:px-10 lg:px-20 py-5">
         <div className="w-full max-w-sm mx-auto">
-          <SunMark />
-          <h1 className="text-[26px] font-extrabold text-center mt-3 text-[#0A0A0A]">Bon retour !</h1>
+          <img src={logo} alt="Buyticle" className="h-11 w-auto mx-auto" />
+          <h1 className="text-[26px] font-extrabold text-center mt-4 text-[#0A0A0A]">Bon retour !</h1>
           <p className="text-center text-[#0A0A0A]/45 text-[13px] mt-1">Connectez-vous pour reprendre là où vous vous êtes arrêté.</p>
 
           {/* Social */}
@@ -117,25 +87,7 @@ export default function Login() {
       </div>
 
       {/* Right — image slider */}
-      <div className="hidden lg:block flex-1 relative rounded-[28px] overflow-hidden">
-        {SLIDES.map((s, i) => (
-          <div key={i} className="absolute inset-0 transition-opacity duration-[1200ms]" style={{ opacity: i === slide ? 1 : 0 }}>
-            <img src={s.img} alt="" className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-black/10" />
-          </div>
-        ))}
-        {/* Slide content */}
-        <div className="absolute inset-x-0 bottom-0 p-10 text-white">
-          <div className="flex gap-2 mb-6">
-            {SLIDES.map((_, i) => (
-              <button key={i} onClick={() => setSlide(i)}
-                className={`h-1.5 rounded-full transition-all duration-500 ${i === slide ? "w-8 bg-white" : "w-4 bg-white/40"}`} aria-label={`Slide ${i + 1}`} />
-            ))}
-          </div>
-          <h2 className="text-3xl font-extrabold leading-tight max-w-md">{SLIDES[slide].title}</h2>
-          <p className="text-white/70 text-sm mt-3 max-w-md leading-relaxed">{SLIDES[slide].text}</p>
-        </div>
-      </div>
+      <AuthSlider />
     </div>
   );
 }

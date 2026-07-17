@@ -18,6 +18,7 @@ export default function ProgramLanding() {
   const heroArt = useRef(null);
 
   useEffect(() => {
+    let refreshTimer;
     const ctx = gsap.context(() => {
       // Hero intro timeline
       const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
@@ -34,26 +35,37 @@ export default function ProgramLanding() {
         scrollTrigger: { trigger: ".hero-sec", start: "top top", end: "bottom top", scrub: 1 },
       });
 
-      // Reveal-on-scroll for every section block
+      // Reveal-on-scroll — play once, never leave content hidden
       gsap.utils.toArray(".lp-reveal").forEach((el) => {
-        gsap.from(el, {
-          y: 40, opacity: 0, duration: 0.8, ease: "power3.out",
-          scrollTrigger: { trigger: el, start: "top 88%" },
+        gsap.fromTo(el, { y: 40, autoAlpha: 0 }, {
+          y: 0, autoAlpha: 1, duration: 0.8, ease: "power3.out",
+          scrollTrigger: { trigger: el, start: "top 92%", once: true },
         });
       });
       // Staggered cards
       gsap.utils.toArray(".lp-stagger").forEach((grid) => {
-        gsap.from(grid.children, {
-          y: 40, opacity: 0, duration: 0.7, ease: "power3.out", stagger: 0.08,
-          scrollTrigger: { trigger: grid, start: "top 85%" },
+        gsap.fromTo(grid.children, { y: 40, autoAlpha: 0 }, {
+          y: 0, autoAlpha: 1, duration: 0.7, ease: "power3.out", stagger: 0.08,
+          scrollTrigger: { trigger: grid, start: "top 90%", once: true },
         });
       });
+
+      // Recompute positions after the 3D canvas / images settle so
+      // triggers are never stuck below an unreachable scroll position.
+      ScrollTrigger.refresh();
+      refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 600);
     }, root);
-    return () => ctx.revert();
+    return () => { clearTimeout(refreshTimer); ctx.revert(); };
   }, []);
 
   return (
-    <div ref={root} className="font-jakarta min-h-screen bg-[#EDECEA] text-[#0A0A0A]">
+    <div ref={root} className="font-jakarta relative min-h-screen bg-[#EDECEA] text-[#0A0A0A] overflow-hidden">
+      {/* Decorative background textures — grid in some zones, dots in others */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute left-0 right-0 top-[92vh] h-[620px] tp-grid tp-mask-fade opacity-70" />
+        <div className="absolute left-0 right-0 top-[195vh] h-[620px] tp-dots tp-mask-fade opacity-60" />
+        <div className="absolute left-0 right-0 top-[300vh] h-[520px] tp-grid tp-mask-fade opacity-50" />
+      </div>
       <ProgramNav />
 
       {/* ── HERO (Kortix-style + themed 3D object) ── */}

@@ -12,6 +12,22 @@
 }
 .font-jakarta h1, .font-jakarta h2, .font-jakarta h3, .font-jakarta h4 { letter-spacing: -0.02em; }
 
+/* Decorative background textures for the tester landing */
+.tp-grid {
+  background-image:
+    linear-gradient(rgba(10,10,10,0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(10,10,10,0.055) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+.tp-dots {
+  background-image: radial-gradient(rgba(10,10,10,0.10) 1.2px, transparent 1.2px);
+  background-size: 24px 24px;
+}
+.tp-mask-fade {
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+          mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, #000 30%, transparent 75%);
+}
+
 /* ─── Reset / Base ─── */
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
