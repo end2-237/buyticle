@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { DashboardShell } from "../TesterNav";
 import { VerdictBadge, StatusBadge, Btn, inputCls, Select, Field, timeAgo } from "../ui";
 import { Icon, appIcon } from "../icons";
 import * as store from "../store";
+import { useTests, useReviews, useTesters } from "../hooks";
 
 const TABS = [
   { key: "overview", label: "Aperçu" },
@@ -19,14 +20,13 @@ const empty = {
 const ICON_CHOICES = ["shopping-bag", "shopping-cart", "layers", "leaf", "shirt", "smartphone", "rocket", "target"];
 
 export default function Admin() {
-  const [, force] = useState(0);
-  useEffect(() => store.subscribe(() => force((n) => n + 1)), []);
   const [tab, setTab] = useState("overview");
   const [editing, setEditing] = useState(null); // program being edited/created
 
-  const testers = store.getTesters().filter((t) => t.role !== "admin");
-  const reviews = store.getReviews();
-  const tests = store.getTests();
+  const testers = (useTesters() || []).filter((t) => t.role !== "admin");
+  const reviews = useReviews() || [];
+  const tests = useTests() || [];
+  const appOf = (id) => tests.find((t) => t.id === id)?.app || "—";
   const bugsOpen = reviews.filter((r) => r.verdict === "bug" && r.status === "ouvert").length;
 
   return (
@@ -64,7 +64,7 @@ export default function Admin() {
                 <div key={r.id} className="flex items-center gap-3 py-2 border-b border-[#0A0A0A]/6 last:border-0">
                   <VerdictBadge verdict={r.verdict} />
                   <span className="font-semibold text-sm truncate flex-1">{r.title}</span>
-                  <span className="text-[12px] text-[#0A0A0A]/45 hidden sm:block">{store.getTest(r.testId)?.app}</span>
+                  <span className="text-[12px] text-[#0A0A0A]/45 hidden sm:block">{appOf(r.testId)}</span>
                   <span className="text-[11px] text-[#0A0A0A]/35">{timeAgo(r.createdAt)}</span>
                 </div>
               ))}
@@ -129,7 +129,7 @@ export default function Admin() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <VerdictBadge verdict={r.verdict} />
-                  <span className="text-[12px] font-semibold text-[#0A0A0A]/60">{store.getTest(r.testId)?.app}</span>
+                  <span className="text-[12px] font-semibold text-[#0A0A0A]/60">{appOf(r.testId)}</span>
                   <span className="text-[11px] text-[#0A0A0A]/35">par {r.userName} · {timeAgo(r.createdAt)}</span>
                 </div>
                 <div className="font-bold text-[15px] mt-2">{r.title}</div>
@@ -152,7 +152,7 @@ export default function Admin() {
       {/* PROGRAMS */}
       {tab === "programs" && (
         editing ? (
-          <ProgramEditor value={editing} onCancel={() => setEditing(null)} onSave={(p) => { store.saveTest(p); setEditing(null); }} />
+          <ProgramEditor value={editing} onCancel={() => setEditing(null)} onSave={async (p) => { await store.saveTest(p); setEditing(null); }} />
         ) : (
           <>
             <div className="flex justify-end mb-4">

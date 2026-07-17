@@ -1,165 +1,24 @@
 /* ────────────────────────────────────────────────────────────
-   Buyticle Tester Program — self-contained data layer
-   Backed by localStorage so the whole flow works end-to-end.
-   Swap the internals for Firebase (already configured in
-   src/firebase.js) later without touching the components.
+   Buyticle Tester Program — Firestore + Firebase Auth data layer
+   Real database (collections: tests, testers, reviews).
 ──────────────────────────────────────────────────────────── */
+import { db, auth } from "../firebase";
+import {
+  collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp, writeBatch, increment,
+} from "firebase/firestore";
+import {
+  createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
+} from "firebase/auth";
 
-const KEYS = {
-  testers: "bt_testers",
-  session: "bt_session",
-  tests: "bt_tests",
-  reviews: "bt_reviews",
-};
-
-/* WhatsApp — community contact + group invite (replace group link freely) */
 export const WHATSAPP_NUMBER = "237696995879";
 export const WHATSAPP_GROUP = "https://chat.whatsapp.com/Buyticle-Testeurs";
+export const ADMIN_EMAIL = "admin@buyticle.com";
+export const ADMIN_PASSWORD = "admin123";
 
-const listeners = new Set();
-const emit = () => listeners.forEach((l) => l());
-export const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+const shot = (url) => `https://image.thum.io/get/width/900/crop/560/noanimate/${url}`;
 
-const read = (k, fallback) => {
-  try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
-  catch { return fallback; }
-};
-const write = (k, v) => { localStorage.setItem(k, JSON.stringify(v)); emit(); };
-
-const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-// tiny non-crypto obfuscation — demo only, not real security
-const scramble = (s) => btoa(unescape(encodeURIComponent(`bt::${s}`)));
-
-/* ─── Seed programs (tests) referencing real Buyticle products ─── */
-const SEED_TESTS = [
-  {
-    id: "prog-buyticle",
-    app: "Buyticle",
-    title: "Buyticle App — Test interne Android",
-    tag: "Application mobile",
-    platform: "Android",
-    version: "v2.4.0-beta",
-    color: "#FF4500",
-    icon: "shopping-bag",
-    status: "en_cours",
-    startDate: "2026-06-01",
-    endDate: "2026-07-15",
-    durationDays: 44,
-    participants: 128,
-    reward: 500,
-    link: "https://play.google.com/apps/internaltest/4701420296100637084",
-    description:
-      "Testez la nouvelle version de l'application Buyticle : parcours d'achat, paiement mobile, notifications et performances générales.",
-    tasks: [
-      "Créer un compte et compléter le profil",
-      "Passer une commande de bout en bout",
-      "Tester le paiement mobile (Mobile Money)",
-      "Vérifier les notifications push",
-      "Signaler tout crash ou lenteur",
-    ],
-  },
-  {
-    id: "prog-eetra",
-    app: "Eetra",
-    title: "Eetra — Marketplace mobile",
-    tag: "Marketplace",
-    platform: "Web · Mobile",
-    version: "v1.2.0",
-    color: "#F2A900",
-    icon: "shopping-cart",
-    status: "en_cours",
-    startDate: "2026-06-10",
-    endDate: "2026-07-05",
-    durationDays: 25,
-    participants: 74,
-    reward: 350,
-    link: "https://eetra.buyticle.com/",
-    description:
-      "Évaluez l'expérience vendeur et acheteur d'Eetra : mise en ligne d'un produit, recherche, panier et messagerie.",
-    tasks: [
-      "Publier une annonce produit",
-      "Rechercher et filtrer des produits",
-      "Contacter un vendeur via la messagerie",
-      "Ajouter au panier et simuler l'achat",
-    ],
-  },
-  {
-    id: "prog-obli",
-    app: "Obli Space",
-    title: "Obli Space — SaaS de productivité",
-    tag: "SaaS · Web App",
-    platform: "Web",
-    version: "v0.9.0-rc",
-    color: "#7A5AF8",
-    icon: "layers",
-    status: "a_venir",
-    startDate: "2026-07-20",
-    endDate: "2026-08-20",
-    durationDays: 31,
-    participants: 0,
-    reward: 400,
-    link: "https://obli.space/",
-    description:
-      "Programme à venir : testez les espaces de travail collaboratifs, les tâches et les intégrations d'Obli Space.",
-    tasks: [
-      "Créer un espace de travail",
-      "Inviter un collaborateur",
-      "Créer et assigner des tâches",
-      "Tester les intégrations",
-    ],
-  },
-  {
-    id: "prog-camille",
-    app: "Camille",
-    title: "Camille — Site vitrine & réservation",
-    tag: "Web · Vitrine",
-    platform: "Web",
-    version: "v1.0.0",
-    color: "#00B4D8",
-    icon: "leaf",
-    status: "termine",
-    startDate: "2026-04-01",
-    endDate: "2026-05-01",
-    durationDays: 30,
-    participants: 52,
-    reward: 250,
-    link: "http://camille.vps.buyticle.com/",
-    description:
-      "Programme clôturé : ergonomie du site vitrine, formulaire de réservation et compatibilité mobile.",
-    tasks: [
-      "Naviguer sur toutes les pages",
-      "Remplir le formulaire de réservation",
-      "Tester l'affichage mobile",
-    ],
-  },
-  {
-    id: "prog-onefreestyle",
-    app: "One Freestyle",
-    title: "One Freestyle — E-commerce mode",
-    tag: "E-commerce",
-    platform: "Web",
-    version: "v2.1.0",
-    color: "#E94560",
-    icon: "shirt",
-    status: "en_cours",
-    startDate: "2026-06-05",
-    endDate: "2026-07-10",
-    durationDays: 35,
-    participants: 61,
-    reward: 300,
-    link: "https://www.onefreestyle.store/",
-    description:
-      "Testez le tunnel d'achat de One Freestyle : fiches produit, tailles, panier et paiement.",
-    tasks: [
-      "Parcourir le catalogue",
-      "Choisir une taille et ajouter au panier",
-      "Compléter le checkout",
-      "Évaluer la vitesse de chargement",
-    ],
-  },
-];
-
-/* Static rewards / advantages of the program */
+/* Static rewards / advantages */
 export const REWARDS = [
   { icon: "gift", title: "Points & récompenses", text: "Cumulez des points à chaque test validé, échangeables contre des cadeaux Buyticle." },
   { icon: "zap", title: "Accès anticipé", text: "Essayez les apps et fonctionnalités avant tout le monde, en avant-première." },
@@ -169,178 +28,172 @@ export const REWARDS = [
   { icon: "banknote", title: "Primes bug critique", text: "Une prime en argent pour chaque bug critique découvert et confirmé." },
 ];
 
-/* ─── Init ─── */
-function ensureSeed() {
-  if (!read(KEYS.tests, null)) write(KEYS.tests, SEED_TESTS);
-  if (!read(KEYS.testers, null)) write(KEYS.testers, []);
-  if (!read(KEYS.reviews, null)) write(KEYS.reviews, seedReviews());
-  ensureAdmin();
-}
+/* Seed programs — with live cover screenshots of the real apps */
+const SEED_TESTS = [
+  {
+    id: "prog-buyticle", app: "Buyticle", title: "Buyticle App — Test interne Android",
+    tag: "Application mobile", platform: "Android", version: "v2.4.0-beta", color: "#FF4500", icon: "shopping-bag",
+    cover: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=70",
+    status: "en_cours", startDate: "2026-06-01", endDate: "2026-07-15", durationDays: 44, participants: 128, reward: 500,
+    link: "https://play.google.com/apps/internaltest/4701420296100637084",
+    description: "Testez la nouvelle version de l'application Buyticle : parcours d'achat, paiement mobile, notifications et performances générales.",
+    tasks: ["Créer un compte et compléter le profil", "Passer une commande de bout en bout", "Tester le paiement mobile (Mobile Money)", "Vérifier les notifications push", "Signaler tout crash ou lenteur"],
+  },
+  {
+    id: "prog-eetra", app: "Eetra", title: "Eetra — Marketplace mobile",
+    tag: "Marketplace", platform: "Web · Mobile", version: "v1.2.0", color: "#F2A900", icon: "shopping-cart",
+    cover: shot("https://eetra.buyticle.com/"),
+    status: "en_cours", startDate: "2026-06-10", endDate: "2026-07-05", durationDays: 25, participants: 74, reward: 350,
+    link: "https://eetra.buyticle.com/",
+    description: "Évaluez l'expérience vendeur et acheteur d'Eetra : mise en ligne d'un produit, recherche, panier et messagerie.",
+    tasks: ["Publier une annonce produit", "Rechercher et filtrer des produits", "Contacter un vendeur via la messagerie", "Ajouter au panier et simuler l'achat"],
+  },
+  {
+    id: "prog-obli", app: "Obli Space", title: "Obli Space — SaaS de productivité",
+    tag: "SaaS · Web App", platform: "Web", version: "v0.9.0-rc", color: "#7A5AF8", icon: "layers",
+    cover: shot("https://obli.space/"),
+    status: "a_venir", startDate: "2026-07-20", endDate: "2026-08-20", durationDays: 31, participants: 0, reward: 400,
+    link: "https://obli.space/",
+    description: "Programme à venir : testez les espaces de travail collaboratifs, les tâches et les intégrations d'Obli Space.",
+    tasks: ["Créer un espace de travail", "Inviter un collaborateur", "Créer et assigner des tâches", "Tester les intégrations"],
+  },
+  {
+    id: "prog-camille", app: "Camille", title: "Camille — Site vitrine & réservation",
+    tag: "Web · Vitrine", platform: "Web", version: "v1.0.0", color: "#00B4D8", icon: "leaf",
+    cover: shot("http://camille.vps.buyticle.com/"),
+    status: "termine", startDate: "2026-04-01", endDate: "2026-05-01", durationDays: 30, participants: 52, reward: 250,
+    link: "http://camille.vps.buyticle.com/",
+    description: "Programme clôturé : ergonomie du site vitrine, formulaire de réservation et compatibilité mobile.",
+    tasks: ["Naviguer sur toutes les pages", "Remplir le formulaire de réservation", "Tester l'affichage mobile"],
+  },
+  {
+    id: "prog-onefreestyle", app: "One Freestyle", title: "One Freestyle — E-commerce mode",
+    tag: "E-commerce", platform: "Web", version: "v2.1.0", color: "#E94560", icon: "shirt",
+    cover: shot("https://www.onefreestyle.store/"),
+    status: "en_cours", startDate: "2026-06-05", endDate: "2026-07-10", durationDays: 35, participants: 61, reward: 300,
+    link: "https://www.onefreestyle.store/",
+    description: "Testez le tunnel d'achat de One Freestyle : fiches produit, tailles, panier et paiement.",
+    tasks: ["Parcourir le catalogue", "Choisir une taille et ajouter au panier", "Compléter le checkout", "Évaluer la vitesse de chargement"],
+  },
+];
 
-/* A ready-to-use admin account so the admin space is reachable.
-   Login: admin@buyticle.com / admin123 */
-function ensureAdmin() {
-  const testers = read(KEYS.testers, []);
-  if (testers.some((t) => t.role === "admin")) return;
-  const admin = {
-    id: "admin-buyticle",
-    email: "admin@buyticle.com",
-    phone: WHATSAPP_NUMBER,
-    whatsapp: WHATSAPP_NUMBER,
-    pass: scramble("admin123"),
-    role: "admin",
-    profile: { fullName: "Admin Buyticle", country: "Cameroun", city: "Douala" },
-    onboarded: true,
-    points: 0,
-    createdAt: new Date().toISOString(),
-  };
-  write(KEYS.testers, [admin, ...testers]);
+const SEED_REVIEWS = [
+  { testId: "prog-buyticle", userId: "seed-1", userName: "Aline N.", verdict: "bug", rating: 3, title: "Crash au paiement Mobile Money", body: "L'app se ferme quand je valide un paiement Orange Money sur Android 11. Reproductible à chaque fois.", status: "ouvert" },
+  { testId: "prog-buyticle", userId: "seed-2", userName: "Boris K.", verdict: "suggestion", rating: 4, title: "Ajouter un mode sombre", body: "Un mode sombre serait top pour l'utilisation nocturne. Le reste est très fluide, bravo !", status: "revu" },
+  { testId: "prog-eetra", userId: "seed-3", userName: "Chris M.", verdict: "valide", rating: 5, title: "Publication d'annonce parfaite", body: "J'ai publié une annonce en moins d'une minute, l'upload photo est rapide. RAS.", status: "resolu" },
+];
+
+/* ─── Seeding (runs once; safe to call repeatedly) ─── */
+let seeded = false;
+export async function ensureSeed() {
+  if (seeded) return;
+  seeded = true;
+  try {
+    const tSnap = await getDocs(collection(db, "tests"));
+    if (tSnap.empty) {
+      const batch = writeBatch(db);
+      SEED_TESTS.forEach((t) => batch.set(doc(db, "tests", t.id), t));
+      await batch.commit();
+    }
+    const rSnap = await getDocs(collection(db, "reviews"));
+    if (rSnap.empty) {
+      const batch = writeBatch(db);
+      SEED_REVIEWS.forEach((r) => batch.set(doc(collection(db, "reviews")), { ...r, createdAt: serverTimestamp() }));
+      await batch.commit();
+    }
+  } catch (e) { seeded = false; console.warn("Seed skipped:", e?.code || e?.message); }
 }
-function seedReviews() {
-  return [
-    {
-      id: uid(), testId: "prog-buyticle", userId: "seed-1", userName: "Aline N.",
-      verdict: "bug", rating: 3, title: "Crash au paiement Mobile Money",
-      body: "L'app se ferme quand je valide un paiement Orange Money sur Android 11. Reproductible à chaque fois.",
-      status: "ouvert", createdAt: "2026-06-12T09:20:00Z",
-    },
-    {
-      id: uid(), testId: "prog-buyticle", userId: "seed-2", userName: "Boris K.",
-      verdict: "suggestion", rating: 4, title: "Ajouter un mode sombre",
-      body: "Un mode sombre serait top pour l'utilisation nocturne. Le reste est très fluide, bravo !",
-      status: "revu", createdAt: "2026-06-13T14:05:00Z",
-    },
-    {
-      id: uid(), testId: "prog-eetra", userId: "seed-3", userName: "Chris M.",
-      verdict: "valide", rating: 5, title: "Publication d'annonce parfaite",
-      body: "J'ai publié une annonce en moins d'une minute, l'upload photo est rapide. RAS.",
-      status: "resolu", createdAt: "2026-06-14T11:30:00Z",
-    },
-  ];
-}
-ensureSeed();
 
 /* ─── Auth ─── */
-export function getSession() { return read(KEYS.session, null); }
-
-export function getCurrentUser() {
-  const s = getSession();
-  if (!s) return null;
-  return read(KEYS.testers, []).find((t) => t.id === s.userId) || null;
+export async function registerUser({ email, phone, whatsapp, password }) {
+  const clean = String(email).trim().toLowerCase();
+  const cred = await createUserWithEmailAndPassword(auth, clean, password);
+  await setDoc(doc(db, "testers", cred.user.uid), {
+    email: clean, phone: String(phone || "").trim(), whatsapp: String(whatsapp || phone || "").trim(),
+    role: "tester", profile: {}, onboarded: false, points: 0, createdAt: serverTimestamp(),
+  });
+  return cred.user;
 }
+export async function loginUser({ email, password }) {
+  return signInWithEmailAndPassword(auth, String(email).trim().toLowerCase(), password);
+}
+export async function logoutUser() { return signOut(auth); }
 
-export function register({ email, phone, whatsapp, password }) {
-  const testers = read(KEYS.testers, []);
-  const clean = String(email || "").trim().toLowerCase();
-  if (testers.some((t) => t.email === clean)) {
-    throw new Error("Un compte existe déjà avec cet email.");
-  }
-  const user = {
-    id: uid(),
-    email: clean,
-    phone: String(phone || "").trim(),
-    whatsapp: String(whatsapp || "").trim(),
-    pass: scramble(password),
-    role: "tester",
-    profile: {},
-    onboarded: false,
-    points: 0,
-    createdAt: new Date().toISOString(),
+export function authError(e) {
+  const map = {
+    "auth/email-already-in-use": "Un compte existe déjà avec cet email.",
+    "auth/invalid-email": "Adresse email invalide.",
+    "auth/weak-password": "Mot de passe trop faible (6 caractères minimum).",
+    "auth/invalid-credential": "Email ou mot de passe incorrect.",
+    "auth/wrong-password": "Email ou mot de passe incorrect.",
+    "auth/user-not-found": "Aucun compte trouvé avec cet email.",
+    "auth/too-many-requests": "Trop de tentatives. Réessayez dans un instant.",
+    "auth/network-request-failed": "Problème de connexion. Vérifiez votre réseau.",
   };
-  write(KEYS.testers, [...testers, user]);
-  write(KEYS.session, { userId: user.id });
-  return user;
+  return map[e?.code] || "Une erreur est survenue. Réessayez.";
 }
 
-export function login({ email, password }) {
-  const clean = String(email || "").trim().toLowerCase();
-  const user = read(KEYS.testers, []).find((t) => t.email === clean);
-  if (!user || user.pass !== scramble(password)) {
-    throw new Error("Email ou mot de passe incorrect.");
+/* Ensure a profile doc exists for a signed-in user; returns the merged profile */
+export async function ensureTesterDoc(uid, email) {
+  const ref = doc(db, "testers", uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    const data = snap.data();
+    const role = email === ADMIN_EMAIL ? "admin" : data.role || "tester";
+    return { id: uid, ...data, role };
   }
-  write(KEYS.session, { userId: user.id });
-  return user;
+  const isAdmin = email === ADMIN_EMAIL;
+  const fresh = { email, phone: "", whatsapp: "", role: isAdmin ? "admin" : "tester", profile: isAdmin ? { fullName: "Admin Buyticle", city: "Douala", country: "Cameroun" } : {}, onboarded: isAdmin, points: 0, createdAt: serverTimestamp() };
+  await setDoc(ref, fresh);
+  return { id: uid, ...fresh };
 }
-
-export function logout() { localStorage.removeItem(KEYS.session); emit(); }
-
-export function completeOnboarding(profile) {
-  const s = getSession();
-  if (!s) throw new Error("Non connecté.");
-  const testers = read(KEYS.testers, []);
-  const next = testers.map((t) =>
-    t.id === s.userId ? { ...t, profile: { ...t.profile, ...profile }, onboarded: true } : t
-  );
-  write(KEYS.testers, next);
-  return next.find((t) => t.id === s.userId);
+export async function completeOnboarding(uid, profile) {
+  await updateDoc(doc(db, "testers", uid), { profile, onboarded: true });
 }
 
 /* ─── Tests / programs ─── */
-export function getTests() { return read(KEYS.tests, []); }
-export function getTest(id) { return getTests().find((t) => t.id === id) || null; }
-
-export function saveTest(test) {
-  const tests = read(KEYS.tests, []);
-  if (test.id && tests.some((t) => t.id === test.id)) {
-    write(KEYS.tests, tests.map((t) => (t.id === test.id ? { ...t, ...test } : t)));
-  } else {
-    write(KEYS.tests, [...tests, { ...test, id: test.id || uid(), participants: test.participants || 0 }]);
-  }
+const mapDocs = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+export function subscribeTests(cb) {
+  return onSnapshot(collection(db, "tests"), (s) => cb(mapDocs(s)), (e) => console.warn("tests sub:", e.code));
 }
-export function deleteTest(id) {
-  write(KEYS.tests, read(KEYS.tests, []).filter((t) => t.id !== id));
+export async function saveTest(t) {
+  if (t.id) { await setDoc(doc(db, "tests", t.id), { ...t }, { merge: true }); return t.id; }
+  const ref = await addDoc(collection(db, "tests"), { ...t, participants: t.participants || 0 });
+  return ref.id;
 }
+export async function deleteTest(id) { await deleteDoc(doc(db, "tests", id)); }
 
-/* ─── Reviews (community feedback — PR-like) ─── */
-export function getReviews() {
-  return read(KEYS.reviews, []).slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+/* ─── Reviews ─── */
+const mapReviews = (snap) => snap.docs.map((d) => {
+  const data = d.data();
+  return { id: d.id, ...data, createdAt: data.createdAt?.toDate?.() ?? new Date() };
+});
+export function subscribeReviews(cb) {
+  return onSnapshot(query(collection(db, "reviews"), orderBy("createdAt", "desc")),
+    (s) => cb(mapReviews(s)), (e) => console.warn("reviews sub:", e.code));
 }
-export function getReviewsForTest(testId) { return getReviews().filter((r) => r.testId === testId); }
-export function getReviewsByUser(userId) { return getReviews().filter((r) => r.userId === userId); }
-
-export function submitReview({ testId, verdict, rating, title, body }) {
-  const user = getCurrentUser();
-  if (!user) throw new Error("Non connecté.");
-  const reviews = read(KEYS.reviews, []);
-  const review = {
-    id: uid(), testId, userId: user.id,
-    userName: user.profile?.fullName || user.email.split("@")[0],
-    verdict, rating: Number(rating) || 0, title, body,
-    status: "ouvert", createdAt: new Date().toISOString(),
-  };
-  write(KEYS.reviews, [...reviews, review]);
-  // award points + increment participation
+export async function submitReview({ testId, verdict, rating, title, body, user }) {
+  await addDoc(collection(db, "reviews"), {
+    testId, userId: user.id, userName: user.profile?.fullName || user.email.split("@")[0],
+    verdict, rating: Number(rating) || 0, title, body, status: "ouvert", createdAt: serverTimestamp(),
+  });
   const pts = verdict === "bug" ? 50 : verdict === "suggestion" ? 30 : 20;
-  const testers = read(KEYS.testers, []);
-  write(KEYS.testers, testers.map((t) => (t.id === user.id ? { ...t, points: (t.points || 0) + pts } : t)));
-  return review;
+  try { await updateDoc(doc(db, "testers", user.id), { points: increment(pts) }); } catch { /* ignore */ }
 }
+export async function setReviewStatus(id, status) { await updateDoc(doc(db, "reviews", id), { status }); }
+export async function deleteReview(id) { await deleteDoc(doc(db, "reviews", id)); }
 
-export function setReviewStatus(id, status) {
-  write(KEYS.reviews, read(KEYS.reviews, []).map((r) => (r.id === id ? { ...r, status } : r)));
+/* ─── Testers (admin) ─── */
+export function subscribeTesters(cb) {
+  return onSnapshot(collection(db, "testers"), (s) => cb(mapDocs(s)), (e) => console.warn("testers sub:", e.code));
 }
-export function deleteReview(id) {
-  write(KEYS.reviews, read(KEYS.reviews, []).filter((r) => r.id !== id));
-}
+export async function deleteTester(id) { await deleteDoc(doc(db, "testers", id)); }
 
-/* ─── Admin ─── */
-export function getTesters() { return read(KEYS.testers, []); }
-export function deleteTester(id) {
-  write(KEYS.testers, read(KEYS.testers, []).filter((t) => t.id !== id));
-}
-
-/* ─── Derived stats for the dashboard ─── */
-export function getUserStats(userId) {
-  const mine = getReviewsByUser(userId);
-  const tests = getTests();
-  const active = tests.filter((t) => t.status === "en_cours").length;
+/* ─── Derived stats ─── */
+export function computeStats(reviews, tests, userId) {
+  const mine = reviews.filter((r) => r.userId === userId);
   const validated = mine.filter((r) => r.verdict === "valide").length;
   const bugs = mine.filter((r) => r.verdict === "bug").length;
   const avg = mine.length ? Math.round((mine.reduce((s, r) => s + (r.rating || 0), 0) / mine.length) * 20) : 0;
-  const user = getTesters().find((t) => t.id === userId);
-  return {
-    total: mine.length, validated, bugs,
-    activePrograms: active, avgScore: avg,
-    points: user?.points || 0,
-  };
+  return { total: mine.length, validated, bugs, activePrograms: tests.filter((t) => t.status === "en_cours").length, avgScore: avg };
 }

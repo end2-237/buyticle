@@ -27,7 +27,7 @@ export function ProgramNav() {
   const linkCls = dark ? "text-[#0A0A0A]/60 hover:text-[#0A0A0A]" : "text-white/70 hover:text-white";
 
   return (
-    <header className={`sticky top-0 z-40 transition-all duration-500 ${dark ? "bg-[#EDECEA]/85 backdrop-blur-xl border-b border-[#0A0A0A]/8" : "bg-transparent"}`}>
+    <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${dark ? "bg-[#EDECEA]/85 backdrop-blur-xl border-b border-[#0A0A0A]/8" : "bg-transparent"}`}>
       {!dark && <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-black/45 to-transparent" />}
       <div className="max-w-[1200px] mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
         <Link to="/testers" className="flex items-center gap-3 group">

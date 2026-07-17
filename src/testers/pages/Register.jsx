@@ -4,6 +4,7 @@ import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
 import { Icon } from "../icons";
 import AuthSlider from "../AuthSlider";
+import { authError } from "../store";
 import logo from "../../assets/buylogo2.png";
 
 export default function Register() {
@@ -17,7 +18,7 @@ export default function Register() {
 
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     setErr("");
     if (!f.email || !f.password) return setErr("Email et mot de passe requis.");
@@ -26,9 +27,9 @@ export default function Register() {
     if (!agree) return setErr("Veuillez accepter les conditions du programme.");
     setBusy(true);
     try {
-      register({ email: f.email, phone: f.phone, whatsapp: f.whatsapp || f.phone, password: f.password });
+      await register({ email: f.email, phone: f.phone, whatsapp: f.whatsapp || f.phone, password: f.password });
       navigate("/testers/onboarding");
-    } catch (e2) { setErr(e2.message); setBusy(false); }
+    } catch (e2) { setErr(authError(e2)); setBusy(false); }
   };
 
   return (

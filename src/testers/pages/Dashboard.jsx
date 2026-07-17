@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { DashboardShell } from "../TesterNav";
 import { useAuth } from "../AuthContext";
 import { Icon, appIcon } from "../icons";
-import { getTests, getUserStats, getReviewsByUser, REWARDS } from "../store";
+import { REWARDS, computeStats } from "../store";
+import { useTests, useReviews } from "../hooks";
 
 function StatTile({ label, value, delta, accent }) {
   return (
@@ -110,13 +111,14 @@ const TABS = [
 export default function Dashboard() {
   const { user } = useAuth();
   const [tab, setTab] = useState("en_cours");
-  const tests = getTests();
-  const stats = getUserStats(user.id);
-  const mine = getReviewsByUser(user.id);
+  const tests = useTests() || [];
+  const reviews = useReviews() || [];
+  const mine = reviews.filter((r) => r.userId === user.id);
+  const stats = computeStats(reviews, tests, user.id);
 
   const progressOf = (t) => Math.min(95, 25 + (t.participants % 70));
   const filtered = tab === "all" ? tests : tests.filter((t) => t.status === tab);
-  const newest = tests.find((t) => t.status === "en_cours") || tests[0];
+  const newest = tests.find((t) => t.status === "en_cours") || tests[0] || { app: "", title: "Aucun test actif", description: "Les prochains programmes arrivent bientôt.", durationDays: 0, reward: 0, icon: "smartphone" };
 
   return (
     <DashboardShell>
@@ -125,7 +127,7 @@ export default function Dashboard() {
           <StatTile label="Tests complétés" value={stats.validated} delta={`+${stats.validated} ce mois`} />
           <StatTile label="Score moyen" value={`${stats.avgScore}%`} delta="qualité des retours" />
           <StatTile label="Programmes actifs" value={stats.activePrograms} delta="à rejoindre" />
-          <StatTile label="Points gagnés" value={stats.points} delta="récompenses cumulées" accent />
+          <StatTile label="Points gagnés" value={user.points || 0} delta="récompenses cumulées" accent />
         </div>
         <div className="col-span-12 md:col-span-5"><ProgressChart /></div>
         <div className="col-span-12 md:col-span-3"><Schedule /></div>

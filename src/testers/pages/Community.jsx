@@ -4,6 +4,7 @@ import { useAuth } from "../AuthContext";
 import { VerdictBadge, StatusBadge, Stars, Btn, inputCls, timeAgo } from "../ui";
 import { Icon, appIcon } from "../icons";
 import * as store from "../store";
+import { useTests, useReviews } from "../hooks";
 
 const VERDICTS = [
   { key: "valide", label: "Tout fonctionne", hint: "Validé, aucun problème", icon: "check-circle" },
@@ -19,26 +20,34 @@ const STATUS_FILTERS = [
 
 export default function Community() {
   const { user } = useAuth();
-  const [, force] = useState(0);
-  useEffect(() => store.subscribe(() => force((n) => n + 1)), []);
-
-  const tests = store.getTests();
-  const [selId, setSelId] = useState(() => (tests.find((t) => t.status === "en_cours") || tests[0])?.id);
+  const tests = useTests() || [];
+  const allReviews = useReviews() || [];
+  const [selId, setSelId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [form, setForm] = useState({ verdict: "bug", rating: 4, title: "", body: "" });
   const [msg, setMsg] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const sel = store.getTest(selId);
-  const reviews = store.getReviewsForTest(selId);
+  useEffect(() => {
+    if (!selId && tests.length) setSelId((tests.find((t) => t.status === "en_cours") || tests[0]).id);
+  }, [tests, selId]);
+
+  const sel = tests.find((t) => t.id === selId) || null;
+  const reviews = allReviews.filter((r) => r.testId === selId);
   const shown = filter === "all" ? reviews : reviews.filter((r) => r.status === filter);
+  const countFor = (id) => allReviews.filter((r) => r.testId === id).length;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     if (!form.title.trim() || !form.body.trim()) { setMsg("Ajoutez un titre et une description."); return; }
-    store.submitReview({ testId: selId, ...form });
-    setForm({ verdict: "bug", rating: 4, title: "", body: "" });
-    setMsg("Merci ! Votre retour a été publié et vos points crédités.");
-    setTimeout(() => setMsg(""), 3500);
+    setBusy(true);
+    try {
+      await store.submitReview({ testId: selId, ...form, user });
+      setForm({ verdict: "bug", rating: 4, title: "", body: "" });
+      setMsg("Merci ! Votre retour a été publié et vos points crédités.");
+      setTimeout(() => setMsg(""), 3500);
+    } catch { setMsg("Publication impossible. Réessayez."); }
+    setBusy(false);
   };
 
   const canModerate = user.role === "admin";
@@ -54,7 +63,7 @@ export default function Community() {
           </div>
           <div className="space-y-1.5">
             {tests.map((t) => {
-              const count = store.getReviewsForTest(t.id).length;
+              const count = countFor(t.id);
               const on = t.id === selId;
               return (
                 <button key={t.id} onClick={() => setSelId(t.id)}
@@ -129,7 +138,7 @@ export default function Community() {
             <input className={`${inputCls} mb-3`} placeholder="Titre (ex. Crash au paiement Mobile Money)" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} />
             <textarea className={`${inputCls} min-h-[110px] resize-y`} placeholder="Décrivez précisément : étapes pour reproduire, appareil, ce que vous attendiez…" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} />
             <div className="flex justify-end mt-4">
-              <Btn as="button" type="submit" variant="orange">Publier mon retour <Icon name="arrow-right" size={16} /></Btn>
+              <Btn as="button" type="submit" variant="orange" disabled={busy}>{busy ? "Publication…" : "Publier mon retour"} <Icon name="arrow-right" size={16} /></Btn>
             </div>
           </form>
 

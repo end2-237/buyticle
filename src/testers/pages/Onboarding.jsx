@@ -38,12 +38,15 @@ export default function Onboarding() {
     return "";
   };
 
-  const next = () => {
+  const [busy, setBusy] = useState(false);
+  const next = async () => {
     const v = validate();
     if (v) return setErr(v);
     setErr("");
-    if (step < STEPS.length - 1) setStep(step + 1);
-    else { completeOnboarding(d); navigate("/testers/success"); }
+    if (step < STEPS.length - 1) { setStep(step + 1); return; }
+    setBusy(true);
+    try { await completeOnboarding(d); navigate("/testers/success"); }
+    catch { setErr("Enregistrement impossible. Réessayez."); setBusy(false); }
   };
   const back = () => { setErr(""); setStep(Math.max(0, step - 1)); };
 
@@ -192,8 +195,8 @@ export default function Onboarding() {
             <div className="flex items-center justify-between mt-6">
               <button onClick={back} disabled={step === 0}
                 className="text-sm font-medium text-[#0A0A0A]/50 hover:text-[#0A0A0A] disabled:opacity-0 transition">← Retour</button>
-              <Btn as="button" onClick={next} variant="orange">
-                {step === STEPS.length - 1 ? "Terminer ✓" : "Continuer →"}
+              <Btn as="button" onClick={next} variant="orange" disabled={busy}>
+                {busy ? "Enregistrement…" : step === STEPS.length - 1 ? "Terminer" : "Continuer"}
               </Btn>
             </div>
           </div>

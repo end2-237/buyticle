@@ -4,6 +4,7 @@ import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
 import { Icon } from "../icons";
 import AuthSlider from "../AuthSlider";
+import { authError } from "../store";
 import logo from "../../assets/buylogo2.png";
 
 export default function Login() {
@@ -15,13 +16,16 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
 
-  const submit = (e) => {
+  const [busy, setBusy] = useState(false);
+  const submit = async (e) => {
     e.preventDefault();
     setErr("");
+    setBusy(true);
     try {
-      const u = login(f);
-      navigate(u.onboarded ? (loc.state?.from || "/testers/dashboard") : "/testers/onboarding");
-    } catch (e2) { setErr(e2.message); }
+      await login(f);
+      // Protected route guard sends non-onboarded users to onboarding.
+      navigate(loc.state?.from || "/testers/dashboard");
+    } catch (e2) { setErr(authError(e2)); setBusy(false); }
   };
 
   const oauth = () => setInfo("Connexion sociale bientôt disponible — utilisez votre email pour l'instant.");
@@ -72,7 +76,7 @@ export default function Login() {
                 <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0A0A0A]/40 hover:text-[#0A0A0A]/70" aria-label="Afficher le mot de passe"><Icon name={show ? "eye-off" : "eye"} size={18} /></button>
               </div>
             </div>
-            <button type="submit" className="w-full rounded-xl bg-[#0A0A0A] text-white py-3 text-sm font-bold hover:bg-[#FF4500] transition">Se connecter</button>
+            <button type="submit" disabled={busy} className="w-full rounded-xl bg-[#0A0A0A] text-white py-3 text-sm font-bold hover:bg-[#FF4500] transition disabled:opacity-50">{busy ? "Connexion…" : "Se connecter"}</button>
           </form>
 
           <p className="text-center text-sm text-[#0A0A0A]/50 mt-4">

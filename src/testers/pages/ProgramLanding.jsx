@@ -5,14 +5,15 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProgramNav } from "../TesterNav";
 import { Btn, StatusBadge } from "../ui";
 import { Icon, appIcon, WhatsAppIcon } from "../icons";
-import { getTests, REWARDS, WHATSAPP_GROUP } from "../store";
+import { REWARDS, WHATSAPP_GROUP } from "../store";
+import { useTests } from "../hooks";
 
 gsap.registerPlugin(ScrollTrigger);
 
 export default function ProgramLanding() {
-  const tests = getTests();
+  const tests = useTests() || [];
   const active = tests.filter((t) => t.status !== "termine");
-  const featured = tests.find((t) => t.id === "prog-buyticle") || tests[0];
+  const featured = tests.find((t) => t.id === "prog-buyticle") || tests[0] || { tasks: [], app: "", platform: "", durationDays: 0, reward: 0, status: "en_cours", description: "" };
   const root = useRef(null);
   const heroArt = useRef(null);
 
@@ -96,7 +97,7 @@ export default function ProgramLanding() {
         {/* Smooth fade into the light section below */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-60 bg-gradient-to-b from-transparent to-[#EDECEA]" />
 
-        <div className="relative z-10 max-w-[920px] mx-auto px-5 pt-10 pb-24 md:pt-16 md:pb-32 text-center">
+        <div className="relative z-10 max-w-[920px] mx-auto px-5 pt-24 pb-24 md:pt-28 md:pb-32 text-center">
           <div className="hero-badge inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/15 rounded-full px-4 py-1.5 text-[12px] font-semibold text-white/85 mb-7">
             <span className="w-1.5 h-1.5 rounded-full bg-[#FF4500]" /> Programme communautaire · Douala, Cameroun
           </div>
@@ -233,17 +234,27 @@ export default function ProgramLanding() {
           </div>
           <div className="lp-stagger grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {tests.map((t) => (
-              <div key={t.id} className="group rounded-3xl border border-[#0A0A0A]/10 bg-[#EDECEA] p-6 hover:border-[#FF4500]/40 hover:shadow-lg transition">
-                <div className="flex items-start justify-between">
-                  <div className="w-12 h-12 rounded-2xl grid place-items-center" style={{ background: `${t.color}1a`, color: t.color }}><Icon name={t.icon || appIcon(t.app)} size={24} /></div>
-                  <StatusBadge status={t.status} />
+              <div key={t.id} className="group rounded-3xl border border-[#0A0A0A]/10 bg-white overflow-hidden hover:border-[#FF4500]/40 hover:shadow-xl transition">
+                <div className="relative h-40 overflow-hidden" style={{ background: `${t.color}1a` }}>
+                  {t.cover && (
+                    <img src={t.cover} alt={t.app} loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute top-3 right-3"><StatusBadge status={t.status} /></div>
+                  <div className="absolute -bottom-5 left-5 w-11 h-11 rounded-2xl grid place-items-center bg-white shadow-md" style={{ color: t.color }}>
+                    <Icon name={t.icon || appIcon(t.app)} size={22} />
+                  </div>
                 </div>
-                <h3 className="font-extrabold text-lg mt-5">{t.app}</h3>
-                <p className="text-[#0A0A0A]/50 text-[13px] mt-1">{t.tag} · {t.platform}</p>
-                <p className="text-[#0A0A0A]/60 text-sm mt-3 leading-relaxed line-clamp-2">{t.description}</p>
-                <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#0A0A0A]/8">
-                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[#0A0A0A]/45"><Icon name="gift" size={14} /> {t.reward} pts</span>
-                  <span className="inline-flex items-center gap-1.5 text-[12px] text-[#0A0A0A]/45"><Icon name="users" size={14} /> {t.participants}</span>
+                <div className="p-6 pt-8">
+                  <h3 className="font-extrabold text-lg">{t.app}</h3>
+                  <p className="text-[#0A0A0A]/50 text-[13px] mt-1">{t.tag} · {t.platform}</p>
+                  <p className="text-[#0A0A0A]/60 text-sm mt-3 leading-relaxed line-clamp-2">{t.description}</p>
+                  <div className="flex items-center justify-between mt-5 pt-4 border-t border-[#0A0A0A]/8">
+                    <span className="inline-flex items-center gap-1.5 text-[12px] text-[#0A0A0A]/45"><Icon name="gift" size={14} /> {t.reward} pts</span>
+                    <span className="inline-flex items-center gap-1.5 text-[12px] text-[#0A0A0A]/45"><Icon name="users" size={14} /> {t.participants}</span>
+                  </div>
                 </div>
               </div>
             ))}
