@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../AuthContext";
 import { inputCls } from "../ui";
@@ -8,7 +8,7 @@ import { authError, loginWithGoogle } from "../store";
 import logo from "../../assets/buylogo2.png";
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const loc = useLocation();
   const [f, setF] = useState({ email: "", password: "" });
@@ -16,23 +16,26 @@ export default function Login() {
   const [err, setErr] = useState("");
   const [info, setInfo] = useState("");
 
+  // Once authenticated (email or Google), route to the right place.
+  useEffect(() => {
+    if (!user) return;
+    navigate(user.onboarded ? (loc.state?.from || "/testers/dashboard") : "/testers/onboarding", { replace: true });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [busy, setBusy] = useState(false);
   const submit = async (e) => {
     e.preventDefault();
     setErr("");
     setBusy(true);
     try {
-      await login(f);
-      // Protected route guard sends non-onboarded users to onboarding.
-      navigate(loc.state?.from || "/testers/dashboard");
+      await login(f); // navigation handled by the effect once `user` is set
     } catch (e2) { setErr(authError(e2)); setBusy(false); }
   };
 
   const doGoogle = async () => {
     setErr(""); setInfo("");
     try {
-      await loginWithGoogle();
-      navigate(loc.state?.from || "/testers/dashboard");
+      await loginWithGoogle(); // navigation handled by the effect once `user` is set
     } catch (e2) { setErr(authError(e2)); }
   };
   const appleSoon = () => setInfo("Connexion Apple bientôt disponible — utilisez Google ou votre email.");

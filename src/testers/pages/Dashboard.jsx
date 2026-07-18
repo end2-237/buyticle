@@ -21,37 +21,53 @@ function StatTile({ label, value, delta, accent }) {
   );
 }
 
-const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
-const BARS = [30, 55, 40, 70, 45, 25, 15, 35, 60, 92, 68, 80];
-const ACTIVE_MONTH = 9;
+const MONTH_LABELS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 
-function ProgressChart() {
+/* Real chart: number of the user's reviews per month over the last 12 months */
+function ProgressChart({ mine }) {
+  const now = new Date();
+  const buckets = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (11 - i), 1);
+    return { m: d.getMonth(), y: d.getFullYear() };
+  });
+  const counts = buckets.map((b) => mine.filter((r) => {
+    const rd = new Date(r.createdAt);
+    return rd.getMonth() === b.m && rd.getFullYear() === b.y;
+  }).length);
+  const max = Math.max(1, ...counts);
+  const activeIdx = 11;
+  const ticks = Array.from({ length: 6 }, (_, i) => Math.round((max * (5 - i)) / 5));
+  const monthName = now.toLocaleDateString("fr-FR", { month: "long" });
+
   return (
     <div className="rounded-3xl bg-white border border-[#0A0A0A]/8 p-6 h-full">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="font-bold text-lg">Ma progression</h3>
+        <div>
+          <h3 className="font-bold text-lg">Ma progression</h3>
+          <p className="text-[11px] text-[#0A0A0A]/40">Retours soumis par mois</p>
+        </div>
         <span className="grid place-items-center w-9 h-9 rounded-full bg-[#0A0A0A]/[0.04] text-[#0A0A0A]/60"><Icon name="calendar" size={16} /></span>
       </div>
       <div className="flex gap-3">
         <div className="flex flex-col justify-between text-[10px] text-[#0A0A0A]/30 py-1 h-[180px]">
-          {[5, 4, 3, 2, 1, 0].map((n) => <span key={n}>{n}</span>)}
+          {ticks.map((n, i) => <span key={i}>{n}</span>)}
         </div>
         <div className="flex-1 relative">
           <div className="flex items-end gap-2 h-[180px]">
-            {BARS.map((h, i) => (
+            {counts.map((c, i) => (
               <div key={i} className="flex-1 flex flex-col items-center justify-end h-full group relative">
-                {i === ACTIVE_MONTH && (
-                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full bg-[#0A0A0A] text-white text-[10px] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg">
-                    <div className="font-bold">Octobre</div>
-                    <div className="text-white/60">Moy. 4h 20m / sem</div>
+                {i === activeIdx && (
+                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 -translate-y-full bg-[#0A0A0A] text-white text-[10px] rounded-lg px-2.5 py-1.5 whitespace-nowrap shadow-lg capitalize">
+                    <div className="font-bold">{monthName}</div>
+                    <div className="text-white/60">{c} retour{c > 1 ? "s" : ""}</div>
                   </div>
                 )}
-                <div className={`w-full rounded-t-md transition-all ${i === ACTIVE_MONTH ? "bg-[#FF4500]" : "bg-[#0A0A0A]/10 group-hover:bg-[#0A0A0A]/20"}`} style={{ height: `${h}%` }} />
+                <div className={`w-full rounded-t-md transition-all ${i === activeIdx ? "bg-[#FF4500]" : "bg-[#0A0A0A]/10 group-hover:bg-[#0A0A0A]/20"}`} style={{ height: `${Math.max(c ? 3 : 0, (c / max) * 100)}%` }} />
               </div>
             ))}
           </div>
           <div className="flex gap-2 mt-2">
-            {MONTHS.map((m, i) => <span key={i} className={`flex-1 text-center text-[10px] ${i === ACTIVE_MONTH ? "text-[#FF4500] font-bold" : "text-[#0A0A0A]/30"}`}>{m}</span>)}
+            {buckets.map((b, i) => <span key={i} className={`flex-1 text-center text-[10px] ${i === activeIdx ? "text-[#FF4500] font-bold" : "text-[#0A0A0A]/30"}`}>{MONTH_LABELS[b.m]}</span>)}
           </div>
         </div>
       </div>
@@ -59,15 +75,22 @@ function ProgressChart() {
   );
 }
 
-const WEEK = [["L", 24], ["M", 25], ["M", 26], ["J", 27], ["V", 28], ["S", 29], ["D", 30]];
-const SCHED = [
-  { icon: "pen", title: "Test Buyticle — Paiement", tag: "Obligatoire", time: "11:30", dur: "15 min", color: "#FF4500" },
-  { icon: "clock", title: "Retour Eetra — Annonces", tag: "Recommandé", time: "10:30", dur: "20 min", color: "#F2A900" },
-  { icon: "check", title: "One Freestyle — Checkout", tag: "Terminé", time: "09:00", dur: "17 min", color: "#25C26E" },
-];
+const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+const STATUS_LABEL = { en_cours: "En cours", a_venir: "À venir", termine: "Terminé" };
 
-function Schedule() {
-  const active = 3;
+/* Real planning: current week + upcoming program deadlines from the DB */
+function Schedule({ tests }) {
+  const now = new Date();
+  const dow = (now.getDay() + 6) % 7; // Monday = 0
+  const monday = new Date(now); monday.setDate(now.getDate() - dow);
+  const week = Array.from({ length: 7 }, (_, i) => { const d = new Date(monday); d.setDate(monday.getDate() + i); return d; });
+  const sameDay = (a, b) => a.toDateString() === b.toDateString();
+
+  const upcoming = tests.filter((t) => t.status !== "termine")
+    .slice().sort((a, b) => new Date(a.endDate) - new Date(b.endDate)).slice(0, 3);
+  const daysLeft = (d) => Math.max(0, Math.ceil((new Date(d) - now) / 86400000));
+  const fmt = (d) => new Date(d).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
+
   return (
     <div className="rounded-3xl bg-white border border-[#0A0A0A]/8 p-6 h-full">
       <div className="flex items-center justify-between mb-5">
@@ -75,24 +98,28 @@ function Schedule() {
         <span className="grid place-items-center w-9 h-9 rounded-full bg-[#0A0A0A]/[0.04] text-[#0A0A0A]/60"><Icon name="calendar" size={16} /></span>
       </div>
       <div className="flex justify-between mb-6">
-        {WEEK.map(([d, n], i) => (
-          <div key={i} className="flex flex-col items-center gap-1.5">
-            <span className="text-[10px] text-[#0A0A0A]/35">{d}</span>
-            <span className={`grid place-items-center w-8 h-8 rounded-full text-[13px] font-semibold ${i === active ? "bg-[#FF4500] text-white" : "text-[#0A0A0A]/60"}`}>{n}</span>
-          </div>
-        ))}
+        {week.map((d, i) => {
+          const today = sameDay(d, now);
+          return (
+            <div key={i} className="flex flex-col items-center gap-1.5">
+              <span className="text-[10px] text-[#0A0A0A]/35">{DAY_LABELS[i]}</span>
+              <span className={`grid place-items-center w-8 h-8 rounded-full text-[13px] font-semibold ${today ? "bg-[#FF4500] text-white" : "text-[#0A0A0A]/60"}`}>{d.getDate()}</span>
+            </div>
+          );
+        })}
       </div>
       <div className="space-y-3">
-        {SCHED.map((s, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <span className="grid place-items-center w-9 h-9 rounded-xl shrink-0" style={{ background: `${s.color}1a`, color: s.color }}><Icon name={s.icon} size={16} /></span>
+        {upcoming.length === 0 && <p className="text-[13px] text-[#0A0A0A]/40 py-4 text-center">Aucune échéance à venir.</p>}
+        {upcoming.map((t) => (
+          <div key={t.id} className="flex items-center gap-3">
+            <span className="grid place-items-center w-9 h-9 rounded-xl shrink-0" style={{ background: `${t.color}1a`, color: t.color }}><Icon name={t.icon || appIcon(t.app)} size={16} /></span>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-semibold truncate">{s.title}</div>
-              <div className="text-[11px] text-[#0A0A0A]/40">{s.tag}</div>
+              <div className="text-[13px] font-semibold truncate">{t.app}</div>
+              <div className="text-[11px] text-[#0A0A0A]/40">{STATUS_LABEL[t.status]}</div>
             </div>
             <div className="text-right shrink-0">
-              <div className="text-[12px] font-semibold">{s.time}</div>
-              <div className="text-[10px] text-[#0A0A0A]/40">{s.dur}</div>
+              <div className="text-[12px] font-semibold">{fmt(t.endDate)}</div>
+              <div className="text-[10px] text-[#0A0A0A]/40">{daysLeft(t.endDate)} j</div>
             </div>
           </div>
         ))}
@@ -116,7 +143,14 @@ export default function Dashboard() {
   const mine = reviews.filter((r) => r.userId === user.id);
   const stats = computeStats(reviews, tests, user.id);
 
-  const progressOf = (t) => Math.min(95, 25 + (t.participants % 70));
+  // Real timeline progress of each program (elapsed vs total duration)
+  const progressOf = (t) => {
+    if (t.status === "termine") return 100;
+    if (t.status === "a_venir") return 0;
+    const s = new Date(t.startDate).getTime(), e = new Date(t.endDate).getTime();
+    if (!s || !e || e <= s) return 0;
+    return Math.max(0, Math.min(100, Math.round(((Date.now() - s) / (e - s)) * 100)));
+  };
   const filtered = tab === "all" ? tests : tests.filter((t) => t.status === tab);
   const newest = tests.find((t) => t.status === "en_cours") || tests[0] || { app: "", title: "Aucun test actif", description: "Les prochains programmes arrivent bientôt.", durationDays: 0, reward: 0, icon: "smartphone" };
 
@@ -129,8 +163,8 @@ export default function Dashboard() {
           <StatTile label="Programmes actifs" value={stats.activePrograms} delta="à rejoindre" />
           <StatTile label="Points gagnés" value={user.points || 0} delta="récompenses cumulées" accent />
         </div>
-        <div className="col-span-12 md:col-span-5"><ProgressChart /></div>
-        <div className="col-span-12 md:col-span-3"><Schedule /></div>
+        <div className="col-span-12 md:col-span-5"><ProgressChart mine={mine} /></div>
+        <div className="col-span-12 md:col-span-3"><Schedule tests={tests} /></div>
       </div>
 
       <div className="grid grid-cols-12 gap-4 mt-4" id="recompenses">
