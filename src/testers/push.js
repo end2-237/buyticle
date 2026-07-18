@@ -7,8 +7,8 @@ import { getMessaging, getToken, onMessage, isSupported } from "firebase/messagi
 import { app } from "../firebase";
 import { saveFcmToken } from "./store";
 
-// ⬇️ Collez ici votre clé "Web Push certificates" pour activer le push en arrière-plan
-const VAPID_KEY = "";
+// Clé publique "Web Push certificates" (Firebase Console → Cloud Messaging)
+const VAPID_KEY = "BOcfE6EXYg4jGvNTn5WP-scqF_9EAbo2I4Br2h0CyDJkDNww9HTvaK3yrff3QIT6ehiwSTArIhsp7UUK1Qd6bvc";
 
 export function canNotify() {
   return typeof window !== "undefined" && "Notification" in window;
