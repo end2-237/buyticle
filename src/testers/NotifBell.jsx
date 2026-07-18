@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Icon } from "./icons";
 import { timeAgo } from "./ui";
 import { useNotifications } from "./hooks";
@@ -8,16 +8,27 @@ export default function NotifBell({ uid }) {
   const notifs = useNotifications(uid) || [];
   const [open, setOpen] = useState(false);
   const seenKey = `bt_notif_seen_${uid}`;
+  const pushedKey = `bt_notif_pushed_${uid}`;
   const [seenAt, setSeenAt] = useState(() => Number(localStorage.getItem(seenKey) || 0));
-  const knownIds = useRef(null);
 
-  // Foreground browser notifications for freshly-arrived items
+  // Foreground browser notifications — de-dup persisted in localStorage so
+  // navigating between pages (which remounts this component) never re-fires them.
   useEffect(() => {
-    if (!notifs) return;
-    if (knownIds.current === null) { knownIds.current = new Set(notifs.map((n) => n.id)); return; }
-    const fresh = notifs.filter((n) => !knownIds.current.has(n.id));
-    fresh.forEach((n) => { knownIds.current.add(n.id); showBrowserNotif(n.title, n.body, "/logo-buyticle.png"); });
-  }, [notifs]);
+    if (!notifs.length || !uid) return;
+    const stored = localStorage.getItem(pushedKey);
+    if (stored === null) {
+      // First run for this device: set a baseline, don't notify existing history
+      const newest = notifs.reduce((m, n) => Math.max(m, n.createdAt.getTime()), 0);
+      localStorage.setItem(pushedKey, String(newest || Date.now()));
+      return;
+    }
+    const last = Number(stored);
+    const fresh = notifs.filter((n) => n.createdAt.getTime() > last).sort((a, b) => a.createdAt - b.createdAt);
+    if (fresh.length) {
+      fresh.forEach((n) => showBrowserNotif(n.title, n.body, "/logo-buyticle.png"));
+      localStorage.setItem(pushedKey, String(Math.max(last, ...fresh.map((n) => n.createdAt.getTime()))));
+    }
+  }, [notifs, uid]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const unread = notifs.filter((n) => n.createdAt.getTime() > seenAt).length;
 
