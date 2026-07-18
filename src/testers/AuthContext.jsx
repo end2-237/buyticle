@@ -41,6 +41,10 @@ export function AuthProvider({ children }) {
       await store.completeOnboarding(auth.currentUser.uid, p);
       await refresh();
     }, [refresh]),
+    saveProfile: useCallback(async (data) => {
+      await store.saveProfile(auth.currentUser.uid, data);
+      await refresh();
+    }, [refresh]),
     refresh,
   };
 

@@ -128,10 +128,11 @@ export function DashboardShell({ children }) {
               {menuOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-[#0A0A0A]/8 p-2 z-20">
-                    <Link to="/testers/dashboard" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#0A0A0A]/[0.04]">Mon tableau de bord</Link>
-                    <Link to="/testers/tests" onClick={() => setMenuOpen(false)} className="block px-3 py-2 rounded-lg text-sm hover:bg-[#0A0A0A]/[0.04]">Tests communautaires</Link>
-                    <button onClick={doLogout} className="w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">Se déconnecter</button>
+                  <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-[#0A0A0A]/8 p-2 z-20">
+                    <Link to="/testers/profile" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[#0A0A0A]/[0.04]"><Icon name="users" size={15} /> Mon profil</Link>
+                    <Link to="/testers/dashboard" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[#0A0A0A]/[0.04]"><Icon name="layout-dashboard" size={15} /> Tableau de bord</Link>
+                    <Link to="/testers/tests" onClick={() => setMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm hover:bg-[#0A0A0A]/[0.04]"><Icon name="message-square" size={15} /> Tests communautaires</Link>
+                    <button onClick={doLogout} className="flex items-center gap-2 w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50"><Icon name="logout" size={15} /> Se déconnecter</button>
                   </div>
                 </>
               )}

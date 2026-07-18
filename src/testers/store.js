@@ -160,6 +160,13 @@ export async function ensureTesterDoc(uid, email) {
 export async function completeOnboarding(uid, profile) {
   await updateDoc(doc(db, "testers", uid), { profile, onboarded: true });
 }
+export async function saveProfile(uid, { phone, whatsapp, profile }) {
+  const patch = { onboarded: true };
+  if (phone !== undefined) patch.phone = String(phone).trim();
+  if (whatsapp !== undefined) patch.whatsapp = String(whatsapp).trim();
+  if (profile !== undefined) patch.profile = profile;
+  await updateDoc(doc(db, "testers", uid), patch);
+}
 
 /* ─── Tests / programs ─── */
 const mapDocs = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));

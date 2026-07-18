@@ -17,6 +17,7 @@ const Login = lazy(() => import("./testers/pages/Login.jsx"));
 const Dashboard = lazy(() => import("./testers/pages/Dashboard.jsx"));
 const Community = lazy(() => import("./testers/pages/Community.jsx"));
 const Admin = lazy(() => import("./testers/pages/Admin.jsx"));
+const Profile = lazy(() => import("./testers/pages/Profile.jsx"));
 
 function Loading() {
   return (
@@ -45,6 +46,7 @@ root.render(
             <Route path="/testers/onboarding" element={<Protected requireOnboarded={false}><Onboarding /></Protected>} />
             <Route path="/testers/success" element={<Protected><Success /></Protected>} />
             <Route path="/testers/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/testers/profile" element={<Protected requireOnboarded={false}><Profile /></Protected>} />
             <Route path="/testers/tests" element={<Protected><Community /></Protected>} />
             <Route path="/testers/admin" element={<Protected admin><Admin /></Protected>} />
 
