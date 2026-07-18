@@ -3,6 +3,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom";
 import { BuyMark, Btn } from "./ui";
 import { Icon } from "./icons";
 import { useAuth } from "./AuthContext";
+import NotifBell from "./NotifBell";
 import logo from "../assets/buylogo2.png";
 
 /* ─── Public program nav — transparent over the video hero, solid on scroll ─── */
@@ -113,10 +114,7 @@ export function DashboardShell({ children }) {
             <button className="hidden sm:grid place-items-center w-10 h-10 rounded-full text-[#0A0A0A]/60 hover:bg-[#0A0A0A]/[0.05] transition" aria-label="Recherche">
               <Icon name="search" size={18} />
             </button>
-            <button className="grid place-items-center w-10 h-10 rounded-full text-[#0A0A0A]/60 hover:bg-[#0A0A0A]/[0.05] transition relative" aria-label="Notifications">
-              <Icon name="bell" size={18} />
-              <span className="absolute top-2 right-2.5 w-2 h-2 rounded-full bg-[#FF4500]" />
-            </button>
+            <NotifBell uid={user?.id} />
             <div className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-[#0A0A0A]/[0.05] transition">
                 <span className="grid place-items-center w-9 h-9 rounded-full bg-[#FF4500] text-white text-xs font-bold">{initials}</span>

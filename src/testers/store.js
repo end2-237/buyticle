@@ -5,7 +5,7 @@
 import { db, auth } from "../firebase";
 import {
   collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp, writeBatch, increment,
+  onSnapshot, query, orderBy, where, serverTimestamp, writeBatch, increment, arrayUnion,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
@@ -113,6 +113,7 @@ export async function registerUser({ email, phone, whatsapp, password }) {
     email: clean, phone: String(phone || "").trim(), whatsapp: String(whatsapp || phone || "").trim(),
     role: "tester", profile: {}, onboarded: false, points: 0, createdAt: serverTimestamp(),
   });
+  await pushNotif({ audience: cred.user.uid, type: "welcome", icon: "award", title: "Bienvenue chez Buyticle ! 🎉", body: "Complétez votre profil et rejoignez votre premier test." });
   return cred.user;
 }
 export async function loginUser({ email, password }) {
@@ -155,6 +156,7 @@ export async function ensureTesterDoc(uid, email) {
   const isAdmin = email === ADMIN_EMAIL;
   const fresh = { email, phone: "", whatsapp: "", role: isAdmin ? "admin" : "tester", profile: isAdmin ? { fullName: "Admin Buyticle", city: "Douala", country: "Cameroun" } : {}, onboarded: isAdmin, points: 0, createdAt: serverTimestamp() };
   await setDoc(ref, fresh);
+  if (!isAdmin) await pushNotif({ audience: uid, type: "welcome", icon: "award", title: "Bienvenue chez Buyticle ! 🎉", body: "Complétez votre profil et rejoignez votre premier test." });
   return { id: uid, ...fresh };
 }
 export async function completeOnboarding(uid, profile) {
@@ -176,6 +178,14 @@ export function subscribeTests(cb) {
 export async function saveTest(t) {
   if (t.id) { await setDoc(doc(db, "tests", t.id), { ...t }, { merge: true }); return t.id; }
   const ref = await addDoc(collection(db, "tests"), { ...t, participants: t.participants || 0 });
+  // Broadcast: a new program is available / upcoming
+  await pushNotif({
+    audience: "all",
+    type: t.status === "a_venir" ? "test_upcoming" : "test_new",
+    title: t.status === "a_venir" ? "Nouveau test à venir" : "Nouveau test disponible",
+    body: `${t.app} — ${t.title}`,
+    icon: t.status === "a_venir" ? "clock" : "rocket",
+  });
   return ref.id;
 }
 export async function deleteTest(id) { await deleteDoc(doc(db, "tests", id)); }
@@ -189,16 +199,50 @@ export function subscribeReviews(cb) {
   return onSnapshot(query(collection(db, "reviews"), orderBy("createdAt", "desc")),
     (s) => cb(mapReviews(s)), (e) => console.warn("reviews sub:", e.code));
 }
-export async function submitReview({ testId, verdict, rating, title, body, user }) {
+export async function submitReview({ testId, verdict, rating, title, body, user, appName }) {
   await addDoc(collection(db, "reviews"), {
     testId, userId: user.id, userName: user.profile?.fullName || user.email.split("@")[0],
     verdict, rating: Number(rating) || 0, title, body, status: "ouvert", createdAt: serverTimestamp(),
   });
   const pts = verdict === "bug" ? 50 : verdict === "suggestion" ? 30 : 20;
   try { await updateDoc(doc(db, "testers", user.id), { points: increment(pts) }); } catch { /* ignore */ }
+  await pushNotif({
+    audience: user.id, type: "points", icon: "gift",
+    title: `+${pts} points gagnés 🎉`,
+    body: `Merci pour votre retour${appName ? ` sur ${appName}` : ""} !`,
+  });
 }
-export async function setReviewStatus(id, status) { await updateDoc(doc(db, "reviews", id), { status }); }
+export async function setReviewStatus(id, status, ownerId) {
+  await updateDoc(doc(db, "reviews", id), { status });
+  if (ownerId) {
+    const label = status === "resolu" ? "résolu" : status === "revu" ? "revu par l'équipe" : "rouvert";
+    await pushNotif({ audience: ownerId, type: "review_status", icon: "check-circle", title: "Mise à jour de votre retour", body: `Votre retour a été marqué comme ${label}.` });
+  }
+}
 export async function deleteReview(id) { await deleteDoc(doc(db, "reviews", id)); }
+
+/* ─── Notifications ─── */
+// audience = a user uid OR "all" for a broadcast
+export async function pushNotif({ audience, type, title, body, icon }) {
+  try {
+    await addDoc(collection(db, "notifications"), {
+      audience, type: type || "info", title, body: body || "", icon: icon || "bell", createdAt: serverTimestamp(),
+    });
+  } catch (e) { console.warn("notif:", e?.code || e?.message); }
+}
+// Live notifications for a user (their own + broadcasts), newest first
+export function subscribeNotifications(uid, cb) {
+  const q = query(collection(db, "notifications"), where("audience", "in", [uid, "all"]));
+  return onSnapshot(q, (s) => {
+    const list = s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() ?? new Date() }));
+    list.sort((a, b) => b.createdAt - a.createdAt);
+    cb(list);
+  }, (e) => console.warn("notif sub:", e.code));
+}
+// Save a device's FCM token on the user's profile (for background push)
+export async function saveFcmToken(uid, token) {
+  try { await updateDoc(doc(db, "testers", uid), { fcmTokens: arrayUnion(token) }); } catch { /* ignore */ }
+}
 
 /* ─── Testers (admin) ─── */
 export function subscribeTesters(cb) {

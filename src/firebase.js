@@ -27,4 +27,4 @@ const db = initializeFirestore(app, { experimentalAutoDetectLongPolling: true })
 const storage = getStorage(app);
 
 // Exporter les connexions
-export { db, auth , storage};
+export { app, db, auth, storage };

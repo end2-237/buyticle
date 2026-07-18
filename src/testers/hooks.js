@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { subscribeTests, subscribeReviews, subscribeTesters } from "./store";
+import { subscribeTests, subscribeReviews, subscribeTesters, subscribeNotifications } from "./store";
 
 export function useTests() {
   const [tests, setTests] = useState(null);
@@ -17,4 +17,10 @@ export function useTesters() {
   const [testers, setTesters] = useState(null);
   useEffect(() => subscribeTesters(setTesters), []);
   return testers;
+}
+
+export function useNotifications(uid) {
+  const [notifs, setNotifs] = useState(null);
+  useEffect(() => { if (!uid) return; return subscribeNotifications(uid, setNotifs); }, [uid]);
+  return notifs;
 }

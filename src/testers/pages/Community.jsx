@@ -42,7 +42,7 @@ export default function Community() {
     if (!form.title.trim() || !form.body.trim()) { setMsg("Ajoutez un titre et une description."); return; }
     setBusy(true);
     try {
-      await store.submitReview({ testId: selId, ...form, user });
+      await store.submitReview({ testId: selId, ...form, user, appName: sel?.app });
       setForm({ verdict: "bug", rating: 4, title: "", body: "" });
       setMsg("Merci ! Votre retour a été publié et vos points crédités.");
       setTimeout(() => setMsg(""), 3500);
@@ -177,7 +177,7 @@ export default function Community() {
                             {r.status === "resolu" ? "Résolu" : r.status === "revu" ? "Revu par l'équipe" : "Ouvert"}
                           </span>
                           {canModerate && r.status !== "resolu" && (
-                            <button onClick={() => store.setReviewStatus(r.id, r.status === "ouvert" ? "revu" : "resolu")}
+                            <button onClick={() => store.setReviewStatus(r.id, r.status === "ouvert" ? "revu" : "resolu", r.userId)}
                               className="text-[11px] text-[#FF4500] font-semibold hover:underline">
                               Marquer {r.status === "ouvert" ? "revu" : "résolu"}
                             </button>
