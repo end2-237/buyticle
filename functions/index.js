@@ -316,3 +316,63 @@ exports.pawapayRefundCallback = functions.https.onRequest((req, res) => {
   });
 });
 
+
+/* ──────────────────────────────────────────────────────────
+   Push FCM : envoie une notification aux appareils des testeurs
+   dès qu'un document est créé dans la collection "notifications".
+   audience = uid d'un testeur  |  "all" = diffusion à tous.
+   ────────────────────────────────────────────────────────── */
+const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+
+exports.sendNotification = onDocumentCreated("notifications/{id}", async (event) => {
+  const n = event.data && event.data.data();
+  if (!n) return;
+
+  // 1. Rassembler les tokens FCM cibles
+  let tokens = [];
+  if (n.audience === "all") {
+    const snap = await db.collection("testers").get();
+    snap.forEach((d) => {
+      const arr = d.data().fcmTokens;
+      if (Array.isArray(arr)) tokens.push(...arr);
+    });
+  } else if (n.audience) {
+    const d = await db.collection("testers").doc(n.audience).get();
+    const arr = d.exists ? d.data().fcmTokens : null;
+    if (Array.isArray(arr)) tokens = arr.slice();
+  }
+  tokens = [...new Set(tokens)].filter(Boolean);
+  if (!tokens.length) return;
+
+  // 2. Envoyer
+  const message = {
+    notification: { title: n.title || "Buyticle", body: n.body || "" },
+    webpush: {
+      notification: { icon: "https://buyticle.com/vite.svg" },
+      fcmOptions: { link: "https://buyticle.com/testers/dashboard" },
+    },
+    data: { type: n.type || "info" },
+    tokens,
+  };
+
+  try {
+    const resp = await admin.messaging().sendEachForMulticast(message);
+    // 3. Nettoyer les tokens invalides
+    const invalid = [];
+    resp.responses.forEach((r, i) => {
+      if (!r.success) {
+        const code = (r.error && r.error.code) || "";
+        if (code.includes("registration-token-not-registered") || code.includes("invalid-argument")) {
+          invalid.push(tokens[i]);
+        }
+      }
+    });
+    for (const tok of invalid) {
+      const q = await db.collection("testers").where("fcmTokens", "array-contains", tok).get();
+      await Promise.all(q.docs.map((d) => d.ref.update({ fcmTokens: admin.firestore.FieldValue.arrayRemove(tok) })));
+    }
+    console.log(`FCM: ${resp.successCount}/${tokens.length} envoyés (${invalid.length} tokens nettoyés)`);
+  } catch (e) {
+    console.error("Erreur envoi FCM:", e);
+  }
+});
