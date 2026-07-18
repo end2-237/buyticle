@@ -18,8 +18,8 @@ messaging.onBackgroundMessage((payload) => {
   const n = payload.notification || {};
   self.registration.showNotification(n.title || "Buyticle", {
     body: n.body || "",
-    icon: "/vite.svg",
-    badge: "/vite.svg",
+    icon: "/logo-buyticle.png",
+    badge: "/logo-buyticle.png",
     data: payload.data || {},
   });
 });

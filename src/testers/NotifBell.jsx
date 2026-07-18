@@ -16,7 +16,7 @@ export default function NotifBell({ uid }) {
     if (!notifs) return;
     if (knownIds.current === null) { knownIds.current = new Set(notifs.map((n) => n.id)); return; }
     const fresh = notifs.filter((n) => !knownIds.current.has(n.id));
-    fresh.forEach((n) => { knownIds.current.add(n.id); showBrowserNotif(n.title, n.body, "/vite.svg"); });
+    fresh.forEach((n) => { knownIds.current.add(n.id); showBrowserNotif(n.title, n.body, "/logo-buyticle.png"); });
   }, [notifs]);
 
   const unread = notifs.filter((n) => n.createdAt.getTime() > seenAt).length;

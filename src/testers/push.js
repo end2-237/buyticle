@@ -23,7 +23,7 @@ export async function requestNotifPermission() {
 export function showBrowserNotif(title, body, icon) {
   try {
     if (canNotify() && Notification.permission === "granted") {
-      new Notification(title, { body: body || "", icon: icon || "/vite.svg", badge: "/vite.svg" });
+      new Notification(title, { body: body || "", icon: icon || "/logo-buyticle.png", badge: "/logo-buyticle.png" });
     }
   } catch { /* ignore */ }
 }

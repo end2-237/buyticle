@@ -349,7 +349,7 @@ exports.sendNotification = functions.firestore
     const message = {
       notification: { title: n.title || "Buyticle", body: n.body || "" },
       webpush: {
-        notification: { icon: "https://buyticle.com/vite.svg" },
+        notification: { icon: "https://buyticle.com/logo-buyticle.png" },
         fcmOptions: { link: "https://buyticle.com/testers/dashboard" },
       },
       data: { type: String(n.type || "info") },
