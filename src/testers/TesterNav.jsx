@@ -114,7 +114,7 @@ export function DashboardShell({ children }) {
             <button className="hidden sm:grid place-items-center w-10 h-10 rounded-full text-[#0A0A0A]/60 hover:bg-[#0A0A0A]/[0.05] transition" aria-label="Recherche">
               <Icon name="search" size={18} />
             </button>
-            <NotifBell uid={user?.id} />
+            <NotifBell uid={user?.id} isAdmin={user?.role === "admin"} />
             <div className="relative">
               <button onClick={() => setMenuOpen(!menuOpen)} className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-full hover:bg-[#0A0A0A]/[0.05] transition">
                 <span className="grid place-items-center w-9 h-9 rounded-full bg-[#FF4500] text-white text-xs font-bold">{initials}</span>

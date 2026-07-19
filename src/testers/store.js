@@ -114,6 +114,7 @@ export async function registerUser({ email, phone, whatsapp, password }) {
     role: "tester", profile: {}, onboarded: false, points: 0, createdAt: serverTimestamp(),
   });
   await pushNotif({ audience: cred.user.uid, type: "welcome", icon: "award", title: "Bienvenue chez Buyticle ! 🎉", body: "Complétez votre profil et rejoignez votre premier test." });
+  await pushNotif({ audience: "admins", type: "new_tester", icon: "users", title: "Nouveau testeur inscrit", body: `${clean} a rejoint le programme.` });
   return cred.user;
 }
 export async function loginUser({ email, password }) {
@@ -156,7 +157,10 @@ export async function ensureTesterDoc(uid, email) {
   const isAdmin = email === ADMIN_EMAIL;
   const fresh = { email, phone: "", whatsapp: "", role: isAdmin ? "admin" : "tester", profile: isAdmin ? { fullName: "Admin Buyticle", city: "Douala", country: "Cameroun" } : {}, onboarded: isAdmin, points: 0, createdAt: serverTimestamp() };
   await setDoc(ref, fresh);
-  if (!isAdmin) await pushNotif({ audience: uid, type: "welcome", icon: "award", title: "Bienvenue chez Buyticle ! 🎉", body: "Complétez votre profil et rejoignez votre premier test." });
+  if (!isAdmin) {
+    await pushNotif({ audience: uid, type: "welcome", icon: "award", title: "Bienvenue chez Buyticle ! 🎉", body: "Complétez votre profil et rejoignez votre premier test." });
+    await pushNotif({ audience: "admins", type: "new_tester", icon: "users", title: "Nouveau testeur inscrit", body: `${email} a rejoint le programme (via Google).` });
+  }
   return { id: uid, ...fresh };
 }
 export async function completeOnboarding(uid, profile) {
@@ -211,6 +215,13 @@ export async function submitReview({ testId, verdict, rating, title, body, user,
     title: `+${pts} points gagnés 🎉`,
     body: `Merci pour votre retour${appName ? ` sur ${appName}` : ""} !`,
   });
+  // Prévenir l'équipe admin du nouveau retour
+  const reviewer = user.profile?.fullName || user.email.split("@")[0];
+  await pushNotif({
+    audience: "admins", type: "new_review", icon: "message-square",
+    title: "Nouveau retour reçu",
+    body: `${reviewer}${appName ? ` sur ${appName}` : ""} : ${title}`,
+  });
 }
 export async function setReviewStatus(id, status, ownerId) {
   await updateDoc(doc(db, "reviews", id), { status });
@@ -230,9 +241,11 @@ export async function pushNotif({ audience, type, title, body, icon }) {
     });
   } catch (e) { console.warn("notif:", e?.code || e?.message); }
 }
-// Live notifications for a user (their own + broadcasts), newest first
-export function subscribeNotifications(uid, cb) {
-  const q = query(collection(db, "notifications"), where("audience", "in", [uid, "all"]));
+// Live notifications for a user (their own + broadcasts + admins if admin)
+export function subscribeNotifications(uid, isAdmin, cb) {
+  const audiences = [uid, "all"];
+  if (isAdmin) audiences.push("admins");
+  const q = query(collection(db, "notifications"), where("audience", "in", audiences));
   return onSnapshot(q, (s) => {
     const list = s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() ?? new Date() }));
     list.sort((a, b) => b.createdAt - a.createdAt);

@@ -337,6 +337,12 @@ exports.sendNotification = functions.firestore
         const arr = d.data().fcmTokens;
         if (Array.isArray(arr)) tokens.push(...arr);
       });
+    } else if (n.audience === "admins") {
+      const admins = await db.collection("testers").where("role", "==", "admin").get();
+      admins.forEach((d) => {
+        const arr = d.data().fcmTokens;
+        if (Array.isArray(arr)) tokens.push(...arr);
+      });
     } else if (n.audience) {
       const d = await db.collection("testers").doc(n.audience).get();
       const arr = d.exists ? d.data().fcmTokens : null;

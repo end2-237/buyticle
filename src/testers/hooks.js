@@ -19,8 +19,8 @@ export function useTesters() {
   return testers;
 }
 
-export function useNotifications(uid) {
+export function useNotifications(uid, isAdmin = false) {
   const [notifs, setNotifs] = useState(null);
-  useEffect(() => { if (!uid) return; return subscribeNotifications(uid, setNotifs); }, [uid]);
+  useEffect(() => { if (!uid) return; return subscribeNotifications(uid, isAdmin, setNotifs); }, [uid, isAdmin]);
   return notifs;
 }

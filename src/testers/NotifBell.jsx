@@ -4,8 +4,8 @@ import { timeAgo } from "./ui";
 import { useNotifications } from "./hooks";
 import { initFcm, showBrowserNotif } from "./push";
 
-export default function NotifBell({ uid }) {
-  const notifs = useNotifications(uid) || [];
+export default function NotifBell({ uid, isAdmin }) {
+  const notifs = useNotifications(uid, isAdmin) || [];
   const [open, setOpen] = useState(false);
   const seenKey = `bt_notif_seen_${uid}`;
   const pushedKey = `bt_notif_pushed_${uid}`;
