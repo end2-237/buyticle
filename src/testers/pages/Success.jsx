@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { BuyMark, Btn } from "../ui";
 import { Icon, WhatsAppIcon } from "../icons";
 import { useAuth } from "../AuthContext";
-import { WHATSAPP_GROUP } from "../store";
+import { WHATSAPP_GROUP, WHATSAPP_SUPPORT } from "../store";
 
 export default function Success() {
   const { user } = useAuth();
@@ -50,6 +50,13 @@ export default function Success() {
           <div className="mt-8">
             <Btn to="/testers/dashboard" variant="primary">Aller à mon tableau de bord</Btn>
           </div>
+
+          <p className="text-[13px] text-[#0A0A0A]/45 mt-6">
+            Besoin d'aide ?{" "}
+            <a href={`https://wa.me/${WHATSAPP_SUPPORT}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-semibold text-[#128C4A] hover:underline align-middle">
+              <WhatsAppIcon size={13} /> Service client
+            </a>
+          </p>
         </div>
       </div>
     </div>

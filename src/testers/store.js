@@ -13,7 +13,8 @@ import {
 } from "firebase/auth";
 
 export const WHATSAPP_NUMBER = "237696995879";
-export const WHATSAPP_GROUP = "https://chat.whatsapp.com/Buyticle-Testeurs";
+export const WHATSAPP_SUPPORT = "237640349236"; // service client
+export const WHATSAPP_GROUP = "https://chat.whatsapp.com/CY3CbFlMIZNBhNVOUriIFq";
 export const ADMIN_EMAIL = "admin@buyticle.com";
 export const ADMIN_PASSWORD = "admin123";
 

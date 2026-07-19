@@ -5,7 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProgramNav } from "../TesterNav";
 import { Btn, StatusBadge } from "../ui";
 import { Icon, appIcon, WhatsAppIcon } from "../icons";
-import { REWARDS, WHATSAPP_GROUP } from "../store";
+import { REWARDS, WHATSAPP_GROUP, WHATSAPP_SUPPORT } from "../store";
 import { useTests } from "../hooks";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -322,8 +322,16 @@ export default function ProgramLanding() {
         </div>
       </section>
 
-      <footer className="border-t border-[#0A0A0A]/8 py-8 text-center text-[#0A0A0A]/40 text-xs">
-        BUYTICLE · Programme Testeurs · Douala, Cameroun · Est. 2025
+      <footer className="border-t border-[#0A0A0A]/8 py-8">
+        <div className="max-w-[1120px] mx-auto px-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-[#0A0A0A]/40">
+          <span>BUYTICLE · Programme Testeurs · Douala, Cameroun · Est. 2025</span>
+          <div className="flex items-center gap-5">
+            <a href={`https://wa.me/${WHATSAPP_SUPPORT}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-[#128C4A] hover:underline">
+              <WhatsAppIcon size={14} /> Service client
+            </a>
+            <a href={WHATSAPP_GROUP} target="_blank" rel="noreferrer" className="hover:text-[#0A0A0A] transition">Groupe testeurs</a>
+          </div>
+        </div>
       </footer>
     </div>
   );
