@@ -177,7 +177,7 @@ export default function Community() {
                             {r.status === "resolu" ? "Résolu" : r.status === "revu" ? "Revu par l'équipe" : "Ouvert"}
                           </span>
                           {canModerate && r.status !== "resolu" && (
-                            <button onClick={() => store.setReviewStatus(r.id, r.status === "ouvert" ? "revu" : "resolu", r.userId)}
+                            <button onClick={() => store.setReviewStatus(r.id, r.status === "ouvert" ? "revu" : "resolu", r.userId, r.title)}
                               className="text-[11px] text-[#FF4500] font-semibold hover:underline">
                               Marquer {r.status === "ouvert" ? "revu" : "résolu"}
                             </button>

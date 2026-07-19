@@ -136,7 +136,7 @@ export default function Admin() {
                 <p className="text-[13px] text-[#0A0A0A]/60 mt-1">{r.body}</p>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
-                <Select value={r.status} onChange={(e) => store.setReviewStatus(r.id, e.target.value, r.userId)} className="!py-1.5 !text-[12px] !w-auto">
+                <Select value={r.status} onChange={(e) => store.setReviewStatus(r.id, e.target.value, r.userId, r.title)} className="!py-1.5 !text-[12px] !w-auto">
                   <option value="ouvert">Ouvert</option>
                   <option value="revu">Revu</option>
                   <option value="resolu">Résolu</option>

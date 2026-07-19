@@ -223,11 +223,18 @@ export async function submitReview({ testId, verdict, rating, title, body, user,
     body: `${reviewer}${appName ? ` sur ${appName}` : ""} : ${title}`,
   });
 }
-export async function setReviewStatus(id, status, ownerId) {
+export async function setReviewStatus(id, status, ownerId, reviewTitle) {
   await updateDoc(doc(db, "reviews", id), { status });
   if (ownerId) {
-    const label = status === "resolu" ? "résolu" : status === "revu" ? "revu par l'équipe" : "rouvert";
-    await pushNotif({ audience: ownerId, type: "review_status", icon: "check-circle", title: "Mise à jour de votre retour", body: `Votre retour a été marqué comme ${label}.` });
+    const map = { resolu: "résolu", revu: "revu par l'équipe", ouvert: "rouvert" };
+    const label = map[status] || status;
+    const title = status === "revu" ? "Votre retour a été revu 👀" : status === "resolu" ? "Votre retour est résolu ✅" : "Statut de votre retour mis à jour";
+    const what = reviewTitle ? `« ${reviewTitle} »` : "Votre retour";
+    await pushNotif({
+      audience: ownerId, type: "review_status", icon: "check-circle",
+      title,
+      body: `${what} a été marqué comme ${label} par l'équipe Buyticle.`,
+    });
   }
 }
 export async function deleteReview(id) { await deleteDoc(doc(db, "reviews", id)); }
