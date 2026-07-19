@@ -32,6 +32,11 @@ export default function NotifBell({ uid }) {
 
   const unread = notifs.filter((n) => n.createdAt.getTime() > seenAt).length;
 
+  // iOS n'autorise le push web que pour un site installé sur l'écran d'accueil (PWA, iOS 16.4+)
+  const isIos = typeof navigator !== "undefined" && /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const standalone = typeof window !== "undefined" && (window.navigator.standalone === true || window.matchMedia?.("(display-mode: standalone)").matches);
+  const iosNeedsInstall = isIos && !standalone;
+
   const toggle = () => {
     const next = !open;
     setOpen(next);
@@ -59,6 +64,11 @@ export default function NotifBell({ uid }) {
               <span className="font-bold text-sm">Notifications</span>
               <span className="text-[11px] text-[#0A0A0A]/40">{notifs.length}</span>
             </div>
+            {iosNeedsInstall && (
+              <div className="px-4 py-3 bg-[#FF4500]/[0.06] border-b border-[#FF4500]/20 text-[12px] text-[#0A0A0A]/70 leading-snug">
+                <span className="font-semibold text-[#FF4500]">Sur iPhone :</span> pour recevoir les notifications, appuyez sur <b>Partager</b> → <b>Sur l'écran d'accueil</b>, puis ouvrez l'app installée.
+              </div>
+            )}
             <div className="max-h-[380px] overflow-y-auto">
               {notifs.length === 0 && (
                 <div className="px-4 py-10 text-center text-sm text-[#0A0A0A]/40">
