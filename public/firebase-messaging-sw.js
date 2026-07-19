@@ -12,6 +12,10 @@ firebase.initializeApp({
   appId: "1:313383491173:web:ed31f670800661f90f188c",
 });
 
+// Activate the updated worker immediately (so icon/tag fixes propagate fast)
+self.addEventListener("install", () => self.skipWaiting());
+self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
+
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
@@ -20,6 +24,8 @@ messaging.onBackgroundMessage((payload) => {
     body: n.body || "",
     icon: "/logo-buyticle.png",
     badge: "/logo-buyticle.png",
+    tag: (payload.data && payload.data.tag) || undefined,
+    renotify: false,
     data: payload.data || {},
   });
 });

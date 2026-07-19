@@ -352,7 +352,7 @@ exports.sendNotification = functions.firestore
         notification: { icon: "https://buyticle.com/logo-buyticle.png" },
         fcmOptions: { link: "https://buyticle.com/testers/dashboard" },
       },
-      data: { type: String(n.type || "info") },
+      data: { type: String(n.type || "info"), tag: snap.id },
       tokens,
     };
 

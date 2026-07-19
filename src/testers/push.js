@@ -20,10 +20,16 @@ export async function requestNotifPermission() {
   try { return await Notification.requestPermission(); } catch { return "default"; }
 }
 
-export function showBrowserNotif(title, body, icon) {
+export function showBrowserNotif(title, body, icon, tag) {
   try {
     if (canNotify() && Notification.permission === "granted") {
-      new Notification(title, { body: body || "", icon: icon || "/logo-buyticle.png", badge: "/logo-buyticle.png" });
+      new Notification(title, {
+        body: body || "",
+        icon: icon || "/logo-buyticle.png",
+        badge: "/logo-buyticle.png",
+        tag: tag || undefined,   // same tag ⇒ the browser replaces, never stacks a duplicate
+        renotify: false,
+      });
     }
   } catch { /* ignore */ }
 }
@@ -42,11 +48,9 @@ export async function initFcm(uid) {
       reg = await navigator.serviceWorker.register("/firebase-messaging-sw.js").catch(() => null);
     }
     const messaging = getMessaging(app);
-    // Foreground messages → show a browser notification
-    onMessage(messaging, (payload) => {
-      const n = payload?.notification || {};
-      showBrowserNotif(n.title || "Buyticle", n.body || "", n.icon);
-    });
+    // Foreground messages: do NOT show a notification here — the in-app
+    // Firestore listener (NotifBell) already shows it, so this avoids a double.
+    onMessage(messaging, () => { /* handled in-app */ });
     // Register this device's token for background push (only if a VAPID key is set)
     if (VAPID_KEY) {
       const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg || undefined }).catch(() => null);

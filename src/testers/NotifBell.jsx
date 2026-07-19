@@ -25,7 +25,7 @@ export default function NotifBell({ uid }) {
     const last = Number(stored);
     const fresh = notifs.filter((n) => n.createdAt.getTime() > last).sort((a, b) => a.createdAt - b.createdAt);
     if (fresh.length) {
-      fresh.forEach((n) => showBrowserNotif(n.title, n.body, "/logo-buyticle.png"));
+      fresh.forEach((n) => showBrowserNotif(n.title, n.body, "/logo-buyticle.png", n.id));
       localStorage.setItem(pushedKey, String(Math.max(last, ...fresh.map((n) => n.createdAt.getTime()))));
     }
   }, [notifs, uid]); // eslint-disable-line react-hooks/exhaustive-deps
