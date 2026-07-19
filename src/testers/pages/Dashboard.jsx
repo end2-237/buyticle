@@ -3,7 +3,8 @@ import { Link } from "react-router-dom";
 import { DashboardShell } from "../TesterNav";
 import { useAuth } from "../AuthContext";
 import { Icon, appIcon } from "../icons";
-import { REWARDS, computeStats } from "../store";
+import { REWARDS, computeStats, WHATSAPP_GROUP } from "../store";
+import { WhatsAppIcon } from "../icons";
 import { useTests, useReviews } from "../hooks";
 
 function StatTile({ label, value, delta, accent }) {
@@ -166,6 +167,19 @@ export default function Dashboard() {
         <div className="col-span-12 md:col-span-5"><ProgressChart mine={mine} /></div>
         <div className="col-span-12 md:col-span-3"><Schedule tests={tests} /></div>
       </div>
+
+      {/* WhatsApp group — reserved for registered testers */}
+      <a href={WHATSAPP_GROUP} target="_blank" rel="noreferrer"
+        className="mt-4 rounded-3xl p-6 flex items-center gap-4 flex-wrap group border border-[#25D366]/30 bg-[#25D366]/[0.06] hover:border-[#25D366] transition">
+        <span className="grid place-items-center w-12 h-12 rounded-2xl bg-[#25D366]/15 text-[#128C4A] shrink-0"><WhatsAppIcon size={26} /></span>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-extrabold text-lg leading-tight">Groupe WhatsApp des testeurs</h3>
+          <p className="text-[13px] text-[#0A0A0A]/55 mt-0.5">Recevez les nouveaux tests en avant-première et échangez avec la communauté. Réservé aux testeurs inscrits.</p>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-full bg-[#25D366] text-white px-6 py-3 text-sm font-bold shrink-0 group-hover:gap-3 transition-all">
+          Rejoindre le groupe <Icon name="arrow-right" size={16} />
+        </span>
+      </a>
 
       <div className="grid grid-cols-12 gap-4 mt-4" id="recompenses">
         <div className="col-span-12 lg:col-span-8 rounded-3xl bg-white border border-[#0A0A0A]/8 p-6">

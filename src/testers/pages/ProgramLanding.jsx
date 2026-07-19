@@ -5,7 +5,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ProgramNav } from "../TesterNav";
 import { Btn, StatusBadge } from "../ui";
 import { Icon, appIcon, WhatsAppIcon } from "../icons";
-import { REWARDS, WHATSAPP_GROUP, WHATSAPP_SUPPORT } from "../store";
+import { REWARDS, WHATSAPP_SUPPORT } from "../store";
 import { useTests } from "../hooks";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -311,12 +311,15 @@ export default function ProgramLanding() {
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3 mt-8 relative">
             <Btn to="/testers/register" className="!bg-white !text-[#0A0A0A] hover:!bg-[#0A0A0A] hover:!text-white">Devenir testeur</Btn>
-            <a href={WHATSAPP_GROUP} target="_blank" rel="noreferrer"
+            <Link to="/testers/register"
               className="inline-flex items-center gap-2 rounded-full border border-white/40 text-white px-7 py-3.5 text-sm font-semibold hover:bg-white/10 transition">
-              <WhatsAppIcon size={16} /> Rejoindre le WhatsApp
-            </a>
+              <WhatsAppIcon size={16} /> Rejoindre le groupe WhatsApp
+            </Link>
           </div>
-          <p className="text-white/60 text-xs mt-6 relative">
+          <p className="text-white/60 text-xs mt-4 relative">
+            Le groupe est réservé aux testeurs inscrits — l'accès vous sera donné après votre inscription.
+          </p>
+          <p className="text-white/60 text-xs mt-2 relative">
             Déjà membre ? <Link to="/testers/login" className="underline">Se connecter</Link>
           </p>
         </div>
@@ -329,7 +332,7 @@ export default function ProgramLanding() {
             <a href={`https://wa.me/${WHATSAPP_SUPPORT}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 font-semibold text-[#128C4A] hover:underline">
               <WhatsAppIcon size={14} /> Service client
             </a>
-            <a href={WHATSAPP_GROUP} target="_blank" rel="noreferrer" className="hover:text-[#0A0A0A] transition">Groupe testeurs</a>
+            <Link to="/testers/register" className="hover:text-[#0A0A0A] transition">Rejoindre le programme</Link>
           </div>
         </div>
       </footer>

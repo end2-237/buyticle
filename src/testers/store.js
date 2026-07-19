@@ -14,7 +14,7 @@ import {
 
 export const WHATSAPP_NUMBER = "237696995879";
 export const WHATSAPP_SUPPORT = "237640349236"; // service client
-export const WHATSAPP_GROUP = "https://chat.whatsapp.com/CY3CbFlMIZNBhNVOUriIFq";
+export const WHATSAPP_GROUP = "https://chat.whatsapp.com/CY3CbFlMIZNBhNVOUriIFq?s=sw&p=i&ilr=4&amv=2";
 export const ADMIN_EMAIL = "admin@buyticle.com";
 export const ADMIN_PASSWORD = "admin123";
 
