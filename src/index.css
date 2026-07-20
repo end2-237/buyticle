@@ -4,7 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Tester program — clean geometric sans (Plus Jakarta Sans) */
+/* ─── Tester program — clean geometric sans (Plus Jakarta Sans) ─── */
 .font-jakarta {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -40,10 +40,15 @@
 /* ─── Reset / Base ─── */
 @layer base {
   *, *::before, *::after { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+
+  html {
+    scroll-behavior: smooth;
+    font-size: 16px;
+  }
+
   body {
-    background-color: #EDECEA;
-    color: #0A0A0A;
+    background-color: #0A0A0A;
+    color: #F0EDE8;
     font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -51,31 +56,72 @@
   }
 }
 
+/* ─── Grain film overlay ─── */
+.grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px;
+}
+
 /* ─── Marquee ─── */
 .marquee-track {
   display: flex;
   gap: 0;
   white-space: nowrap;
+  will-change: transform;
   animation: marquee-scroll 35s linear infinite;
 }
+
 @keyframes marquee-scroll {
   from { transform: translateX(0); }
   to   { transform: translateX(-50%); }
 }
 
-/* ─── Scrollbar ─── */
+/* ─── Text stroke utility ─── */
+.text-stroke {
+  -webkit-text-stroke: 2px #F0EDE8;
+  color: transparent;
+}
+
+/* ─── Hover underline ─── */
+.hover-underline {
+  position: relative;
+  display: inline-block;
+}
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1px;
+  background: currentColor;
+  transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hover-underline:hover::after { width: 100%; }
+
+/* ─── Custom scrollbar ─── */
 ::-webkit-scrollbar { width: 3px; }
-::-webkit-scrollbar-track { background: #EDECEA; }
-::-webkit-scrollbar-thumb { background: #0A0A0A; border-radius: 2px; }
+::-webkit-scrollbar-track { background: #0A0A0A; }
+::-webkit-scrollbar-thumb { background: #FF4500; border-radius: 2px; }
 
 /* ─── Selection ─── */
-::selection { background: #0A0A0A; color: #EDECEA; }
+::selection { background: #FF4500; color: #fff; }
 
-/* ─── GSAP clip ─── */
-.clip-wrap { overflow: hidden; }
+/* ─── GSAP clip reveal helper ─── */
+.clip-reveal-wrap { overflow: hidden; }
 
-/* ─── Contact/services pages keep light theme ─── */
-.page-light {
-  background-color: #EDECEA;
-  color: #0A0A0A;
+/* ─── Smooth image load ─── */
+img { transition: opacity 0.4s ease; }
+img[loading="lazy"] { opacity: 0; }
+img[loading="lazy"].loaded { opacity: 1; }
+
+/* ─── Nav glass ─── */
+.nav-glass {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }

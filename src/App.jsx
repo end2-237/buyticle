@@ -3,223 +3,19 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navigation from "./nav";
 import Footer from "./footer";
-import BackToTop from "./components/BackToTop";
-import FloatingBar from "./components/FloatingBar";
-import logo from "./assets/buylogo2.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
-/* ─── Lusion-style particle dunes — canvas, mouse-reactive ─── */
-function ParticleWaves() {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    let W = 0, H = 0, raf = 0, parts = [];
-    const mouse = { x: -9999, y: -9999 };
-    const COUNT = window.innerWidth < 768 ? 380 : 800;
-
-    const initParts = () => {
-      parts = [];
-      for (let i = 0; i < COUNT; i++) {
-        parts.push({
-          bx: Math.random() * W,
-          by: Math.random() * H,
-          kind: Math.floor(Math.random() * 4),
-          s: 1.4 + Math.random() * 2.4,
-          ph: Math.random() * Math.PI * 2,
-          sp: 0.35 + Math.random() * 0.75,
-          fl: 6 + Math.random() * 18,      // slow downward flow (liquid feel)
-          o: 0.45 + Math.random() * 0.55,
-        });
-      }
-    };
-
-    const resize = () => {
-      W = canvas.clientWidth; H = canvas.clientHeight;
-      canvas.width = W * dpr; canvas.height = H * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      initParts();
-    };
-
-    const draw = (tms) => {
-      const t = tms / 1000;
-      ctx.clearRect(0, 0, W, H);
-      ctx.fillStyle = "#FFFFFF";
-      for (const p of parts) {
-        // gentle wave drift + continuous downward flow (wraps around)
-        let x = p.bx + Math.sin(t * p.sp + p.ph) * 6;
-        let y = (p.by + t * p.fl) % (H + 20) - 10;
-        y += Math.cos(t * p.sp * 0.8 + p.ph) * 4 +
-             Math.sin(p.bx * 0.004 + t * 0.55) * 7;
-        // mouse repulsion (fluid feel)
-        const dx = x - mouse.x, dy = y - mouse.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < 19600) {
-          const d = Math.sqrt(d2) || 1;
-          const f = ((140 - d) / 140) * 42;
-          x += (dx / d) * f;
-          y += (dy / d) * f;
-        }
-        ctx.globalAlpha = p.o;
-        const s = p.s;
-        if (p.kind === 0) {
-          ctx.beginPath(); ctx.arc(x, y, s, 0, 6.2832); ctx.fill();
-        } else if (p.kind === 1) {
-          ctx.fillRect(x - s, y - s, s * 2, s * 2);
-        } else if (p.kind === 2) {
-          ctx.beginPath();
-          ctx.moveTo(x, y - s * 1.2);
-          ctx.lineTo(x - s, y + s * 0.9);
-          ctx.lineTo(x + s, y + s * 0.9);
-          ctx.closePath(); ctx.fill();
-        } else {
-          ctx.fillRect(x - s, y - s * 0.3, s * 2, s * 0.6);
-          ctx.fillRect(x - s * 0.3, y - s, s * 0.6, s * 2);
-        }
-      }
-      ctx.globalAlpha = 1;
-
-      // ── Animated wave at the bottom of the hero ──
-      // Gradient: orange at wave-top → #EDECEA at canvas-bottom (matches next section)
-      const wt = t * 0.7;
-      const amp  = H * 0.055;
-      const amp2 = H * 0.030;
-      const waveTopY = H * 0.82 - amp - amp2; // approximate highest point of wave
-
-      const waveGrad = ctx.createLinearGradient(0, waveTopY, 0, H);
-      waveGrad.addColorStop(0,   "#FF4500");   // matches hero background exactly
-      waveGrad.addColorStop(1,   "#EDECEA");   // matches the next section bg
-
-      ctx.beginPath();
-      ctx.moveTo(-10, H);
-      for (let px = 0; px <= W + 10; px += 4) {
-        const wy =
-          H * 0.82 +
-          Math.sin(px * 0.006 + wt) * amp +
-          Math.sin(px * 0.0023 - wt * 0.6) * amp2;
-        if (px === 0) ctx.moveTo(px, wy);
-        else ctx.lineTo(px, wy);
-      }
-      ctx.lineTo(W + 10, H);
-      ctx.lineTo(-10, H);
-      ctx.closePath();
-      ctx.fillStyle = waveGrad;
-      ctx.fill();
-
-      raf = requestAnimationFrame(draw);
-    };
-
-    const onMove = (e) => {
-      const r = canvas.getBoundingClientRect();
-      mouse.x = e.clientX - r.left;
-      mouse.y = e.clientY - r.top;
-    };
-    const onLeave = () => { mouse.x = -9999; mouse.y = -9999; };
-
-    resize();
-    raf = requestAnimationFrame(draw);
-    window.addEventListener("resize", resize);
-    canvas.parentElement.addEventListener("pointermove", onMove);
-    canvas.parentElement.addEventListener("pointerleave", onLeave);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-      canvas.parentElement?.removeEventListener("pointermove", onMove);
-      canvas.parentElement?.removeEventListener("pointerleave", onLeave);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} className="hero-canvas absolute inset-0 w-full h-full" />;
-}
-
-/* ─── Professional loader — waits for real asset readiness ─── */
-function HeroLoader({ onDone }) {
-  const loaderRef = useRef(null);
-  const barRef = useRef(null);
-  const textRef = useRef(null);
-  const pctRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    const progress = { v: 0 };
-    let target = 0;
-
-    // Smoothly tween the bar toward the latest real progress target
-    const render = gsap.to(progress, {
-      v: () => target,
-      duration: 0.6,
-      ease: "power2.out",
-      paused: true,
-      onUpdate: () => {
-        if (barRef.current) barRef.current.style.transform = `scaleX(${progress.v / 100})`;
-        if (pctRef.current) pctRef.current.textContent = `${Math.round(progress.v)}%`;
-      },
-    });
-    const setTarget = (v) => { target = v; render.invalidate().restart(); };
-
-    gsap.from(textRef.current, { opacity: 0, y: 10, duration: 0.4, ease: "power3.out" });
-
-    // Real readiness checks:
-    const tasks = [
-      // 1. Fonts (the letter clip-paths depend on the loaded font metrics)
-      document.fonts ? document.fonts.ready : Promise.resolve(),
-      // 2. Hero image decoded
-      new Promise((res) => {
-        const img = new Image();
-        img.onload = res; img.onerror = res;
-        img.src = "/hero-brand.jpg";
-      }),
-      // 3. Particle canvas mounted & painted (two rAF ticks after layout)
-      new Promise((res) => {
-        const check = () => {
-          const cv = document.querySelector(".hero-canvas");
-          if (cv && cv.width > 0) requestAnimationFrame(() => requestAnimationFrame(res));
-          else setTimeout(check, 80);
-        };
-        check();
-      }),
-      // 4. Minimum display time so the loader never flashes
-      new Promise((res) => setTimeout(res, 1200)),
-    ];
-
-    let done = 0;
-    tasks.forEach((t) =>
-      t.then(() => {
-        if (cancelled) return;
-        done += 1;
-        setTarget((done / tasks.length) * 100);
-      })
-    );
-
-    Promise.all(tasks).then(() => {
-      if (cancelled) return;
-      setTarget(100);
-      gsap.to(loaderRef.current, {
-        opacity: 0, duration: 0.55, ease: "power2.inOut", delay: 0.45,
-        onComplete: onDone,
-      });
-    });
-
-    return () => { cancelled = true; render.kill(); };
-  }, []);
-
-  return (
-    <div ref={loaderRef} className="fixed inset-0 z-[100] bg-[#EDECEA] flex flex-col items-center justify-center pointer-events-none">
-      <img ref={textRef} src={logo} alt="Buyticle" className="h-10 w-auto mb-10" />
-      <div className="w-44 h-px bg-[#0A0A0A]/10 overflow-hidden rounded-full">
-        <div ref={barRef} className="h-full bg-[#FF4500] origin-left" style={{ transform: "scaleX(0)" }} />
-      </div>
-      <p ref={pctRef} className="text-[#0A0A0A]/30 font-mono text-[10px] tracking-[0.35em] mt-5">0%</p>
-    </div>
-  );
-}
-
-/* ─── Screenshot via thum.io ─── */
-const thumb = (url) =>
-  `https://image.thum.io/get/width/1200/crop/900/noanimate/${url}`;
+/* ─────────────────────────────────────────
+   DATA
+───────────────────────────────────────── */
+const services = [
+  { num: "01", label: "Développement Web & Mobile", detail: "Applications sur mesure, SaaS, e-commerce, APIs." },
+  { num: "02", label: "Design UI/UX", detail: "Identité visuelle, interfaces, expérience utilisateur." },
+  { num: "03", label: "Infogérance & Cloud", detail: "Hébergement VPS, maintenance, monitoring 24/7." },
+  { num: "04", label: "Commerce Général", detail: "Distribution, logistique, gestion de produits physiques." },
+  { num: "05", label: "Prestation & Conseil", detail: "Accompagnement stratégique, intégration, formation." },
+];
 
 const projects = [
   {
@@ -229,7 +25,9 @@ const projects = [
     href: "https://www.onefreestyle.store/",
     type: "E-commerce · Design",
     year: "2024",
-    desc: "Boutique en ligne spécialisée dans le sport et le lifestyle freestyle.",
+    desc: "Boutique en ligne spécialisée dans le sport et le style de vie freestyle.",
+    color: "#1a1a2e",
+    accent: "#e94560",
   },
   {
     num: "002",
@@ -239,6 +37,8 @@ const projects = [
     type: "SaaS · Web App",
     year: "2024",
     desc: "Plateforme digitale innovante pour la gestion et l'organisation d'espaces.",
+    color: "#0f3460",
+    accent: "#533483",
   },
   {
     num: "003",
@@ -248,303 +48,221 @@ const projects = [
     type: "Marketplace · Mobile",
     year: "2025",
     desc: "Marketplace Buyticle — achat et vente de produits locaux en toute simplicité.",
+    color: "#1b1b2f",
+    accent: "#FF4500",
   },
   {
     num: "004",
     name: "Camille",
     url: "camille.vps.buyticle.com",
-    href: "https://camille.vps.buyticle.com/",
+    href: "http://camille.vps.buyticle.com/",
     type: "Web · Vitrine",
     year: "2025",
     desc: "Site vitrine élégant hébergé sur l'infrastructure VPS de Buyticle.",
+    color: "#12172b",
+    accent: "#00b4d8",
   },
 ];
 
-const services = [
-  { num: "01", label: "Développement Web & Mobile", detail: "Applications sur mesure, SaaS, e-commerce, APIs." },
-  { num: "02", label: "Design UI/UX", detail: "Identité visuelle, interfaces, expérience utilisateur." },
-  { num: "03", label: "Infogérance & Cloud", detail: "Hébergement VPS, maintenance, monitoring 24/7." },
-  { num: "04", label: "Commerce Général", detail: "Distribution, logistique, gestion de produits physiques." },
-  { num: "05", label: "Prestation & Conseil", detail: "Accompagnement stratégique, intégration, formation." },
-];
-
 const tape = [
-  "Informatique", "Design", "Commerce", "Web Dev", "UI/UX",
-  "Cloud", "Cameroun", "Agence", "Mobile", "SaaS", "Infogérance", "Prestation",
+  "Informatique", "Design", "Commerce", "Web Dev",
+  "UI/UX", "Cloud", "Cameroun", "Agence", "Mobile",
+  "Prestation", "SaaS", "Infogérance",
 ];
 
-/* ─── Agency-style project card (awwwards directory) ─── */
-function AgencyCard({ p }) {
+/* ─────────────────────────────────────────
+   BROWSER MOCKUP PREVIEW
+───────────────────────────────────────── */
+function SitePreview({ href, color, accent }) {
+  const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+
   return (
-    <a
-      href={p.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="proj-card group block bg-[#1C1C1C] rounded-2xl overflow-hidden hover:-translate-y-1 transition-transform duration-400"
+    <div
+      className="relative w-full overflow-hidden rounded-2xl"
+      style={{ background: color, aspectRatio: "16/10" }}
     >
-      {/* Top row: logo + screenshot */}
-      <div className="flex items-start gap-4 p-5 pb-0">
-        {/* Logo circle */}
-        <div className="w-12 h-12 rounded-full bg-[#FF4500] flex items-center justify-center flex-shrink-0 text-white font-black text-sm">
-          {p.name.charAt(0)}
-        </div>
-        {/* Screenshot thumbnail */}
-        <div className="flex-1 rounded-xl overflow-hidden bg-[#2a2a2a]" style={{ aspectRatio: "16/10" }}>
-          <img
-            src={thumb(p.href)}
-            alt={p.name}
-            loading="lazy"
-            className="w-full h-full object-cover object-top"
-            onError={(e) => { e.currentTarget.parentElement.style.background = "#2a2a2a"; e.currentTarget.style.display = "none"; }}
-          />
-        </div>
+      {/* Browser chrome */}
+      <div className="absolute top-0 left-0 right-0 z-10 flex items-center gap-1.5 px-4 py-3"
+        style={{ background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)" }}>
+        <span className="w-2.5 h-2.5 rounded-full bg-red-500/70" />
+        <span className="w-2.5 h-2.5 rounded-full bg-yellow-400/70" />
+        <span className="w-2.5 h-2.5 rounded-full bg-green-500/70" />
+        <span
+          className="ml-3 flex-1 text-[10px] font-mono text-white/40 bg-white/5 rounded px-3 py-1 truncate"
+        >
+          {href.replace("http://", "").replace("https://", "")}
+        </span>
       </div>
 
-      {/* Dots (carousel indicator style) */}
-      <div className="flex items-center gap-1.5 px-5 pt-4">
-        <span className="w-2 h-2 rounded-full bg-white/70" />
-        <span className="w-2 h-2 rounded-full bg-white/20" />
-        <span className="w-2 h-2 rounded-full bg-white/20" />
-        <span className="w-2 h-2 rounded-full bg-white/20" />
-      </div>
-
-      {/* Info */}
-      <div className="px-5 pt-3 pb-5">
-        <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-1">Cameroun</p>
-        <div className="flex items-end justify-between gap-4 mb-2">
-          <h3 className="text-white text-2xl font-black tracking-tight leading-none group-hover:text-[#FF4500] transition-colors duration-300">
-            {p.name}
-          </h3>
-          <div className="border border-white/20 rounded-lg px-3 py-1.5 text-center flex-shrink-0">
-            <p className="text-white/40 text-[9px] font-mono uppercase tracking-wider leading-none">Type</p>
-            <p className="text-white text-sm font-bold leading-tight mt-0.5">{p.year}</p>
+      {/* Iframe scaled */}
+      {!failed && (
+        <div
+          className="absolute inset-0 top-10"
+          style={{ overflow: "hidden" }}
+        >
+          <div
+            style={{
+              width: "250%",
+              height: "250%",
+              transformOrigin: "top left",
+              transform: "scale(0.4)",
+              pointerEvents: "none",
+            }}
+          >
+            <iframe
+              src={href}
+              title={href}
+              loading="lazy"
+              style={{ width: "100%", height: "100%", border: "none" }}
+              onLoad={() => setLoaded(true)}
+              onError={() => setFailed(true)}
+              sandbox="allow-scripts allow-same-origin"
+            />
           </div>
         </div>
-        <div className="flex items-center justify-between pt-3 border-t border-white/10">
-          <span className="text-white/35 text-xs font-mono">{p.url}</span>
-          <span className="text-white/35 text-xs font-mono">{p.type.split(" · ")[0]}</span>
+      )}
+
+      {/* Placeholder if iframe blocked */}
+      {(!loaded || failed) && (
+        <div
+          className="absolute inset-0 top-10 flex flex-col items-center justify-center gap-4"
+          style={{ opacity: loaded ? 0 : 1, transition: "opacity 0.5s" }}
+        >
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black"
+            style={{ background: accent + "20", color: accent }}
+          >
+            ✦
+          </div>
+          <span className="text-white/30 text-xs font-mono">
+            {href.replace("http://", "").replace("https://", "")}
+          </span>
         </div>
-      </div>
-    </a>
+      )}
+    </div>
   );
 }
 
+/* ─────────────────────────────────────────
+   MAIN
+───────────────────────────────────────── */
 export default function App() {
-  const heroTagRef = useRef(null);
-  const heroBadgeRef = useRef(null);
-  const heroImgRef = useRef(null);
-  const [loaderDone, setLoaderDone] = useState(false);
+  const heroRef = useRef(null);
+  const line1Ref = useRef(null);
+  const line2Ref = useRef(null);
+  const subRef = useRef(null);
+  const ctaRef = useRef(null);
+  const [hoveredProject, setHoveredProject] = useState(null);
 
-  /* Water-fill animation — runs after loader fades out */
-  const startHeroAnim = () => {
-    setLoaderDone(true);
-    const ctx = gsap.context(() => {
-      // Tag + badge entrance
-      gsap.from(heroTagRef.current, { opacity: 0, y: 10, duration: 0.5, ease: "power3.out" });
-
-      // Title letters rise from below their line, slight stagger
-      gsap.fromTo(".hero-letter",
-        { yPercent: 110 },
-        { yPercent: 0, duration: 1.2, ease: "expo.out", stagger: 0.05, delay: 0.15 }
-      );
-
-      // Particle field fades in softly
-      gsap.from(".hero-canvas", { opacity: 0, duration: 1.6, ease: "power2.out", delay: 0.3 });
-
-      // Tagline + image
-      gsap.from(heroBadgeRef.current, { opacity: 0, y: 12, duration: 0.7, ease: "power3.out", delay: 1.0 });
-      gsap.from(heroImgRef.current,   { opacity: 0, y: 30, duration: 0.9, ease: "power3.out", delay: 1.2 });
-    });
-  };
-
-  /* Scroll animations — all scroll-triggered, independent of loader */
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Hero image zoom
-      gsap.timeline({
-        scrollTrigger: { trigger: ".hero-zoom", start: "top top", end: "+=140%", scrub: 1, pin: true, anticipatePin: 1 },
-        defaults: { ease: "none" },
-      })
-        .to(".zoom-wrap", { width: "100vw", height: "100vh", borderRadius: 0 })
-        .to(".zoom-img", { scale: 1 }, "<")
-        .to(".zoom-overlay", { opacity: 1 }, "<0.25")
-        .to(".zoom-text", { opacity: 1, y: 0, ease: "power2.out" }, "<0.3");
+      // Hero entrance — staggered lines
+      const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
+      tl.from(line1Ref.current, { y: "110%", duration: 1.1 })
+        .from(line2Ref.current, { y: "110%", duration: 1.1 }, "-=0.75")
+        .from(subRef.current, { opacity: 0, y: 30, duration: 0.7 }, "-=0.5")
+        .from(ctaRef.current, { opacity: 0, y: 20, duration: 0.6 }, "-=0.4");
 
-      // Manifesto word-by-word
-      gsap.to(".m-word", {
-        opacity: 1, stagger: 0.06, ease: "none",
-        scrollTrigger: { trigger: ".manifesto", start: "top 75%", end: "bottom 40%", scrub: 1 },
-      });
-
-      // Drift word parallax
-      gsap.to(".drift-word", {
-        xPercent: -30, ease: "none",
-        scrollTrigger: { trigger: ".immersion", start: "top bottom", end: "bottom top", scrub: 1 },
-      });
-
-      // Immersion cards
-      gsap.from(".imm-card", {
-        opacity: 0, y: 50, stagger: 0.15, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: ".imm-card", start: "top 85%" },
+      // Services list
+      gsap.from(".svc-row", {
+        opacity: 0, x: -50, stagger: 0.12, duration: 0.7,
+        scrollTrigger: { trigger: ".svc-section", start: "top 75%" },
       });
 
       // Project cards
       gsap.from(".proj-card", {
-        opacity: 0, y: 50, stagger: 0.12, duration: 0.8, ease: "power3.out",
-        scrollTrigger: { trigger: ".proj-section", start: "top 78%" },
+        opacity: 0, y: 80, stagger: 0.15, duration: 0.9, ease: "power3.out",
+        scrollTrigger: { trigger: ".proj-section", start: "top 70%" },
       });
 
-      // Services
-      gsap.from(".svc-row", {
-        opacity: 0, x: -30, stagger: 0.09, duration: 0.6,
-        scrollTrigger: { trigger: ".svc-section", start: "top 78%" },
-      });
-
+      // Section labels
       gsap.utils.toArray(".reveal-up").forEach((el) => {
         gsap.from(el, {
-          opacity: 0, y: 40, duration: 0.8,
+          opacity: 0, y: 50, duration: 0.8,
           scrollTrigger: { trigger: el, start: "top 88%" },
         });
       });
-    });
+    }, heroRef);
+
     return () => ctx.revert();
   }, []);
 
   return (
-    <div className="bg-[#EDECEA] text-[#0A0A0A] overflow-x-hidden selection:bg-[#0A0A0A] selection:text-[#EDECEA]">
-      {!loaderDone && <HeroLoader onDone={startHeroAnim} />}
+    <div ref={heroRef} className="bg-[#0A0A0A] text-[#F0EDE8] overflow-x-hidden selection:bg-[#FF4500] selection:text-white">
+      {/* Grain */}
+      <div className="grain" aria-hidden="true" />
+
       <Navigation />
 
       {/* ══════════════════════════════════════
-          HERO — Lusion style: vivid bg + particle dunes
+          HERO
       ══════════════════════════════════════ */}
-      <section className="relative min-h-screen flex flex-col justify-center bg-[#FF4500] text-white text-center overflow-hidden px-6 md:px-14">
+      <section className="relative min-h-screen flex flex-col justify-end px-6 md:px-14 pb-20 pt-36 overflow-hidden">
+        {/* Glow */}
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[500px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(ellipse, rgba(255,69,0,0.08) 0%, transparent 70%)" }} />
 
-        {/* Particle field (canvas) */}
-        <ParticleWaves />
-
-        {/* Tag line */}
-        <div ref={heroTagRef} className="relative z-10 flex items-center justify-center gap-3 mb-8 pt-24">
-          <span className="text-white/60 text-sm">Agence Digitale</span>
-          <span className="border border-white/40 text-white text-sm px-3 py-0.5 rounded font-medium">
-            Douala
-          </span>
-          <span className="text-white/60 text-sm">Est. 2025</span>
-        </div>
-
-        {/* Massive solid title — one line, per-letter rise */}
-        <h1 className="hero-title relative z-10 font-black tracking-[-0.04em] leading-[0.85] whitespace-nowrap text-[clamp(56px,11.5vw,210px)] select-none">
-          {"BUYTICLE".split("").map((l, i) => (
-            <span key={i} className="inline-block overflow-hidden align-bottom">
-              <span className="hero-letter inline-block will-change-transform">{l}</span>
-            </span>
-          ))}
-        </h1>
-
-        {/* Scroll pill — like Lusion "continue to scroll" */}
-        <div className="relative z-10 mt-14 mb-10 flex justify-center">
-          <div className="flex items-center gap-3 border border-white/35 rounded-full px-6 py-3 text-white/80 text-[11px] font-mono tracking-[0.25em] uppercase backdrop-blur-sm">
-            <span className="inline-block animate-bounce">↓</span>
-            Continuez de scroller
-          </div>
-        </div>
-
-        {/* Tagline badge */}
-        <div ref={heroBadgeRef} className="relative z-10 flex items-center justify-center gap-2 mt-2 mb-6">
-          <span className="text-white/55 text-sm font-mono tracking-wide">Informatique</span>
-          <span className="text-white/30">·</span>
-          <span className="text-white/55 text-sm font-mono tracking-wide">Design</span>
-          <span className="text-white/30">·</span>
-          <span className="text-white/55 text-sm font-mono tracking-wide">Commerce</span>
-          <span className="text-white/30">·</span>
-          <span className="text-white/55 text-sm font-mono tracking-wide">Douala 🇨🇲</span>
-        </div>
-
-      </section>
-
-      {/* ══════════════════════════════════════
-          HERO ZOOM — image expands to fullscreen on scroll
-      ══════════════════════════════════════ */}
-      <section className="hero-zoom relative h-screen overflow-hidden flex items-center justify-center">
-        <div
-          ref={heroImgRef}
-          className="zoom-wrap relative overflow-hidden rounded-2xl"
-          style={{ width: "86vw", height: "64vh" }}
-        >
-          <img
-            src="/hero-brand.jpg"
-            alt="Buyticle Brand"
-            className="zoom-img w-full h-full object-cover"
-            style={{ transform: "scale(1.15)" }}
-          />
-          {/* Darkening overlay revealed while expanding */}
-          <div className="zoom-overlay absolute inset-0 bg-[#0A0A0A]/45 opacity-0" />
-
-          {/* Text inside the image */}
-          <div className="zoom-text absolute inset-0 flex flex-col items-center justify-center text-center px-6 opacity-0" style={{ transform: "translateY(40px)" }}>
-            <p className="text-white/60 font-mono text-[10px] md:text-xs tracking-[0.5em] uppercase mb-6">
-              ✦ Depuis Douala, pour le monde
-            </p>
-            <h2 className="text-white text-[clamp(36px,7vw,110px)] font-black tracking-[-0.03em] leading-[0.92]">
-              On construit le<br />
-              <span style={{ WebkitTextStroke: "2px #fff", color: "transparent" }}>digital africain</span>
-            </h2>
-            <p className="text-white/50 text-sm md:text-base max-w-md mt-8 leading-relaxed">
-              Des produits pensés, designés et développés au Cameroun — utilisés chaque jour par des milliers de personnes.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
-          IMMERSION — complementary teal tone
-      ══════════════════════════════════════ */}
-      <section className="immersion relative bg-[#0E3331] text-[#EDECEA] overflow-hidden">
-        {/* Giant parallax outline word */}
-        <div className="pointer-events-none select-none absolute top-10 left-0 whitespace-nowrap">
-          <span
-            className="drift-word inline-block text-[clamp(90px,18vw,280px)] font-black tracking-[-0.04em] leading-none opacity-[0.07]"
-            style={{ WebkitTextStroke: "2px #EDECEA", color: "transparent" }}
-          >
-            CRÉATIVITÉ · TECHNOLOGIE · CRÉATIVITÉ · TECHNOLOGIE
-          </span>
-        </div>
-
-        <div className="max-w-[1400px] mx-auto px-6 md:px-14 py-40 relative z-10">
-          <p className="text-[#7FD1C0]/70 font-mono text-[10px] tracking-[0.4em] uppercase mb-12">✦ Manifesto</p>
-
-          {/* Word-by-word scroll reveal */}
-          <p className="manifesto text-[clamp(26px,4.2vw,64px)] font-black leading-[1.12] tracking-tight max-w-5xl">
-            {"Chaque pixel, chaque ligne de code, chaque produit que nous livrons porte une ambition : prouver que l'excellence digitale se fabrique aussi ici."
-              .split(" ")
-              .map((w, i) => (
-                <span key={i} className="m-word inline-block mr-[0.28em] opacity-20">{w}</span>
-              ))}
+        <div className="relative z-10 max-w-[1400px] mx-auto w-full">
+          {/* Tag */}
+          <p className="text-[#FF4500] font-mono text-[11px] tracking-[0.45em] uppercase mb-10">
+            Agence digitale · Cameroun ✦ est. 2023
           </p>
 
-          <div className="grid md:grid-cols-3 gap-10 mt-28">
-            {[
-              { t: "Vision", d: "Faire du Cameroun un hub de produits digitaux reconnus à l'international." },
-              { t: "Méthode", d: "Design d'abord, itérations rapides, obsession du détail et de la performance." },
-              { t: "Impact", d: "Des outils concrets qui servent les commerçants, créateurs et entreprises locales." },
-            ].map((b, i) => (
-              <div key={i} className="imm-card border-t border-[#EDECEA]/15 pt-6">
-                <p className="text-[#7FD1C0] font-mono text-[10px] tracking-[0.35em] uppercase mb-4">0{i + 1} — {b.t}</p>
-                <p className="text-[#EDECEA]/55 text-sm leading-relaxed">{b.d}</p>
-              </div>
-            ))}
+          {/* Headline — clipped lines for reveal animation */}
+          <div className="overflow-hidden leading-none">
+            <h1 ref={line1Ref}
+              className="text-[clamp(70px,13vw,200px)] font-black tracking-[-0.03em] leading-none"
+            >
+              BUYTICLE
+            </h1>
           </div>
+          <div className="overflow-hidden leading-none">
+            <h2 ref={line2Ref}
+              className="text-[clamp(24px,4.5vw,72px)] font-black tracking-[-0.02em] leading-none text-[#F0EDE8]/20 mt-2"
+            >
+              Tech · Design · Commerce
+            </h2>
+          </div>
+
+          {/* Sub + CTA row */}
+          <div ref={subRef}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-10 mt-14"
+          >
+            <p className="text-[#F0EDE8]/50 text-sm md:text-base max-w-sm leading-relaxed">
+              Nous concevons des expériences numériques, développons des plateformes et accompagnons les entreprises dans leur transformation digitale.
+            </p>
+            <div ref={ctaRef} className="flex gap-4 flex-wrap">
+              <a href="#projets"
+                className="group flex items-center gap-3 bg-[#FF4500] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#F0EDE8] hover:text-black transition-all duration-400"
+              >
+                Voir nos projets
+                <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
+              </a>
+              <a href="/contact"
+                className="flex items-center gap-3 border border-white/15 text-[#F0EDE8]/60 px-8 py-4 rounded-full text-sm font-semibold hover:border-white/40 hover:text-white transition-all duration-300"
+              >
+                Nous contacter
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Scroll line */}
+        <div className="absolute bottom-10 right-14 hidden md:flex flex-col items-center gap-3 text-[#F0EDE8]/20">
+          <span className="text-[9px] tracking-[0.4em] uppercase font-mono rotate-90 mb-8">Scroll</span>
+          <div className="w-px h-20 bg-gradient-to-b from-[#F0EDE8]/20 to-transparent" />
         </div>
       </section>
 
       {/* ══════════════════════════════════════
-          MARQUEE
+          MARQUEE TICKER
       ══════════════════════════════════════ */}
-      <div className="border-y border-[#0A0A0A]/10 py-4 overflow-hidden bg-[#E8E5E1]">
+      <div className="border-y border-white/[0.07] bg-[#0f0f0f] py-4 overflow-hidden">
         <div className="marquee-track">
           {[...tape, ...tape].map((t, i) => (
-            <span key={i} className="flex-shrink-0 text-[#0A0A0A]/30 text-[11px] font-mono tracking-[0.35em] uppercase">
-              {t}&nbsp;&nbsp;<span className="text-[#0A0A0A]/20">✦</span>&nbsp;&nbsp;
+            <span key={i} className="flex-shrink-0 text-[#F0EDE8]/25 text-[11px] font-mono tracking-[0.35em] uppercase">
+              {t}&nbsp;&nbsp;<span className="text-[#FF4500]">✦</span>&nbsp;&nbsp;
             </span>
           ))}
         </div>
@@ -553,15 +271,15 @@ export default function App() {
       {/* ══════════════════════════════════════
           STATEMENT
       ══════════════════════════════════════ */}
-      <section className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10">
-        <div className="max-w-[1400px] mx-auto grid md:grid-cols-12 gap-8">
-          <div className="md:col-span-2">
-            <span className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase">À propos</span>
+      <section className="py-36 px-6 md:px-14 border-b border-white/[0.07]">
+        <div className="max-w-[1400px] mx-auto grid md:grid-cols-12 gap-10">
+          <div className="md:col-span-2 flex items-start pt-2">
+            <span className="text-[#FF4500] font-mono text-[10px] tracking-[0.4em] uppercase">À propos</span>
           </div>
           <div className="md:col-span-10 reveal-up">
-            <p className="text-[clamp(20px,3vw,46px)] font-black leading-[1.15] tracking-tight">
+            <p className="text-[clamp(22px,3.5vw,52px)] font-black leading-[1.1] tracking-tight text-[#F0EDE8]/90">
               Buyticle est une agence camerounaise spécialisée dans le développement de produits digitaux, la prestation de services informatiques et le commerce général.{" "}
-              <span className="text-[#0A0A0A]/25">
+              <span className="text-[#F0EDE8]/25">
                 Nous construisons des outils qui simplifient la vie des entreprises et des particuliers.
               </span>
             </p>
@@ -570,28 +288,71 @@ export default function App() {
       </section>
 
       {/* ══════════════════════════════════════
-          PROJETS — awwwards directory style
+          PROJETS / WORKS
       ══════════════════════════════════════ */}
-      <section id="projets" className="proj-section py-24 px-6 md:px-14 bg-[#141414]">
+      <section id="projets" className="proj-section py-32 px-6 md:px-14">
         <div className="max-w-[1400px] mx-auto">
-
           {/* Header */}
-          <div className="flex items-end justify-between mb-10 reveal-up">
+          <div className="flex items-end justify-between mb-20 reveal-up">
             <div>
-              <p className="text-white/30 font-mono text-[10px] tracking-[0.4em] uppercase mb-4">Réalisations</p>
-              <h2 className="text-[clamp(40px,7vw,96px)] font-black tracking-[-0.03em] leading-none text-white">
-                PROJETS
+              <p className="text-[#FF4500] font-mono text-[10px] tracking-[0.4em] uppercase mb-4">Nos réalisations</p>
+              <h2 className="text-[clamp(40px,7vw,96px)] font-black tracking-[-0.03em] leading-none">
+                Projets
               </h2>
             </div>
-            <span className="text-white/15 font-mono text-sm hidden md:block">
+            <span className="text-[#F0EDE8]/20 font-mono text-sm hidden md:block">
               {projects.length.toString().padStart(2, "0")} projets
             </span>
           </div>
 
-          {/* Cards grid — awwwards directory layout */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Cards grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {projects.map((p, i) => (
-              <AgencyCard key={i} p={p} />
+              <a
+                key={i}
+                href={p.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="proj-card group block relative rounded-3xl overflow-hidden border border-white/[0.07] hover:border-white/20 transition-all duration-500 hover:-translate-y-2"
+                onMouseEnter={() => setHoveredProject(i)}
+                onMouseLeave={() => setHoveredProject(null)}
+                style={{ background: p.color }}
+              >
+                {/* Site preview */}
+                <div className="p-5 pb-0">
+                  <SitePreview href={p.href} color={p.color} accent={p.accent} />
+                </div>
+
+                {/* Info bar */}
+                <div className="p-6 flex items-end justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-[#F0EDE8]/30 font-mono text-[10px]">{p.num}</span>
+                      <span
+                        className="text-[10px] font-mono px-2 py-0.5 rounded-full border"
+                        style={{ borderColor: p.accent + "40", color: p.accent }}
+                      >
+                        {p.type}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black tracking-tight text-[#F0EDE8] group-hover:text-white transition-colors">
+                      {p.name}
+                    </h3>
+                    <p className="text-[#F0EDE8]/40 text-xs mt-1 font-mono">{p.url}</p>
+                  </div>
+                  <div
+                    className="w-10 h-10 rounded-full border flex items-center justify-center text-sm flex-shrink-0 group-hover:bg-[#FF4500] group-hover:border-[#FF4500] transition-all duration-300"
+                    style={{ borderColor: "rgba(240,237,232,0.2)", color: "rgba(240,237,232,0.5)" }}
+                  >
+                    ↗
+                  </div>
+                </div>
+
+                {/* Hover desc */}
+                <div className="px-6 pb-6 overflow-hidden max-h-0 group-hover:max-h-16 transition-all duration-500">
+                  <p className="text-[#F0EDE8]/50 text-xs leading-relaxed">{p.desc}</p>
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -600,37 +361,37 @@ export default function App() {
       {/* ══════════════════════════════════════
           SERVICES
       ══════════════════════════════════════ */}
-      <section className="svc-section py-28 px-6 md:px-14 bg-[#E8E5E1] border-y border-[#0A0A0A]/10">
+      <section className="svc-section py-32 px-6 md:px-14 bg-[#0d0d0d] border-y border-white/[0.07]">
         <div className="max-w-[1400px] mx-auto">
-          <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
+          <div className="grid md:grid-cols-12 gap-10 mb-16 reveal-up">
             <div className="md:col-span-2 pt-1">
-              <span className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase">Services</span>
+              <p className="text-[#FF4500] font-mono text-[10px] tracking-[0.4em] uppercase">Services</p>
             </div>
-            <div className="md:col-span-7">
+            <div className="md:col-span-6">
               <h2 className="text-[clamp(36px,5.5vw,80px)] font-black tracking-[-0.03em] leading-none">
                 Ce qu'on fait
               </h2>
             </div>
           </div>
 
-          <div className="divide-y divide-[#0A0A0A]/10">
+          <div className="divide-y divide-white/[0.07]">
             {services.map((s, i) => (
               <div key={i}
-                className="svc-row group grid md:grid-cols-12 gap-6 py-7 hover:bg-[#0A0A0A]/[0.03] -mx-4 px-4 rounded-xl transition-colors duration-200 cursor-default"
+                className="svc-row group grid md:grid-cols-12 gap-6 py-7 cursor-default hover:bg-white/[0.02] transition-colors duration-300 -mx-6 px-6 rounded-xl"
               >
                 <div className="md:col-span-1">
-                  <span className="text-[#0A0A0A]/25 font-mono text-[10px]">{s.num}</span>
+                  <span className="text-[#FF4500] font-mono text-[10px] tracking-widest">{s.num}</span>
                 </div>
                 <div className="md:col-span-6">
-                  <h3 className="font-bold text-base md:text-lg tracking-tight group-hover:text-[#FF4500] transition-colors duration-300">
+                  <h3 className="text-lg md:text-xl font-bold tracking-tight group-hover:text-[#FF4500] transition-colors duration-300">
                     {s.label}
                   </h3>
                 </div>
                 <div className="md:col-span-4 flex items-center">
-                  <p className="text-[#0A0A0A]/40 text-sm">{s.detail}</p>
+                  <p className="text-[#F0EDE8]/35 text-sm">{s.detail}</p>
                 </div>
                 <div className="md:col-span-1 flex items-center justify-end">
-                  <span className="text-[#0A0A0A]/15 group-hover:text-[#FF4500] group-hover:translate-x-1 transition-all duration-300 text-sm">→</span>
+                  <span className="text-[#F0EDE8]/15 group-hover:text-[#FF4500] group-hover:translate-x-1 transition-all duration-300">→</span>
                 </div>
               </div>
             ))}
@@ -639,75 +400,22 @@ export default function App() {
       </section>
 
       {/* ══════════════════════════════════════
-          CLIENTS
+          STATS
       ══════════════════════════════════════ */}
-      <section id="apropos" className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10 bg-[#EDECEA]">
+      <section className="py-28 px-6 md:px-14 border-b border-white/[0.07]">
         <div className="max-w-[1400px] mx-auto">
-          <div className="grid md:grid-cols-12 gap-8 mb-16 reveal-up">
-            <div className="md:col-span-2 pt-1">
-              <span className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase">Clients</span>
-            </div>
-            <div className="md:col-span-7">
-              <h2 className="text-[clamp(36px,5.5vw,80px)] font-black tracking-[-0.03em] leading-none">
-                Ils nous font<br />
-                <span style={{ WebkitTextStroke: "2px #0A0A0A", color: "transparent" }}>confiance</span>
-              </h2>
-            </div>
-          </div>
-
-          {/* Client logos grid */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-px bg-[#0A0A0A]/10 border border-[#0A0A0A]/10 rounded-2xl overflow-hidden reveal-up">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 reveal-up">
             {[
-              { name: "One Freestyle", sector: "E-commerce · Sport",    init: "OF", color: "#FF4500", href: "https://www.onefreestyle.store/" },
-              { name: "Obli Space",    sector: "SaaS · Productivité",   init: "OS", color: "#0A0A0A", href: "https://obli.space/" },
-              { name: "Eetra",         sector: "Marketplace · Local",   init: "EE", color: "#FF6B35", href: "https://eetra.buyticle.com/" },
-              { name: "Camille",       sector: "Vitrine · Beauté",      init: "CA", color: "#8B7355", href: "https://camille.vps.buyticle.com/" },
-              { name: "No Limit CM",   sector: "Web · Communication",   init: "NL", color: "#1A1A2E", href: "https://nolimitcm.com/" },
-              { name: "Chimicam",      sector: "Industrie · Savon Pakeh", init: "CH", color: "#2E7D32", href: null },
-              { name: "LFD Services",  sector: "Services · BTP",        init: "LF", color: "#1565C0", href: "https://lfdservices.com/" },
-              { name: "Votre projet",  sector: "Bientôt ici",           init: "+",  color: "#FF4500", href: "/contact" },
-            ].map((c, i) => {
-              const Wrapper = c.href ? "a" : "div";
-              const wrapperProps = c.href
-                ? { href: c.href, target: c.href.startsWith("http") ? "_blank" : undefined, rel: c.href.startsWith("http") ? "noopener noreferrer" : undefined }
-                : {};
-              return (
-                <Wrapper key={i} {...wrapperProps}
-                  className="group bg-[#EDECEA] p-6 md:p-8 flex flex-col gap-4 hover:bg-[#F5F2EF] transition-colors duration-200"
-                >
-                  <div
-                    className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-black text-sm flex-shrink-0"
-                    style={{ backgroundColor: c.color }}
-                  >
-                    {c.init}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-bold text-sm tracking-tight text-[#0A0A0A] group-hover:text-[#FF4500] transition-colors duration-200">{c.name}</p>
-                    <p className="text-[#0A0A0A]/35 text-[10px] font-mono mt-1">{c.sector}</p>
-                  </div>
-                  {c.href && (
-                    <span className="text-[#0A0A0A]/20 group-hover:text-[#FF4500] text-[10px] font-mono tracking-wider uppercase transition-colors duration-200">
-                      {c.name === "Votre projet" ? "Nous rejoindre →" : "Voir →"}
-                    </span>
-                  )}
-                </Wrapper>
-              );
-            })}
-          </div>
-
-          {/* Trust stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20 reveal-up">
-            {[
-              { n: "04",   label: "Produits lancés" },
-              { n: "2025", label: "Année de création" },
-              { n: "50+",  label: "Clients accompagnés" },
+              { n: "04", label: "Produits lancés" },
+              { n: "3+", label: "Années d'expérience" },
+              { n: "50+", label: "Clients accompagnés" },
               { n: "100%", label: "Made in Cameroun" },
             ].map((s, i) => (
               <div key={i} className="group">
-                <div className="text-[clamp(48px,6vw,88px)] font-black tracking-[-0.04em] leading-none mb-2 group-hover:text-[#FF4500] transition-colors duration-400">
+                <div className="text-[clamp(48px,7vw,96px)] font-black tracking-[-0.04em] text-[#F0EDE8] leading-none mb-2 group-hover:text-[#FF4500] transition-colors duration-400">
                   {s.n}
                 </div>
-                <div className="text-[#0A0A0A]/35 text-xs font-mono tracking-widest uppercase">{s.label}</div>
+                <div className="text-[#F0EDE8]/30 text-xs font-mono tracking-widest uppercase">{s.label}</div>
               </div>
             ))}
           </div>
@@ -715,119 +423,34 @@ export default function App() {
       </section>
 
       {/* ══════════════════════════════════════
-          RENDEZ-VOUS (WhatsApp)
+          CONTACT CTA
       ══════════════════════════════════════ */}
-      <section className="py-28 px-6 md:px-14 border-b border-[#0A0A0A]/10 bg-[#141414]">
-        <div className="max-w-[1400px] mx-auto">
-          <div className="grid md:grid-cols-2 gap-16 items-center">
-
-            {/* Left: text */}
-            <div className="reveal-up">
-              <p className="text-white/30 font-mono text-[10px] tracking-[0.4em] uppercase mb-6">✦ Rendez-vous</p>
-              <h2 className="text-[clamp(36px,5vw,72px)] font-black tracking-[-0.03em] leading-[0.9] text-white mb-6">
-                Parlons de<br />
-                <span style={{ WebkitTextStroke: "2px rgba(255,255,255,0.9)", color: "transparent" }}>votre projet</span>
-              </h2>
-              <p className="text-white/40 text-sm leading-relaxed max-w-md">
-                Réservez un créneau directement via WhatsApp — réponse garantie en moins de 24h.
-                Consultation gratuite pour tout nouveau projet.
-              </p>
-
-              {/* Info pills */}
-              <div className="flex flex-wrap gap-3 mt-8">
-                {["Consultation gratuite", "Réponse &lt; 24h", "Douala · Cameroun"].map((tag, i) => (
-                  <span key={i} className="border border-white/15 text-white/40 text-[10px] font-mono tracking-wider uppercase px-3 py-1.5 rounded-full"
-                    dangerouslySetInnerHTML={{ __html: tag }}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Right: CTA card */}
-            <div className="reveal-up">
-              <div className="bg-[#1C1C1C] rounded-2xl p-8 border border-white/[0.06]">
-                {/* WhatsApp block */}
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-14 h-14 rounded-2xl bg-[#25D366] flex items-center justify-center flex-shrink-0">
-                    {/* WhatsApp icon */}
-                    <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-white/30 text-[10px] font-mono uppercase tracking-widest mb-1">WhatsApp direct</p>
-                    <p className="text-white font-bold text-lg tracking-tight">+237 696 995 879</p>
-                  </div>
-                </div>
-
-                {/* Steps */}
-                <div className="space-y-4 mb-8 border-t border-white/[0.06] pt-6">
-                  {[
-                    { step: "01", text: "Décrivez brièvement votre projet" },
-                    { step: "02", text: "On fixe un créneau selon vos disponibilités" },
-                    { step: "03", text: "Consultation gratuite de 30 min" },
-                  ].map((item) => (
-                    <div key={item.step} className="flex items-start gap-4">
-                      <span className="text-[#FF4500] font-mono text-[10px] mt-0.5 flex-shrink-0">{item.step}</span>
-                      <p className="text-white/50 text-sm">{item.text}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Buttons */}
-                <div className="flex flex-col gap-3">
-                  <a
-                    href="https://wa.me/237696995879?text=Bonjour%20Buyticle%2C%20je%20souhaite%20prendre%20rendez-vous%20pour%20discuter%20d%27un%20projet."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20BA5A] text-white font-bold text-sm px-6 py-4 rounded-xl transition-colors duration-200 group"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                    </svg>
-                    Prendre rendez-vous
-                    <span className="group-hover:translate-x-1 transition-transform duration-200">→</span>
-                  </a>
-                  <a href="/contact"
-                    className="flex items-center justify-center gap-2 border border-white/15 text-white/60 hover:text-white hover:border-white/30 text-sm font-medium px-6 py-3.5 rounded-xl transition-all duration-200"
-                  >
-                    Formulaire de contact
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══════════════════════════════════════
-          CTA
-      ══════════════════════════════════════ */}
-      <section className="py-36 px-6 md:px-14 overflow-hidden">
+      <section className="py-40 px-6 md:px-14 overflow-hidden">
         <div className="max-w-[1400px] mx-auto reveal-up">
-          <p className="text-[#0A0A0A]/40 font-mono text-[10px] tracking-[0.4em] uppercase mb-8">
+          <p className="text-[#FF4500] font-mono text-[10px] tracking-[0.4em] uppercase mb-8">
             Travaillons ensemble
           </p>
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-12">
-            <h2 className="text-[clamp(52px,10vw,150px)] font-black tracking-[-0.03em] leading-[0.88]">
-              Démarrons<br />
-              <span style={{ WebkitTextStroke: "2px #0A0A0A", color: "transparent" }}>
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-10">
+            <h2 className="text-[clamp(48px,9vw,140px)] font-black tracking-[-0.03em] leading-none">
+              Démarrons
+              <br />
+              <span style={{ WebkitTextStroke: "1.5px rgba(240,237,232,0.3)", color: "transparent" }}>
                 un projet
               </span>
             </h2>
             <div className="flex flex-col gap-5 md:pb-4">
               <a href="mailto:contact@buyticle.com"
-                className="text-[#0A0A0A]/50 hover:text-[#0A0A0A] text-sm font-mono underline-offset-4 hover:underline transition-colors"
+                className="hover-underline text-[#F0EDE8]/50 hover:text-white text-sm font-mono transition-colors"
               >
                 contact@buyticle.com
               </a>
               <a href="mailto:support@buyticle.com"
-                className="text-[#0A0A0A]/50 hover:text-[#0A0A0A] text-sm font-mono underline-offset-4 hover:underline transition-colors"
+                className="hover-underline text-[#F0EDE8]/50 hover:text-white text-sm font-mono transition-colors"
               >
                 support@buyticle.com
               </a>
               <a href="/contact"
-                className="group mt-3 inline-flex items-center gap-3 bg-[#0A0A0A] text-[#EDECEA] px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#FF4500] transition-colors duration-300 w-fit"
+                className="group mt-2 inline-flex items-center gap-3 bg-[#FF4500] text-white px-8 py-4 rounded-full text-sm font-semibold hover:bg-[#F0EDE8] hover:text-black transition-all duration-400 w-fit"
               >
                 Envoyer un message
                 <span className="group-hover:translate-x-1 transition-transform duration-300">→</span>
@@ -838,8 +461,6 @@ export default function App() {
       </section>
 
       <Footer />
-      <BackToTop />
-      <FloatingBar />
     </div>
   );
 }
