@@ -18,6 +18,77 @@ const STATUS_FILTERS = [
   { key: "resolu", label: "Résolus" },
 ];
 
+/* Fil de commentaires d'un retour — échange entre testeurs */
+function Comments({ review, user }) {
+  const [open, setOpen] = useState(false);
+  const [list, setList] = useState(null);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    const unsub = store.subscribeComments(review.id, setList);
+    return unsub;
+  }, [open, review.id]);
+
+  const send = async (e) => {
+    e.preventDefault();
+    if (!text.trim()) return;
+    setBusy(true);
+    try {
+      await store.addComment(review.id, { user, body: text, review });
+      setText("");
+    } catch { /* ignore */ }
+    setBusy(false);
+  };
+
+  const count = list?.length ?? review.commentCount ?? 0;
+
+  return (
+    <div className="mt-3 pt-3 border-t border-[#0A0A0A]/6">
+      <button onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#0A0A0A]/55 hover:text-[#FF4500] transition">
+        <Icon name="message-square" size={13} /> {open ? "Masquer les commentaires" : "Commenter"}{count ? ` · ${count}` : ""}
+        <Icon name={open ? "chevron-up" : "chevron-down"} size={13} />
+      </button>
+
+      {open && (
+        <div className="mt-3 space-y-3">
+          {list === null && <p className="text-[12px] text-[#0A0A0A]/35">Chargement…</p>}
+          {list && list.length === 0 && <p className="text-[12px] text-[#0A0A0A]/35">Aucun commentaire. Lancez la discussion !</p>}
+          {list && list.map((c) => {
+            const own = c.userId === user.id;
+            const initials = (c.userName || "?").split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
+            return (
+              <div key={c.id} className="flex items-start gap-2.5">
+                <span className="w-7 h-7 rounded-full grid place-items-center text-white text-[10px] font-bold shrink-0" style={{ background: own ? "#FF4500" : "#0A0A0A" }}>{initials}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-[13px]">{own ? "Vous" : c.userName}</span>
+                    <span className="text-[10px] text-[#0A0A0A]/35">· {timeAgo(c.createdAt)}</span>
+                    {(own || user.role === "admin") && (
+                      <button onClick={() => store.deleteComment(review.id, c.id)} className="text-[10px] text-red-500 hover:underline ml-auto">Supprimer</button>
+                    )}
+                  </div>
+                  <p className="text-[13px] text-[#0A0A0A]/70 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">{c.body}</p>
+                </div>
+              </div>
+            );
+          })}
+
+          <form onSubmit={send} className="flex items-center gap-2 pt-1">
+            <input className={`${inputCls} !py-2.5 flex-1`} placeholder="Écrire un commentaire…" value={text} onChange={(e) => setText(e.target.value)} />
+            <button type="submit" disabled={busy || !text.trim()}
+              className="grid place-items-center w-10 h-10 rounded-xl bg-[#FF4500] text-white shrink-0 disabled:opacity-40 hover:bg-[#e63e00] transition">
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Community() {
   const { user } = useAuth();
   const tests = useTests() || [];
@@ -186,6 +257,7 @@ export default function Community() {
                             <button onClick={() => store.deleteReview(r.id)} className="text-[11px] text-red-500 font-semibold hover:underline">Supprimer</button>
                           )}
                         </div>
+                        <Comments review={r} user={user} />
                       </div>
                     </div>
                   </div>

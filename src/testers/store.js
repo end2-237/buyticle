@@ -240,6 +240,34 @@ export async function setReviewStatus(id, status, ownerId, reviewTitle) {
 }
 export async function deleteReview(id) { await deleteDoc(doc(db, "reviews", id)); }
 
+/* ─── Commentaires sur un retour (échange entre testeurs) ─── */
+export function subscribeComments(reviewId, cb) {
+  return onSnapshot(
+    query(collection(db, "reviews", reviewId, "comments"), orderBy("createdAt", "asc")),
+    (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() ?? new Date() }))),
+    (e) => console.warn("comments sub:", e.code)
+  );
+}
+export async function addComment(reviewId, { user, body, review }) {
+  const text = (body || "").trim();
+  if (!text) return;
+  const userName = user.profile?.fullName || user.email.split("@")[0];
+  await addDoc(collection(db, "reviews", reviewId, "comments"), {
+    userId: user.id, userName, body: text, createdAt: serverTimestamp(),
+  });
+  // Prévenir l'auteur du retour (sauf s'il commente le sien)
+  if (review && review.userId && review.userId !== user.id) {
+    await pushNotif({
+      audience: review.userId, type: "comment", icon: "message-square",
+      title: "Nouveau commentaire sur votre retour 💬",
+      body: `${userName} a commenté « ${review.title} ».`,
+    });
+  }
+}
+export async function deleteComment(reviewId, commentId) {
+  await deleteDoc(doc(db, "reviews", reviewId, "comments", commentId));
+}
+
 /* ─── Notifications ─── */
 // audience = a user uid OR "all" for a broadcast
 export async function pushNotif({ audience, type, title, body, icon }) {
