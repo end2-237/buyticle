@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const functionsV1 = require("firebase-functions/v1");
 const admin = require("firebase-admin");
 const cors = require("cors")({ origin: true });
 const { PayunitClient } = require("@payunit/nodejs-sdk");
@@ -323,7 +324,7 @@ exports.pawapayRefundCallback = functions.https.onRequest((req, res) => {
    testeurs dès qu'un document est créé dans "notifications".
    audience = uid d'un testeur | "all" = diffusion à tous.
    ────────────────────────────────────────────────────────── */
-exports.sendNotification = functions.firestore
+exports.sendNotification = functionsV1.firestore
   .document("notifications/{id}")
   .onCreate(async (snap) => {
     const n = snap.data();
