@@ -86,8 +86,8 @@ export default function Onboarding() {
                   </Field>
                   <div>
                     <span className="block text-[13px] font-semibold mb-2">Sexe</span>
-                    <div className="grid grid-cols-3 gap-2">
-                      {["Homme", "Femme", "Autre"].map((g) => (
+                    <div className="grid grid-cols-2 gap-2">
+                      {["Homme", "Femme"].map((g) => (
                         <button key={g} type="button" onClick={() => set("gender", g)}
                           className={`rounded-xl border py-3 text-sm font-medium transition ${d.gender === g ? "border-[#FF4500] bg-[#FF4500]/8 text-[#FF4500]" : "border-[#0A0A0A]/12 hover:border-[#0A0A0A]/30"}`}>{g}</button>
                       ))}
