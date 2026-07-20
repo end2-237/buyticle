@@ -18,6 +18,30 @@ const STATUS_FILTERS = [
   { key: "resolu", label: "Résolus" },
 ];
 
+/* Notation communautaire en étoiles — chaque testeur donne sa note */
+function StarRate({ ratings, myId, onRate, size = 15 }) {
+  const [hover, setHover] = useState(0);
+  const { avg, count } = store.ratingAvg(ratings);
+  const mine = ratings?.[myId] || 0;
+  return (
+    <div className="inline-flex items-center gap-2">
+      <span className="inline-flex" onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map((i) => {
+          const active = hover ? i <= hover : i <= Math.round(mine || avg);
+          return (
+            <button key={i} type="button" onClick={() => onRate(i)} onMouseEnter={() => setHover(i)}
+              className="leading-none transition-transform hover:scale-110" style={{ fontSize: size }}
+              title={`Noter ${i}/5`}>
+              <span className={active ? "text-[#FF4500]" : "text-[#0A0A0A]/15"}>★</span>
+            </button>
+          );
+        })}
+      </span>
+      {count > 0 && <span className="text-[11px] text-[#0A0A0A]/45 font-semibold">{avg.toFixed(1)} · {count}</span>}
+    </div>
+  );
+}
+
 /* Fil de commentaires d'un retour — échange entre testeurs */
 function Comments({ review, user }) {
   const [open, setOpen] = useState(false);
@@ -71,6 +95,19 @@ function Comments({ review, user }) {
                     )}
                   </div>
                   <p className="text-[13px] text-[#0A0A0A]/70 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">{c.body}</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    {(() => {
+                      const liked = Array.isArray(c.likes) && c.likes.includes(user.id);
+                      const n = c.likes?.length || 0;
+                      return (
+                        <button onClick={() => store.toggleCommentLike(review.id, c, user.id)}
+                          className={`inline-flex items-center gap-1 text-[11px] font-semibold transition ${liked ? "text-[#FF4500]" : "text-[#0A0A0A]/40 hover:text-[#FF4500]"}`}>
+                          <Icon name="heart" size={13} fill={liked ? "currentColor" : "none"} /> {n > 0 ? n : "J'aime"}
+                        </button>
+                      );
+                    })()}
+                    <StarRate ratings={c.ratings} myId={user.id} onRate={(s) => store.rateComment(review.id, c, user.id, s)} size={12} />
+                  </div>
                 </div>
               </div>
             );
@@ -244,6 +281,17 @@ export default function Community() {
                         <div className="font-bold text-[15px] mt-2">{r.title}</div>
                         <p className="text-[13px] text-[#0A0A0A]/65 mt-1 leading-relaxed whitespace-pre-wrap">{r.body}</p>
                         <div className="flex items-center gap-3 mt-3">
+                          {(() => {
+                            const liked = Array.isArray(r.likes) && r.likes.includes(user.id);
+                            const n = r.likes?.length || 0;
+                            return (
+                              <button onClick={() => store.toggleReviewLike(r, user.id)}
+                                className={`inline-flex items-center gap-1.5 text-[12px] font-semibold transition ${liked ? "text-[#FF4500]" : "text-[#0A0A0A]/50 hover:text-[#FF4500]"}`}>
+                                <Icon name="heart" size={15} fill={liked ? "currentColor" : "none"} /> {n > 0 && n}
+                              </button>
+                            );
+                          })()}
+                          <StarRate ratings={r.ratings} myId={user.id} onRate={(s) => store.rateReview(r, user.id, s)} />
                           <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${r.status === "resolu" ? "bg-emerald-500/12 text-emerald-600" : r.status === "revu" ? "bg-blue-500/12 text-blue-600" : "bg-[#0A0A0A]/6 text-[#0A0A0A]/50"}`}>
                             {r.status === "resolu" ? "Résolu" : r.status === "revu" ? "Revu par l'équipe" : "Ouvert"}
                           </span>

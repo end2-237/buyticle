@@ -45,12 +45,14 @@ const PATHS = {
   lock: "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2zM7 11V7a5 5 0 0 1 10 0v4",
   "chevron-down": "M6 9l6 6 6-6",
   "chevron-up": "M18 15l-6-6-6 6",
+  heart: "M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z",
+  star: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14l-5-4.87 6.91-1.01L12 2z",
 };
 
-export function Icon({ name, size = 20, className = "", strokeWidth = 1.75, style }) {
+export function Icon({ name, size = 20, className = "", strokeWidth = 1.75, style, fill = "none" }) {
   const d = PATHS[name] || PATHS.sparkle;
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor"
       strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} style={style} aria-hidden="true">
       {d.split("M").filter(Boolean).map((seg, i) => <path key={i} d={"M" + seg} />)}
     </svg>

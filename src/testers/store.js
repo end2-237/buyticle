@@ -5,7 +5,7 @@
 import { db, auth } from "../firebase";
 import {
   collection, doc, getDoc, getDocs, setDoc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, where, serverTimestamp, writeBatch, increment, arrayUnion,
+  onSnapshot, query, orderBy, where, serverTimestamp, writeBatch, increment, arrayUnion, arrayRemove,
 } from "firebase/firestore";
 import {
   createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut,
@@ -266,6 +266,48 @@ export async function addComment(reviewId, { user, body, review }) {
 }
 export async function deleteComment(reviewId, commentId) {
   await deleteDoc(doc(db, "reviews", reviewId, "comments", commentId));
+}
+
+/* ─── Likes ─── */
+export async function toggleReviewLike(review, userId) {
+  const liked = Array.isArray(review.likes) && review.likes.includes(userId);
+  await updateDoc(doc(db, "reviews", review.id), {
+    likes: liked ? arrayRemove(userId) : arrayUnion(userId),
+  });
+  // Prévenir l'auteur quand on aime son retour (pas soi-même)
+  if (!liked && review.userId && review.userId !== userId) {
+    await pushNotif({
+      audience: review.userId, type: "like", icon: "heart",
+      title: "Votre retour a été aimé ❤️",
+      body: `Quelqu'un a aimé « ${review.title} ».`,
+    });
+  }
+}
+export async function toggleCommentLike(reviewId, comment, userId) {
+  const liked = Array.isArray(comment.likes) && comment.likes.includes(userId);
+  await updateDoc(doc(db, "reviews", reviewId, "comments", comment.id), {
+    likes: liked ? arrayRemove(userId) : arrayUnion(userId),
+  });
+}
+
+/* ─── Notes en étoiles (communauté) — stockées par utilisateur ─── */
+export function ratingAvg(ratings) {
+  const vals = ratings ? Object.values(ratings) : [];
+  if (!vals.length) return { avg: 0, count: 0 };
+  return { avg: vals.reduce((s, v) => s + v, 0) / vals.length, count: vals.length };
+}
+export async function rateReview(review, userId, stars) {
+  await updateDoc(doc(db, "reviews", review.id), { [`ratings.${userId}`]: stars });
+  if (review.userId && review.userId !== userId) {
+    await pushNotif({
+      audience: review.userId, type: "rating", icon: "star",
+      title: "Votre retour a été noté ⭐",
+      body: `Quelqu'un a donné ${stars}/5 à « ${review.title} ».`,
+    });
+  }
+}
+export async function rateComment(reviewId, comment, userId, stars) {
+  await updateDoc(doc(db, "reviews", reviewId, "comments", comment.id), { [`ratings.${userId}`]: stars });
 }
 
 /* ─── Notifications ─── */
