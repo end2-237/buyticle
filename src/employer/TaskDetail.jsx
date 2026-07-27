@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Icon } from "../testers/icons";
 import { timeAgo } from "../testers/ui";
 import * as store from "./store";
+import * as gh from "./github";
 
 const TABS_BASE = [
   { key: "details", label: "Détails", icon: "briefcase" },
@@ -14,31 +15,65 @@ function Assignee({ id, employees, size = 24 }) {
   return <span className="rounded-full grid place-items-center text-white text-[9px] font-bold ring-2 ring-white" style={{ width: size, height: size, background: e?.color || store.colorFor(id) }}>{store.initials(e?.name || "?")}</span>;
 }
 
-/* ── Onglet Actions type-Git ── */
+/* ── Onglet Actions type-Git (vrai GitHub + repli simulé) ── */
+function RepoPicker({ repo, setRepo, repos }) {
+  return (
+    <>
+      <input list="gh-repos" value={repo} onChange={(e) => setRepo(e.target.value)} placeholder="Dépôt (ex. end2-237/buyticle)" className={inp} />
+      <datalist id="gh-repos">{repos.map((r) => <option key={r.full_name} value={r.full_name}>{r.private ? "🔒 " : ""}{r.full_name}</option>)}</datalist>
+    </>
+  );
+}
+
 function GitActions({ task, actor }) {
-  const [branch, setBranch] = useState({ name: "", base: "main", project: task.project || "" });
-  const [pr, setPr] = useState({ title: "", url: "" });
-  const [runName, setRunName] = useState("");
+  const [gitHub, setGitHub] = useState({ connected: false, login: "" });
+  const [repos, setRepos] = useState([]);
+  const [branch, setBranch] = useState({ name: "", base: "main", repo: task.project || "" });
+  const [pr, setPr] = useState({ title: task.title, head: task.branch?.name || "", base: "main", repo: task.project || "" });
+  const [runs, setRuns] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
   const kind = task.kind;
+
+  useEffect(() => {
+    gh.githubStatus().then((s) => {
+      setGitHub(s);
+      if (s.connected) gh.githubListRepos().then(setRepos).catch(() => {});
+    }).catch(() => {});
+  }, []);
+
+  const wrap = async (fn) => { setBusy(true); setErr(""); try { await fn(); } catch (e) { setErr(e?.message || "Erreur GitHub"); } setBusy(false); };
+
+  const Banner = () => gitHub.connected
+    ? <div className="flex items-center gap-1.5 text-[12px] text-green-600 mb-2"><Icon name="git-commit" size={13} /> GitHub connecté ({gitHub.login}) — actions réelles</div>
+    : <div className="flex items-center gap-1.5 text-[12px] text-amber-600 mb-2"><Icon name="alert-triangle" size={13} /> GitHub non connecté — mode simulé. <a href="/employer/integrations" className="underline font-semibold">Connecter</a></div>;
 
   if (kind === "branch") {
     return (
       <div>
+        <Banner />
+        {err && <div className="text-[12px] text-red-500 mb-2">{err}</div>}
         {task.branch ? (
           <div className="rounded-xl border border-slate-200 p-4">
-            <div className="flex items-center gap-2 text-[#8B5CF6] font-bold text-[14px]"><Icon name="git-branch" size={17} /> {task.branch.name}</div>
-            <div className="text-[12px] text-slate-400 mt-1">basée sur <code className="bg-slate-100 px-1.5 py-0.5 rounded">{task.branch.base}</code>{task.branch.project && <> · projet <b>{task.branch.project}</b></>}</div>
-            <span className="inline-flex items-center gap-1 mt-3 text-[11px] font-semibold text-green-600 bg-green-500/10 rounded-full px-2 py-0.5"><Icon name="git-commit" size={11} /> Branche active</span>
+            <div className="flex items-center gap-2 text-[#8B5CF6] font-bold text-[14px]"><Icon name="git-branch" size={17} /> {task.branch.name} {task.branch.real && <span className="text-[10px] bg-green-500/10 text-green-600 rounded-full px-2 py-0.5">réelle</span>}</div>
+            <div className="text-[12px] text-slate-400 mt-1">basée sur <code className="bg-slate-100 px-1.5 py-0.5 rounded">{task.branch.base}</code>{task.branch.project && <> · <b>{task.branch.project}</b></>}</div>
+            {task.branch.url && <a href={task.branch.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-[#2C87F2] mt-2 hover:underline"><Icon name="link" size={12} /> Voir sur GitHub</a>}
           </div>
         ) : (
           <div className="space-y-2.5">
-            <p className="text-[13px] text-slate-500">Créez la branche de travail pour cette tâche.</p>
-            <input value={branch.project} onChange={(e) => setBranch({ ...branch, project: e.target.value })} placeholder="Projet (ex. buyticle)" className={inp} />
+            <RepoPicker repo={branch.repo} setRepo={(v) => setBranch({ ...branch, repo: v })} repos={repos} />
             <div className="grid grid-cols-2 gap-2">
               <input value={branch.name} onChange={(e) => setBranch({ ...branch, name: e.target.value })} placeholder="feat/ma-branche" className={inp} />
               <input value={branch.base} onChange={(e) => setBranch({ ...branch, base: e.target.value })} placeholder="main" className={inp} />
             </div>
-            <button disabled={!branch.name.trim()} onClick={() => store.createBranch(task, actor, branch)} className={btnPrimary}><Icon name="git-branch" size={15} /> Créer la branche</button>
+            <button disabled={busy || !branch.name.trim()} className={btnPrimary} onClick={() => wrap(async () => {
+              if (gitHub.connected && branch.repo) {
+                const r = await gh.githubCreateBranch(branch.repo, branch.name, branch.base);
+                await store.createBranch(task, actor, { name: branch.name, base: branch.base, project: branch.repo, url: r.url, real: true });
+              } else {
+                await store.createBranch(task, actor, { name: branch.name, base: branch.base, project: branch.repo });
+              }
+            })}><Icon name="git-branch" size={15} /> {busy ? "..." : gitHub.connected && branch.repo ? "Créer la vraie branche" : "Créer la branche"}</button>
           </div>
         )}
       </div>
@@ -48,10 +83,12 @@ function GitActions({ task, actor }) {
   if (kind === "pr") {
     return (
       <div>
+        <Banner />
+        {err && <div className="text-[12px] text-red-500 mb-2">{err}</div>}
         {task.pr ? (
           <div className="rounded-xl border border-slate-200 p-4">
-            <div className="flex items-center gap-2 text-green-600 font-bold text-[14px]"><Icon name="git-pull-request" size={17} /> {task.pr.title}</div>
-            {task.pr.url && <a href={task.pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-[#2C87F2] mt-1 hover:underline"><Icon name="link" size={12} /> {task.pr.url}</a>}
+            <div className="flex items-center gap-2 text-green-600 font-bold text-[14px]"><Icon name="git-pull-request" size={17} /> {task.pr.title} {task.pr.number && <span className="text-slate-400 font-normal">#{task.pr.number}</span>}</div>
+            {task.pr.url && <a href={task.pr.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-[#2C87F2] mt-1 hover:underline"><Icon name="link" size={12} /> Voir la PR</a>}
             <div className="flex items-center gap-1.5 mt-3">
               {Object.entries(store.PR_STATES).map(([k, v]) => (
                 <button key={k} onClick={() => store.setPRStatus(task, actor, k)}
@@ -62,10 +99,20 @@ function GitActions({ task, actor }) {
           </div>
         ) : (
           <div className="space-y-2.5">
-            <p className="text-[13px] text-slate-500">Ouvrez un espace de revue de code (Pull Request).</p>
+            <RepoPicker repo={pr.repo} setRepo={(v) => setPr({ ...pr, repo: v })} repos={repos} />
             <input value={pr.title} onChange={(e) => setPr({ ...pr, title: e.target.value })} placeholder="Titre de la PR" className={inp} />
-            <input value={pr.url} onChange={(e) => setPr({ ...pr, url: e.target.value })} placeholder="Lien GitHub (optionnel)" className={inp} />
-            <button disabled={!pr.title.trim()} onClick={() => store.openPR(task, actor, pr)} className={btnPrimary}><Icon name="git-pull-request" size={15} /> Ouvrir la PR</button>
+            <div className="grid grid-cols-2 gap-2">
+              <input value={pr.head} onChange={(e) => setPr({ ...pr, head: e.target.value })} placeholder="branche source (head)" className={inp} />
+              <input value={pr.base} onChange={(e) => setPr({ ...pr, base: e.target.value })} placeholder="base (main)" className={inp} />
+            </div>
+            <button disabled={busy || !pr.title.trim()} className={btnPrimary} onClick={() => wrap(async () => {
+              if (gitHub.connected && pr.repo && pr.head) {
+                const r = await gh.githubCreatePR(pr.repo, pr.head, pr.base, pr.title, `Tâche Buyticle : ${task.title}`);
+                await store.openPR(task, actor, { title: pr.title, url: r.url, number: r.number, real: true });
+              } else {
+                await store.openPR(task, actor, { title: pr.title });
+              }
+            })}><Icon name="git-pull-request" size={15} /> {busy ? "..." : gitHub.connected && pr.repo ? "Ouvrir la vraie PR" : "Ouvrir la PR"}</button>
           </div>
         )}
       </div>
@@ -73,34 +120,63 @@ function GitActions({ task, actor }) {
   }
 
   if (kind === "pipeline") {
+    const repo = task.project || branch.repo;
     return (
       <div className="space-y-3">
-        <div className="flex gap-2">
-          <input value={runName} onChange={(e) => setRunName(e.target.value)} placeholder="Nom du pipeline (ex. build & deploy)" className={inp} />
-          <button onClick={() => { store.addPipelineRun(task, actor, { name: runName || "Pipeline" }); setRunName(""); }} className={`${btnPrimary} !w-auto whitespace-nowrap`}><Icon name="git-action" size={15} /> Lancer</button>
-        </div>
-        <div className="space-y-2">
-          {(task.runs || []).length === 0 && <p className="text-[13px] text-slate-400">Aucune exécution. Lancez un pipeline.</p>}
-          {(task.runs || []).map((r, i) => {
-            const st = store.RUN_STATES[r.status] || store.RUN_STATES.running;
-            return (
-              <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
-                <Icon name="git-action" size={16} className="text-slate-400" />
-                <div className="flex-1 min-w-0">
-                  <div className="font-semibold text-[13px] truncate">{r.name}</div>
-                  <div className="text-[11px] text-slate-400">{timeAgo(new Date(r.at))}</div>
-                </div>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${st.color}18`, color: st.color }}>{st.label}</span>
-                {r.status === "running" && (
-                  <div className="flex gap-1">
-                    <button onClick={() => store.setRunStatus(task, actor, i, "success")} className="text-[11px] font-semibold text-green-600 hover:underline">Succès</button>
-                    <button onClick={() => store.setRunStatus(task, actor, i, "failed")} className="text-[11px] font-semibold text-red-500 hover:underline">Échec</button>
+        <Banner />
+        {err && <div className="text-[12px] text-red-500">{err}</div>}
+        {gitHub.connected ? (
+          <>
+            <div className="flex gap-2">
+              <RepoPicker repo={branch.repo} setRepo={(v) => setBranch({ ...branch, repo: v })} repos={repos} />
+              <button disabled={busy || !(repo)} className={`${btnPrimary} !w-auto whitespace-nowrap`} onClick={() => wrap(async () => setRuns(await gh.githubListRuns(repo)))}><Icon name="git-action" size={15} /> Charger</button>
+            </div>
+            <div className="space-y-2">
+              {runs === null && <p className="text-[13px] text-slate-400">Choisissez un dépôt et chargez les exécutions GitHub Actions.</p>}
+              {runs && runs.length === 0 && <p className="text-[13px] text-slate-400">Aucune exécution récente.</p>}
+              {(runs || []).map((r) => {
+                const c = r.status === "completed" ? (r.conclusion === "success" ? "#22C55E" : "#EF4444") : "#F97316";
+                const label = r.status === "completed" ? (r.conclusion || "terminé") : r.status;
+                return (
+                  <div key={r.id} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                    <Icon name="git-action" size={16} className="text-slate-400" />
+                    <div className="flex-1 min-w-0">
+                      <a href={r.url} target="_blank" rel="noreferrer" className="font-semibold text-[13px] truncate hover:text-[#2C87F2] block">{r.name}</a>
+                      <div className="text-[11px] text-slate-400">{r.branch} · {timeAgo(new Date(r.at))}</div>
+                    </div>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${c}18`, color: c }}>{label}</span>
+                    <button onClick={() => wrap(async () => { await gh.githubRerun(repo, r.id); setRuns(await gh.githubListRuns(repo)); })} className="text-[11px] font-semibold text-[#2C87F2] hover:underline">Relancer</button>
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex gap-2">
+              <input value={branch.name} onChange={(e) => setBranch({ ...branch, name: e.target.value })} placeholder="Nom du pipeline (simulé)" className={inp} />
+              <button onClick={() => { store.addPipelineRun(task, actor, { name: branch.name || "Pipeline" }); setBranch({ ...branch, name: "" }); }} className={`${btnPrimary} !w-auto whitespace-nowrap`}><Icon name="git-action" size={15} /> Lancer</button>
+            </div>
+            <div className="space-y-2">
+              {(task.runs || []).map((r, i) => {
+                const st = store.RUN_STATES[r.status] || store.RUN_STATES.running;
+                return (
+                  <div key={i} className="flex items-center gap-3 rounded-xl border border-slate-200 p-3">
+                    <Icon name="git-action" size={16} className="text-slate-400" />
+                    <div className="flex-1 min-w-0"><div className="font-semibold text-[13px] truncate">{r.name}</div><div className="text-[11px] text-slate-400">{timeAgo(new Date(r.at))}</div></div>
+                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ background: `${st.color}18`, color: st.color }}>{st.label}</span>
+                    {r.status === "running" && (
+                      <div className="flex gap-1">
+                        <button onClick={() => store.setRunStatus(task, actor, i, "success")} className="text-[11px] font-semibold text-green-600 hover:underline">Succès</button>
+                        <button onClick={() => store.setRunStatus(task, actor, i, "failed")} className="text-[11px] font-semibold text-red-500 hover:underline">Échec</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
       </div>
     );
   }

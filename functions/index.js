@@ -385,3 +385,200 @@ exports.sendNotification = functionsV1.firestore
     }
     return null;
   });
+
+/* ══════════════════════════════════════════════════════════════
+   Intégration GitHub (App OAuth) — création de branches, PR, Actions
+   Le client_secret est lu depuis Firestore config/github (jamais côté client).
+   ══════════════════════════════════════════════════════════════ */
+const APP_BASE = "https://buyticle.com";
+
+async function githubConfig() {
+  let c = {};
+  try { const s = await db.doc("config/github").get(); if (s.exists) c = s.data(); } catch (e) { /* ignore */ }
+  return {
+    clientId: c.clientId || "Iv23lif6fAjd88glfvtQ",
+    clientSecret: c.clientSecret || "",
+    appBase: c.appBase || APP_BASE,
+  };
+}
+
+async function ghApi(token, path, opts = {}) {
+  const res = await fetch(`https://api.github.com${path}`, {
+    ...opts,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "BuyticleWork",
+      ...(opts.body ? { "Content-Type": "application/json" } : {}),
+      ...(opts.headers || {}),
+    },
+  });
+  const text = await res.text();
+  let json = {};
+  try { json = text ? JSON.parse(text) : {}; } catch { json = { raw: text }; }
+  if (!res.ok) { const err = new Error(json.message || `GitHub ${res.status}`); err.status = res.status; err.data = json; throw err; }
+  return json;
+}
+
+/* Échange/refresh de token OAuth */
+async function exchangeCode(code) {
+  const { clientId, clientSecret } = await githubConfig();
+  const res = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": "BuyticleWork" },
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, code }),
+  });
+  return res.json();
+}
+async function refreshToken(refresh_token) {
+  const { clientId, clientSecret } = await githubConfig();
+  const res = await fetch("https://github.com/login/oauth/access_token", {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json", "User-Agent": "BuyticleWork" },
+    body: JSON.stringify({ client_id: clientId, client_secret: clientSecret, grant_type: "refresh_token", refresh_token }),
+  });
+  return res.json();
+}
+
+/* Récupère un token valide pour un uid (rafraîchit si expiré) */
+async function tokenForUid(uid) {
+  const ref = db.doc(`github_tokens/${uid}`);
+  const snap = await ref.get();
+  if (!snap.exists) { const e = new Error("GitHub non connecté"); e.code = "unauth"; throw e; }
+  const d = snap.data();
+  if (d.expires_at && Date.now() > d.expires_at - 60000 && d.refresh_token) {
+    const r = await refreshToken(d.refresh_token);
+    if (r.access_token) {
+      const patch = {
+        access_token: r.access_token,
+        refresh_token: r.refresh_token || d.refresh_token,
+        expires_at: r.expires_in ? Date.now() + r.expires_in * 1000 : null,
+      };
+      await ref.set(patch, { merge: true });
+      return patch.access_token;
+    }
+  }
+  return d.access_token;
+}
+
+/* Callback OAuth : GitHub redirige ici avec ?code&state(uid) */
+exports.githubCallback = functionsV1.https.onRequest(async (req, res) => {
+  const { code, state } = req.query;
+  const { appBase } = await githubConfig();
+  const back = (status) => res.redirect(`${appBase}/employer/integrations?github=${status}`);
+  if (!code || !state) return back("error");
+  try {
+    const tok = await exchangeCode(String(code));
+    if (!tok.access_token) return back("error");
+    let login = "", avatar = "";
+    try { const u = await ghApi(tok.access_token, "/user"); login = u.login; avatar = u.avatar_url; } catch { /* ignore */ }
+    await db.doc(`github_tokens/${state}`).set({
+      access_token: tok.access_token,
+      refresh_token: tok.refresh_token || null,
+      expires_at: tok.expires_in ? Date.now() + tok.expires_in * 1000 : null,
+      login, avatar, connectedAt: Date.now(),
+    }, { merge: true });
+    return back("connected");
+  } catch (e) {
+    console.error("githubCallback:", e.message);
+    return back("error");
+  }
+});
+
+/* Statut de connexion (login) */
+exports.githubStatus = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const s = await db.doc(`github_tokens/${uid}`).get();
+  if (!s.exists) return { connected: false };
+  const d = s.data();
+  return { connected: true, login: d.login || "", avatar: d.avatar || "" };
+});
+
+exports.githubDisconnect = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  await db.doc(`github_tokens/${uid}`).delete();
+  return { ok: true };
+});
+
+/* Liste des repos accessibles */
+exports.githubListRepos = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  try {
+    const token = await tokenForUid(uid);
+    const repos = await ghApi(token, "/user/repos?per_page=100&sort=updated&affiliation=owner,collaborator,organization_member");
+    return { repos: repos.map((r) => ({ full_name: r.full_name, name: r.name, default_branch: r.default_branch, private: r.private })) };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message);
+  }
+});
+
+/* Crée une vraie branche */
+exports.githubCreateBranch = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, base = "main", name } = data || {};
+  if (!repo || !name) throw new functions.https.HttpsError("invalid-argument", "repo et name requis");
+  try {
+    const token = await tokenForUid(uid);
+    const ref = await ghApi(token, `/repos/${repo}/git/ref/heads/${encodeURIComponent(base)}`);
+    const sha = ref.object.sha;
+    await ghApi(token, `/repos/${repo}/git/refs`, { method: "POST", body: JSON.stringify({ ref: `refs/heads/${name}`, sha }) });
+    return { ok: true, name, base, url: `https://github.com/${repo}/tree/${name}` };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Ouvre une vraie Pull Request */
+exports.githubCreatePR = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, head, base = "main", title, body } = data || {};
+  if (!repo || !head || !title) throw new functions.https.HttpsError("invalid-argument", "repo, head et title requis");
+  try {
+    const token = await tokenForUid(uid);
+    const pr = await ghApi(token, `/repos/${repo}/pulls`, { method: "POST", body: JSON.stringify({ head, base, title, body: body || "" }) });
+    return { ok: true, number: pr.number, url: pr.html_url, state: pr.state };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Liste les exécutions de workflows (GitHub Actions) */
+exports.githubListRuns = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo } = data || {};
+  if (!repo) throw new functions.https.HttpsError("invalid-argument", "repo requis");
+  try {
+    const token = await tokenForUid(uid);
+    const r = await ghApi(token, `/repos/${repo}/actions/runs?per_page=10`);
+    return { runs: (r.workflow_runs || []).map((w) => ({ id: w.id, name: w.name || w.display_title, status: w.status, conclusion: w.conclusion, url: w.html_url, branch: w.head_branch, at: w.created_at })) };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Relance un workflow */
+exports.githubRerun = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, runId } = data || {};
+  if (!repo || !runId) throw new functions.https.HttpsError("invalid-argument", "repo et runId requis");
+  try {
+    const token = await tokenForUid(uid);
+    await ghApi(token, `/repos/${repo}/actions/runs/${runId}/rerun`, { method: "POST" });
+    return { ok: true };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});

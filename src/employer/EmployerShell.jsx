@@ -22,6 +22,7 @@ const OTHERS_ADMIN = [
   { to: "/contact", icon: "help-circle", label: "Aide" },
 ];
 const OTHERS_EMP = [
+  { to: "/employer/integrations", icon: "puzzle", label: "Intégrations" },
   { to: "/employer/settings", icon: "settings", label: "Paramètres" },
   { to: "/contact", icon: "help-circle", label: "Aide" },
 ];

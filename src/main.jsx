@@ -67,7 +67,7 @@ root.render(
             <Route path="/employer/brainstorm" element={<Protected requireOnboarded={false}><EmpBrainstorm /></Protected>} />
             <Route path="/employer/tasks" element={<Protected admin><EmpTasks /></Protected>} />
             <Route path="/employer/employees" element={<Protected admin><EmpEmployees /></Protected>} />
-            <Route path="/employer/integrations" element={<Protected admin><EmpIntegrations /></Protected>} />
+            <Route path="/employer/integrations" element={<Protected requireOnboarded={false}><EmpIntegrations /></Protected>} />
             <Route path="/employer/settings" element={<Protected requireOnboarded={false}><EmpSettings /></Protected>} />
 
             <Route path="*" element={<NotFoundPage />} />

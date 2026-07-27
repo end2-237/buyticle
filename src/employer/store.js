@@ -181,15 +181,15 @@ async function logActivity(taskId, actor, body) {
 }
 
 /* ─── Actions type-Git ─── */
-export async function createBranch(task, actor, { name, base = "main", project }) {
-  const branch = { name, base, project: project || task.project || "", status: "active", at: Date.now() };
+export async function createBranch(task, actor, { name, base = "main", project, url = "", real = false }) {
+  const branch = { name, base, project: project || task.project || "", url, real, status: "active", at: Date.now() };
   await updateDoc(doc(db, "emp_tasks", task.id), { branch, project: project || task.project || "", status: task.status === "todo" ? "in_progress" : task.status });
-  await logActivity(task.id, actor, `a créé la branche \`${name}\` depuis \`${base}\`.`);
+  await logActivity(task.id, actor, `a créé ${real ? "la vraie branche" : "la branche"} \`${name}\` depuis \`${base}\`${branch.project ? ` sur ${branch.project}` : ""}.`);
 }
-export async function openPR(task, actor, { title, url }) {
-  const pr = { title: title || task.title, url: url || "", status: "open", at: Date.now() };
+export async function openPR(task, actor, { title, url, number = null, real = false }) {
+  const pr = { title: title || task.title, url: url || "", number, real, status: "open", at: Date.now() };
   await updateDoc(doc(db, "emp_tasks", task.id), { pr, status: "in_progress" });
-  await logActivity(task.id, actor, `a ouvert une Pull Request : ${title || task.title}.`);
+  await logActivity(task.id, actor, `a ouvert une Pull Request${number ? ` #${number}` : ""} : ${title || task.title}.`);
 }
 export async function setPRStatus(task, actor, status) {
   await updateDoc(doc(db, "emp_tasks", task.id), { "pr.status": status });
