@@ -44,7 +44,7 @@ function GitHubCard() {
           <p className="text-[13px] text-slate-400 mt-0.5">Créez de vraies branches, ouvrez des PR et suivez vos GitHub Actions depuis les tâches.</p>
 
           {justConnected && <div className="text-[12px] text-green-600 mt-2">✅ GitHub connecté avec succès.</div>}
-          {errorConnect && <div className="text-[12px] text-red-500 mt-2">❌ Échec de connexion. Vérifiez la configuration (config/github) puis réessayez.</div>}
+          {errorConnect && <div className="text-[12px] text-red-500 mt-2">❌ Échec de connexion{params.get("reason") ? ` : ${params.get("reason")}` : ""}. Vérifiez la configuration (config/github) puis réessayez.</div>}
           {err && <div className="text-[12px] text-red-500 mt-2">{err}</div>}
 
           {loading ? (

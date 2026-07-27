@@ -465,12 +465,14 @@ async function tokenForUid(uid) {
 /* Callback OAuth : GitHub redirige ici avec ?code&state(uid) */
 exports.githubCallback = functionsV1.https.onRequest(async (req, res) => {
   const { code, state } = req.query;
-  const { appBase } = await githubConfig();
-  const back = (status) => res.redirect(`${appBase}/employer/integrations?github=${status}`);
-  if (!code || !state) return back("error");
+  const cfg = await githubConfig();
+  const { appBase } = cfg;
+  const back = (status, reason) => res.redirect(`${appBase}/employer/integrations?github=${status}${reason ? `&reason=${encodeURIComponent(reason)}` : ""}`);
+  if (!code || !state) return back("error", "code ou state manquant");
+  if (!cfg.clientSecret) return back("error", "config/github.clientSecret absent");
   try {
     const tok = await exchangeCode(String(code));
-    if (!tok.access_token) return back("error");
+    if (!tok.access_token) return back("error", tok.error_description || tok.error || "pas de access_token");
     let login = "", avatar = "";
     try { const u = await ghApi(tok.access_token, "/user"); login = u.login; avatar = u.avatar_url; } catch { /* ignore */ }
     await db.doc(`github_tokens/${state}`).set({
@@ -482,7 +484,7 @@ exports.githubCallback = functionsV1.https.onRequest(async (req, res) => {
     return back("connected");
   } catch (e) {
     console.error("githubCallback:", e.message);
-    return back("error");
+    return back("error", e.message || "exception");
   }
 });
 
