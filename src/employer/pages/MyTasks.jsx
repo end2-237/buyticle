@@ -23,6 +23,9 @@ export default function MyTasks() {
 
   const actor = { id: user.id, name: user.profile?.fullName || user.email.split("@")[0] };
   const mine = me ? tasks.filter((t) => t.assigneeIds?.includes(me.id)) : [];
+
+  // Rappels : échéance aujourd'hui/demain + tâches en retard (délivrés via FCM)
+  useEffect(() => { if (me && mine.length) store.runTaskReminders(user.id, mine); /* eslint-disable-next-line */ }, [me, tasks.length]);
   const shown = mine.filter((t) => filter === "all" ? true : filter === "done" ? t.status === "done" : t.status !== "done")
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 

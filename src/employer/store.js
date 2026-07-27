@@ -233,3 +233,88 @@ export function fmtTime(hhmm = "") {
   const h12 = ((h + 11) % 12) + 1;
   return `${pad(h12)}:${pad(m || 0)} ${ap}`;
 }
+export const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+/* ─── Brainstorm / Idées (collaboration d'équipe) ─── */
+export const IDEA_STATUS = [
+  { key: "idea", label: "Idée", color: "#2C87F2" },
+  { key: "planned", label: "Planifiée", color: "#F97316" },
+  { key: "converted", label: "Convertie en tâche", color: "#22C55E" },
+];
+export function subscribeIdeas(cb) {
+  return onSnapshot(
+    query(collection(db, "emp_ideas"), orderBy("createdAt", "desc")),
+    (s) => cb(map(s)),
+    (e) => console.warn("ideas sub:", e.code)
+  );
+}
+export async function addIdea({ user, title, body, tag }) {
+  if (!title?.trim()) return;
+  const authorName = user.profile?.fullName || user.email.split("@")[0];
+  const ref = await addDoc(collection(db, "emp_ideas"), {
+    title: title.trim(), body: (body || "").trim(), tag: tag || "général",
+    authorId: user.id, authorName, votes: [], status: "idea", createdAt: serverTimestamp(),
+  });
+  await pushNotif({ audience: "admins", type: "idea", icon: "lightbulb", title: "Nouvelle idée proposée 💡", body: `${authorName} : « ${title.trim()} »` });
+  return ref;
+}
+export async function toggleIdeaVote(idea, userId) {
+  const voted = Array.isArray(idea.votes) && idea.votes.includes(userId);
+  await updateDoc(doc(db, "emp_ideas", idea.id), { votes: voted ? arrayRemove(userId) : arrayUnion(userId) });
+}
+export async function setIdeaStatus(id, status) {
+  return updateDoc(doc(db, "emp_ideas", id), { status });
+}
+export async function deleteIdea(id) {
+  return deleteDoc(doc(db, "emp_ideas", id));
+}
+export async function convertIdeaToTask(idea, { date, assigneeIds = [] } = {}) {
+  await addTask({
+    title: idea.title, description: idea.body || `Idée proposée par ${idea.authorName}.`,
+    kind: "standard", date: date || ymd(new Date()), assigneeIds,
+  });
+  await setIdeaStatus(idea.id, "converted");
+}
+/* Commentaires d'idée (discussion / brainstorm) */
+export function subscribeIdeaComments(ideaId, cb) {
+  return onSnapshot(
+    query(collection(db, "emp_ideas", ideaId, "comments"), orderBy("createdAt", "asc")),
+    (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() ?? new Date() }))),
+    (e) => console.warn("idea comments sub:", e.code)
+  );
+}
+export async function addIdeaComment(ideaId, { user, body }) {
+  const text = (body || "").trim();
+  if (!text) return;
+  return addDoc(collection(db, "emp_ideas", ideaId, "comments"), {
+    userId: user.id, userName: user.profile?.fullName || user.email.split("@")[0], body: text, createdAt: serverTimestamp(),
+  });
+}
+
+/* ─── Rappels de tâches (côté client, délivrés via FCM par la Cloud Function) ─── */
+/* Génère des notifications de rappel pour l'employé connecté : échéance aujourd'hui/demain + en retard.
+   Déduplication via localStorage pour ne pas spammer (une fois par tâche/type/jour). */
+export async function runTaskReminders(uid, myTasks) {
+  if (!uid || !myTasks?.length) return;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const key = ymd(today);
+  let store;
+  try { store = JSON.parse(localStorage.getItem("bt_emp_reminders") || "{}"); } catch { store = {}; }
+  if (store.day !== key) store = { day: key, sent: [] };
+  const sent = new Set(store.sent);
+
+  for (const t of myTasks) {
+    if (t.status === "done" || !t.date) continue;
+    const diff = daysBetween(today, t.date + "T00:00:00");
+    let kind = null, title = null, body = null;
+    if (diff < 0) { kind = "late"; title = "Tâche en retard ⏰"; body = `« ${t.title} » était due le ${t.date}.`; }
+    else if (diff === 0) { kind = "today"; title = "Tâche à rendre aujourd'hui 📅"; body = `« ${t.title} » — ${fmtTime(t.start)}.`; }
+    else if (diff === 1) { kind = "tomorrow"; title = "Échéance demain ⏳"; body = `« ${t.title} » est prévue pour demain.`; }
+    if (!kind) continue;
+    const mark = `${t.id}:${kind}`;
+    if (sent.has(mark)) continue;
+    sent.add(mark);
+    try { await pushNotif({ audience: uid, type: "reminder", icon: "clock", title, body }); } catch { /* ignore */ }
+  }
+  try { localStorage.setItem("bt_emp_reminders", JSON.stringify({ day: key, sent: [...sent] })); } catch { /* ignore */ }
+}
