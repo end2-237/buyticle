@@ -13,7 +13,7 @@ function Stat({ icon, label, value, sub, color }) {
       <div className="flex items-center justify-between">
         <span className="w-10 h-10 rounded-xl grid place-items-center" style={{ background: `${color}18`, color }}><Icon name={icon} size={20} /></span>
       </div>
-      <div className="text-[30px] font-extrabold leading-none mt-4">{value}</div>
+      <div className="text-[24px] font-bold tracking-tight leading-none mt-4">{value}</div>
       <div className="text-[13px] font-semibold text-slate-600 mt-1">{label}</div>
       {sub && <div className="text-[12px] text-slate-400 mt-0.5">{sub}</div>}
     </div>
@@ -43,7 +43,7 @@ export default function EmpDashboard() {
     <EmployerShell title="Dashboard">
       <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h2 className="font-extrabold text-[22px]">Bonjour 👋</h2>
+          <h2 className="font-bold text-[18px] tracking-tight">Bonjour 👋</h2>
           <p className="text-[13px] text-slate-400">Voici l'activité de votre équipe aujourd'hui.</p>
         </div>
         <button onClick={() => navigate("/employer/calendar")} className="inline-flex items-center gap-2 rounded-lg bg-[#2C87F2] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#1e6fd0]">
@@ -62,7 +62,7 @@ export default function EmpDashboard() {
         {/* Planning du jour */}
         <div className="lg:col-span-2 rounded-2xl bg-white border border-slate-200 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-[16px]">Planning du jour</h3>
+            <h3 className="font-semibold text-[14px] tracking-tight">Planning du jour</h3>
             <button onClick={() => navigate("/employer/calendar")} className="text-[12px] font-semibold text-[#2C87F2] hover:underline">Voir le calendrier</button>
           </div>
           {todayTasks.length === 0 ? (

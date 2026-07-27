@@ -4,11 +4,23 @@
 ──────────────────────────────────────────────────────────── */
 import { db } from "../firebase";
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, serverTimestamp,
+  collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, where,
+  onSnapshot, query, orderBy, serverTimestamp, arrayUnion,
 } from "firebase/firestore";
+import { pushNotif } from "../testers/store";
 
 const map = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+/* Types de tâches — chacun débloque des actions spécifiques */
+export const TASK_KINDS = [
+  { key: "standard", label: "Standard", icon: "list-checks", color: "#2C87F2", desc: "Tâche classique avec checklist et suivi." },
+  { key: "branch", label: "Branche Git", icon: "git-branch", color: "#8B5CF6", desc: "Créer une branche et développer une fonctionnalité." },
+  { key: "pr", label: "Pull Request", icon: "git-pull-request", color: "#22C55E", desc: "Espace de revue de code façon PR." },
+  { key: "pipeline", label: "Pipeline / CI", icon: "git-action", color: "#F97316", desc: "Suivre des exécutions de pipeline et GitHub Actions." },
+];
+export const kindOf = (k) => TASK_KINDS.find((x) => x.key === k) || TASK_KINDS[0];
+export const PR_STATES = { open: { label: "Ouverte", color: "#22C55E" }, review: { label: "En revue", color: "#F97316" }, merged: { label: "Fusionnée", color: "#8B5CF6" }, closed: { label: "Fermée", color: "#EF4444" } };
+export const RUN_STATES = { running: { label: "En cours", color: "#F97316" }, success: { label: "Succès", color: "#22C55E" }, failed: { label: "Échoué", color: "#EF4444" } };
 
 /* Palette pour les avatars / marqueurs de tâches */
 export const TASK_COLORS = ["#2C87F2", "#22C55E", "#F97316", "#A855F7", "#EF4444", "#0EA5E9", "#EAB308"];
@@ -69,10 +81,14 @@ export function subscribeTasks(cb) {
     (e) => console.warn("emp_tasks sub:", e.code)
   );
 }
+export function subscribeTask(id, cb) {
+  return onSnapshot(doc(db, "emp_tasks", id), (d) => cb(d.exists() ? { id: d.id, ...d.data() } : null));
+}
 export async function addTask(data) {
-  return addDoc(collection(db, "emp_tasks"), {
+  const ref = await addDoc(collection(db, "emp_tasks"), {
     title: data.title || "Nouvelle tâche",
     description: data.description || "",
+    kind: data.kind || "standard",
     mark: data.mark || "audience",
     color: data.color || TASK_COLORS[0],
     opacity: data.opacity ?? 100,
@@ -81,17 +97,120 @@ export async function addTask(data) {
     start: data.start || "09:00",     // "HH:MM"
     end: data.end || "10:00",
     status: data.status || "todo",
+    progress: data.progress ?? 0,
+    checklist: data.checklist || [],  // [{ text, done }]
+    project: data.project || "",
+    branch: null, pr: null, runs: [],
     createdAt: serverTimestamp(),
   });
+  // Notifier les employés assignés
+  await notifyAssignees(data.assigneeIds || [], {
+    type: "task_assigned", icon: "briefcase",
+    title: "Nouvelle tâche assignée 📋",
+    body: `« ${data.title || "Nouvelle tâche"} » vous a été attribuée.`,
+  });
+  return ref;
 }
 export async function updateTask(id, patch) {
   return updateDoc(doc(db, "emp_tasks", id), patch);
 }
 export async function setTaskStatus(id, status) {
-  return updateDoc(doc(db, "emp_tasks", id), { status });
+  const patch = { status };
+  if (status === "done") patch.progress = 100;
+  return updateDoc(doc(db, "emp_tasks", id), patch);
+}
+export async function setProgress(id, progress) {
+  const p = Math.max(0, Math.min(100, Math.round(progress)));
+  const patch = { progress: p };
+  if (p >= 100) patch.status = "done";
+  else if (p > 0) patch.status = "in_progress";
+  return updateDoc(doc(db, "emp_tasks", id), patch);
+}
+export async function setChecklist(id, checklist) {
+  const done = checklist.filter((c) => c.done).length;
+  const progress = checklist.length ? Math.round((done / checklist.length) * 100) : 0;
+  const patch = { checklist, progress };
+  if (progress >= 100 && checklist.length) patch.status = "done";
+  else if (progress > 0) patch.status = "in_progress";
+  return updateDoc(doc(db, "emp_tasks", id), patch);
 }
 export async function deleteTask(id) {
   return deleteDoc(doc(db, "emp_tasks", id));
+}
+
+/* Utilitaire : notifier une liste d'employés (email employé → uid du compte auth) */
+async function notifyAssignees(employeeIds, notif) {
+  for (const eid of employeeIds) {
+    try {
+      const snap = await getDoc(doc(db, "employees", eid));
+      const email = snap.exists() ? (snap.data().email || "").toLowerCase() : "";
+      if (!email) continue;
+      const q = query(collection(db, "testers"), where("email", "==", email));
+      const res = await getDocs(q);
+      for (const t of res.docs) await pushNotif({ audience: t.id, ...notif });
+    } catch { /* ignore */ }
+  }
+}
+/* Retrouver l'employé lié à un email (pour l'espace employé) */
+export async function employeeForEmail(email) {
+  const e = (email || "").toLowerCase();
+  const res = await getDocs(query(collection(db, "employees"), where("email", "==", e)));
+  return res.empty ? null : { id: res.docs[0].id, ...res.docs[0].data() };
+}
+
+/* ─── Commentaires & activité d'une tâche ─── */
+export function subscribeTaskComments(taskId, cb) {
+  return onSnapshot(
+    query(collection(db, "emp_tasks", taskId, "comments"), orderBy("createdAt", "asc")),
+    (s) => cb(s.docs.map((d) => ({ id: d.id, ...d.data(), createdAt: d.data().createdAt?.toDate?.() ?? new Date() }))),
+    (e) => console.warn("task comments sub:", e.code)
+  );
+}
+export async function addTaskComment(taskId, { userId, userName, body, type = "comment" }) {
+  const text = (body || "").trim();
+  if (!text) return;
+  return addDoc(collection(db, "emp_tasks", taskId, "comments"), {
+    userId: userId || "system", userName: userName || "Système", body: text, type, createdAt: serverTimestamp(),
+  });
+}
+export async function deleteTaskComment(taskId, commentId) {
+  return deleteDoc(doc(db, "emp_tasks", taskId, "comments", commentId));
+}
+async function logActivity(taskId, actor, body) {
+  return addTaskComment(taskId, { userId: actor?.id, userName: actor?.name || "Système", body, type: "activity" });
+}
+
+/* ─── Actions type-Git ─── */
+export async function createBranch(task, actor, { name, base = "main", project }) {
+  const branch = { name, base, project: project || task.project || "", status: "active", at: Date.now() };
+  await updateDoc(doc(db, "emp_tasks", task.id), { branch, project: project || task.project || "", status: task.status === "todo" ? "in_progress" : task.status });
+  await logActivity(task.id, actor, `a créé la branche \`${name}\` depuis \`${base}\`.`);
+}
+export async function openPR(task, actor, { title, url }) {
+  const pr = { title: title || task.title, url: url || "", status: "open", at: Date.now() };
+  await updateDoc(doc(db, "emp_tasks", task.id), { pr, status: "in_progress" });
+  await logActivity(task.id, actor, `a ouvert une Pull Request : ${title || task.title}.`);
+}
+export async function setPRStatus(task, actor, status) {
+  await updateDoc(doc(db, "emp_tasks", task.id), { "pr.status": status });
+  await logActivity(task.id, actor, `a marqué la PR comme « ${PR_STATES[status]?.label || status} ».`);
+  if (status === "merged") { await updateDoc(doc(db, "emp_tasks", task.id), { progress: 100, status: "done" }); }
+}
+export async function addPipelineRun(task, actor, { name, status = "running" }) {
+  const run = { name: name || "Pipeline", status, at: Date.now() };
+  await updateDoc(doc(db, "emp_tasks", task.id), { runs: arrayUnion(run) });
+  await logActivity(task.id, actor, `a lancé le pipeline « ${run.name} ».`);
+}
+export async function setRunStatus(task, actor, index, status) {
+  const runs = (task.runs || []).map((r, i) => (i === index ? { ...r, status } : r));
+  await updateDoc(doc(db, "emp_tasks", task.id), { runs });
+  await logActivity(task.id, actor, `pipeline « ${runs[index]?.name} » : ${RUN_STATES[status]?.label || status}.`);
+}
+export async function finalizeTask(task, actor) {
+  await updateDoc(doc(db, "emp_tasks", task.id), { status: "done", progress: 100 });
+  await logActivity(task.id, actor, "a finalisé la tâche ✅.");
+  // Prévenir l'admin
+  await pushNotif({ audience: "admins", type: "task_done", icon: "check-circle", title: "Tâche finalisée ✅", body: `« ${task.title} » a été terminée par ${actor?.name || "un employé"}.` });
 }
 
 /* ─── Helpers date ─── */

@@ -13,7 +13,7 @@ export default function Integrations() {
   return (
     <EmployerShell title="Intégrations">
       <div className="mb-4">
-        <h2 className="font-extrabold text-[20px]">Intégrations</h2>
+        <h2 className="font-bold text-[16px] tracking-tight">Intégrations</h2>
         <p className="text-[13px] text-slate-400">Connectez vos outils au portail employeur.</p>
       </div>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

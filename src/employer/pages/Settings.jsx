@@ -11,12 +11,12 @@ export default function Settings() {
   return (
     <EmployerShell title="Paramètres">
       <div className="max-w-2xl">
-        <h2 className="font-extrabold text-[20px] mb-4">Paramètres du compte</h2>
+        <h2 className="font-bold text-[16px] tracking-tight mb-4">Paramètres du compte</h2>
 
         <div className="rounded-2xl bg-white border border-slate-200 p-5 flex items-center gap-4">
           <span className="w-14 h-14 rounded-full grid place-items-center bg-[#2C87F2] text-white text-[18px] font-bold">{name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase()}</span>
           <div className="flex-1 min-w-0">
-            <div className="font-bold text-[16px]">{name}</div>
+            <div className="font-semibold text-[14px] tracking-tight">{name}</div>
             <div className="text-[13px] text-slate-400 truncate">{user?.email}</div>
             <span className="inline-flex items-center gap-1 mt-1 text-[11px] font-semibold text-[#2C87F2] bg-[#2C87F2]/10 rounded-full px-2 py-0.5">
               <Icon name="shield" size={11} /> {user?.role === "admin" ? "Administrateur" : "Employeur"}

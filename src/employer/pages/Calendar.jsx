@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { EmployerShell } from "../EmployerShell";
 import { Icon } from "../../testers/icons";
+import { useAuth } from "../../testers/AuthContext";
+import TaskDetail from "../TaskDetail";
 import * as store from "../store";
 
 const DAY_START = 8;   // 8:00
@@ -67,7 +69,7 @@ function TaskCard({ t, employees, onClick }) {
   );
 }
 
-const EMPTY = { title: "", mark: "audience", color: store.TASK_COLORS[0], opacity: 100, date: "", start: "08:00", end: "09:00", assigneeIds: [], description: "" };
+const EMPTY = { title: "", kind: "standard", mark: "audience", color: store.TASK_COLORS[0], opacity: 100, date: "", start: "08:00", end: "09:00", assigneeIds: [], description: "" };
 
 function ScheduleModal({ open, onClose, employees, initial, editingId }) {
   const [f, setF] = useState(EMPTY);
@@ -95,7 +97,7 @@ function ScheduleModal({ open, onClose, employees, initial, editingId }) {
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#2C87F2]/10 text-[#2C87F2] shrink-0"><Icon name="calendar" size={20} /></span>
           <div className="flex-1">
-            <h3 className="font-extrabold text-[17px] leading-tight">{editingId ? "Modifier la tâche" : "Créer une tâche"}</h3>
+            <h3 className="font-bold text-[14px] tracking-tight leading-tight">{editingId ? "Modifier la tâche" : "Créer une tâche"}</h3>
             <p className="text-[12px] text-slate-400">Remplissez les champs pour {editingId ? "mettre à jour" : "planifier"} une tâche</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><Icon name="x" size={18} /></button>
@@ -103,7 +105,19 @@ function ScheduleModal({ open, onClose, employees, initial, editingId }) {
 
         <div className="mt-4 space-y-3.5">
           <div>
-            <label className="text-[12px] font-semibold text-slate-500">Type de tâche</label>
+            <label className="text-[12px] font-semibold text-slate-500">Nature de la tâche</label>
+            <div className="grid grid-cols-2 gap-1.5 mt-1.5">
+              {store.TASK_KINDS.map((kd) => (
+                <button key={kd.key} type="button" onClick={() => set("kind", kd.key)}
+                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${f.kind === kd.key ? "border-[#2C87F2] bg-[#2C87F2]/[0.06]" : "border-slate-200 hover:border-slate-300"}`}>
+                  <span className="w-6 h-6 rounded-md grid place-items-center shrink-0" style={{ background: `${kd.color}18`, color: kd.color }}><Icon name={kd.icon} size={13} /></span>
+                  <span className="text-[12px] font-semibold truncate">{kd.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-[12px] font-semibold text-slate-500">Marqueur</label>
             <div className="flex items-center gap-2 mt-1.5">
               <div className="flex-1 relative">
                 <select value={f.mark} onChange={(e) => set("mark", e.target.value)}
@@ -186,11 +200,20 @@ function ScheduleModal({ open, onClose, employees, initial, editingId }) {
 }
 
 export default function Calendar() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const employees = useEmployees();
-  const tasks = useTasks();
+  const allTasks = useTasks();
+  const [me, setMe] = useState(null);
   const [anchor, setAnchor] = useState(() => new Date());
-  const [modal, setModal] = useState(null); // {initial, editingId} | null
+  const [modal, setModal] = useState(null); // {initial} | null (création)
+  const [openId, setOpenId] = useState(null); // détail tâche
   const [q, setQ] = useState("");
+
+  useEffect(() => { if (!isAdmin) store.employeeForEmail(user.email).then(setMe); }, [isAdmin, user.email]);
+  const actor = { id: user.id, name: user.profile?.fullName || user.email.split("@")[0] };
+  // Admin voit tout ; employé voit ses tâches
+  const tasks = isAdmin ? allTasks : (me ? allTasks.filter((t) => t.assigneeIds?.includes(me.id)) : []);
 
   const week = useMemo(() => weekOf(anchor), [anchor]);
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -227,7 +250,7 @@ export default function Calendar() {
           <button onClick={() => shift(-1)} className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500"><Icon name="chevron-left" size={16} /></button>
           <button onClick={() => shift(1)} className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500"><Icon name="chevron-right" size={16} /></button>
           <div>
-            <div className="flex items-center gap-2 font-extrabold text-[20px]">{monthLabel} <Icon name="edit" size={15} className="text-slate-300" /></div>
+            <div className="flex items-center gap-2 font-bold text-[16px] tracking-tight">{monthLabel} <Icon name="edit" size={15} className="text-slate-300" /></div>
             <div className="text-[12px] text-slate-400">{rangeLabel}</div>
           </div>
         </div>
@@ -237,9 +260,8 @@ export default function Calendar() {
               className="w-44 rounded-lg border border-slate-200 pl-9 pr-3 py-2 text-[13px] focus:border-[#2C87F2] outline-none" />
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"><Icon name="search" size={15} /></span>
           </div>
-          <button onClick={() => openCreate()} className="inline-flex items-center gap-2 rounded-lg bg-[#2C87F2] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#1e6fd0]">
-            <Icon name="plus" size={16} /> Créer une tâche
-          </button>
+          {isAdmin && <button onClick={() => openCreate()} className="inline-flex items-center gap-2 rounded-lg bg-[#2C87F2] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#1e6fd0]">
+            <Icon name="plus" size={16} /> Créer une tâche</button>}
         </div>
       </div>
 
@@ -283,7 +305,7 @@ export default function Calendar() {
                   </div>
                 )}
                 {tasksFor(d).map((t) => (
-                  <TaskCard key={t.id} t={t} employees={employees} onClick={() => setModal({ initial: t, editingId: t.id })} />
+                  <TaskCard key={t.id} t={t} employees={employees} onClick={() => setOpenId(t.id)} />
                 ))}
               </div>
             );
@@ -291,8 +313,9 @@ export default function Calendar() {
         </div>
       </div>
 
-      <ScheduleModal open={!!modal} onClose={() => setModal(null)} employees={employees}
-        initial={modal?.initial || {}} editingId={modal?.editingId} />
+      {isAdmin && <ScheduleModal open={!!modal} onClose={() => setModal(null)} employees={employees}
+        initial={modal?.initial || {}} editingId={modal?.editingId} />}
+      {openId && <TaskDetail taskId={openId} onClose={() => setOpenId(null)} employees={employees} actor={actor} canManage={isAdmin} />}
     </EmployerShell>
   );
 }

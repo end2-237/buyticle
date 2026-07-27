@@ -30,7 +30,7 @@ function EmployeeModal({ open, onClose, initial, editingId }) {
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#2C87F2]/10 text-[#2C87F2] shrink-0"><Icon name="user-plus" size={20} /></span>
           <div className="flex-1">
-            <h3 className="font-extrabold text-[17px] leading-tight">{editingId ? "Modifier l'employé" : "Ajouter un employé"}</h3>
+            <h3 className="font-bold text-[14px] tracking-tight leading-tight">{editingId ? "Modifier l'employé" : "Ajouter un employé"}</h3>
             <p className="text-[12px] text-slate-400">Renseignez les informations de l'employé</p>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><Icon name="x" size={18} /></button>
@@ -98,7 +98,7 @@ export default function Employees() {
     <EmployerShell title="Employés">
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
         <div>
-          <h2 className="font-extrabold text-[20px]">Gestion des employés</h2>
+          <h2 className="font-bold text-[16px] tracking-tight">Gestion des employés</h2>
           <p className="text-[13px] text-slate-400">{list.length} employé{list.length > 1 ? "s" : ""} · {tasks.length} tâches au total</p>
         </div>
         <div className="flex items-center gap-2.5">

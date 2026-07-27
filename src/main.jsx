@@ -20,10 +20,11 @@ const Admin = lazy(() => import("./testers/pages/Admin.jsx"));
 const Profile = lazy(() => import("./testers/pages/Profile.jsx"));
 
 /* Portail Employeur — gestion des employés + tâches */
-const EmpDashboard = lazy(() => import("./employer/pages/EmpDashboard.jsx"));
+const EmployerHome = lazy(() => import("./employer/EmployerHome.jsx"));
 const EmpCalendar = lazy(() => import("./employer/pages/Calendar.jsx"));
 const EmpTasks = lazy(() => import("./employer/pages/Tasks.jsx"));
 const EmpEmployees = lazy(() => import("./employer/pages/Employees.jsx"));
+const EmpMyTasks = lazy(() => import("./employer/pages/MyTasks.jsx"));
 const EmpIntegrations = lazy(() => import("./employer/pages/Integrations.jsx"));
 const EmpSettings = lazy(() => import("./employer/pages/Settings.jsx"));
 
@@ -58,13 +59,14 @@ root.render(
             <Route path="/testers/tests" element={<Protected><Community /></Protected>} />
             <Route path="/testers/admin" element={<Protected admin><Admin /></Protected>} />
 
-            {/* ── Portail Employeur (réservé aux admins) ── */}
-            <Route path="/employer" element={<Protected admin><EmpDashboard /></Protected>} />
-            <Route path="/employer/calendar" element={<Protected admin><EmpCalendar /></Protected>} />
+            {/* ── Portail Employeur ── */}
+            <Route path="/employer" element={<Protected requireOnboarded={false}><EmployerHome /></Protected>} />
+            <Route path="/employer/my" element={<Protected requireOnboarded={false}><EmpMyTasks /></Protected>} />
+            <Route path="/employer/calendar" element={<Protected requireOnboarded={false}><EmpCalendar /></Protected>} />
             <Route path="/employer/tasks" element={<Protected admin><EmpTasks /></Protected>} />
             <Route path="/employer/employees" element={<Protected admin><EmpEmployees /></Protected>} />
             <Route path="/employer/integrations" element={<Protected admin><EmpIntegrations /></Protected>} />
-            <Route path="/employer/settings" element={<Protected admin><EmpSettings /></Protected>} />
+            <Route path="/employer/settings" element={<Protected requireOnboarded={false}><EmpSettings /></Protected>} />
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>

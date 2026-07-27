@@ -3,16 +3,24 @@ import { Icon } from "../testers/icons";
 import { useAuth } from "../testers/AuthContext";
 import logo from "../assets/buylogo2.png";
 
-const MAIN = [
+const MAIN_ADMIN = [
   { to: "/employer", icon: "layout-dashboard", label: "Dashboard", end: true },
   { to: "/employer/calendar", icon: "calendar", label: "Calendrier" },
   { to: "/employer/tasks", icon: "list-checks", label: "Tâches" },
   { to: "/employer/employees", icon: "users", label: "Employés" },
   { to: "/employer/integrations", icon: "puzzle", label: "Intégrations" },
 ];
-const OTHERS = [
+const MAIN_EMP = [
+  { to: "/employer/my", icon: "list-checks", label: "Mes tâches", end: true },
+  { to: "/employer/calendar", icon: "calendar", label: "Mon calendrier" },
+];
+const OTHERS_ADMIN = [
   { to: "/employer/settings", icon: "settings", label: "Paramètres" },
   { to: "/testers/admin", icon: "shield", label: "Espace testeurs" },
+  { to: "/contact", icon: "help-circle", label: "Aide" },
+];
+const OTHERS_EMP = [
+  { to: "/employer/settings", icon: "settings", label: "Paramètres" },
   { to: "/contact", icon: "help-circle", label: "Aide" },
 ];
 
@@ -20,11 +28,11 @@ function SideLink({ item }) {
   return (
     <NavLink to={item.to} end={item.end}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[14px] font-medium transition ${
+        `flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-[13px] font-medium transition ${
           isActive ? "bg-[#2C87F2]/10 text-[#2C87F2]" : "text-slate-500 hover:bg-slate-100 hover:text-slate-800"
         }`
       }>
-      <Icon name={item.icon} size={19} strokeWidth={1.9} />
+      <Icon name={item.icon} size={17} strokeWidth={1.8} />
       {item.label}
     </NavLink>
   );
@@ -33,7 +41,10 @@ function SideLink({ item }) {
 export function EmployerShell({ title = "Dashboard", actions, children }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const name = user?.profile?.fullName || user?.email?.split("@")[0] || "Employeur";
+  const isAdmin = user?.role === "admin";
+  const MAIN = isAdmin ? MAIN_ADMIN : MAIN_EMP;
+  const OTHERS = isAdmin ? OTHERS_ADMIN : OTHERS_EMP;
+  const name = user?.profile?.fullName || user?.email?.split("@")[0] || "Employé";
   const inits = name.split(" ").map((w) => w[0]).slice(0, 2).join("").toUpperCase();
 
   return (
@@ -41,22 +52,22 @@ export function EmployerShell({ title = "Dashboard", actions, children }) {
       {/* Sidebar */}
       <aside className="w-[240px] shrink-0 bg-white border-r border-slate-200 hidden lg:flex flex-col">
         <div className="px-6 py-5 flex items-center gap-2.5">
-          <img src={logo} alt="Buyticle" className="w-9 h-9 rounded-xl object-cover" />
-          <span className="font-extrabold text-[18px] tracking-tight">Buyticle<span className="text-[#2C87F2]">Work</span></span>
+          <img src={logo} alt="Buyticle" className="w-8 h-8 rounded-lg object-cover" />
+          <span className="font-bold text-[15px] tracking-tight">Buyticle<span className="text-[#2C87F2]">Work</span></span>
         </div>
 
         <nav className="flex-1 px-3 overflow-y-auto">
-          <p className="px-3.5 mt-4 mb-2 text-[11px] font-semibold tracking-wider text-slate-400">MENU PRINCIPAL</p>
-          <div className="space-y-1">{MAIN.map((i) => <SideLink key={i.to} item={i} />)}</div>
-          <p className="px-3.5 mt-6 mb-2 text-[11px] font-semibold tracking-wider text-slate-400">AUTRES</p>
-          <div className="space-y-1">{OTHERS.map((i) => <SideLink key={i.to} item={i} />)}</div>
+          <p className="px-3.5 mt-4 mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-300">MENU PRINCIPAL</p>
+          <div className="space-y-0.5">{MAIN.map((i) => <SideLink key={i.to} item={i} />)}</div>
+          <p className="px-3.5 mt-6 mb-1.5 text-[10px] font-semibold tracking-[0.12em] text-slate-300">AUTRES</p>
+          <div className="space-y-0.5">{OTHERS.map((i) => <SideLink key={i.to} item={i} />)}</div>
         </nav>
 
         <div className="p-3">
           <div className="rounded-2xl p-4 text-white" style={{ background: "linear-gradient(150deg,#2C87F2,#1e6fd0)" }}>
-            <div className="flex items-center gap-2 font-bold text-[14px]"><Icon name="rocket" size={16} /> Plan Pro</div>
-            <p className="text-white/80 text-[12px] mt-1 leading-snug">Gérez employés et tâches sans limite.</p>
-            <button onClick={() => navigate("/employer/employees")} className="mt-3 w-full rounded-lg bg-white/15 hover:bg-white/25 transition py-2 text-[13px] font-semibold">Gérer l'équipe</button>
+            <div className="flex items-center gap-2 font-bold text-[14px]"><Icon name="rocket" size={16} /> {isAdmin ? "Espace employeur" : "Espace employé"}</div>
+            <p className="text-white/80 text-[12px] mt-1 leading-snug">{isAdmin ? "Gérez employés et tâches sans limite." : "Consultez et faites avancer vos tâches."}</p>
+            <button onClick={() => navigate(isAdmin ? "/employer/employees" : "/employer/my")} className="mt-3 w-full rounded-lg bg-white/15 hover:bg-white/25 transition py-2 text-[13px] font-semibold">{isAdmin ? "Gérer l'équipe" : "Voir mes tâches"}</button>
           </div>
         </div>
       </aside>
@@ -64,8 +75,8 @@ export function EmployerShell({ title = "Dashboard", actions, children }) {
       {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top bar */}
-        <header className="h-16 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-5 md:px-8 gap-4">
-          <h1 className="font-extrabold text-[20px] tracking-tight truncate">{title}</h1>
+        <header className="h-14 shrink-0 bg-white border-b border-slate-200 flex items-center justify-between px-5 md:px-8 gap-4">
+          <h1 className="font-bold text-[15px] tracking-tight truncate">{title}</h1>
           <div className="flex items-center gap-3 md:gap-5">
             <button className="text-slate-400 hover:text-slate-700 transition"><Icon name="share" size={19} /></button>
             <button className="relative text-slate-400 hover:text-slate-700 transition">

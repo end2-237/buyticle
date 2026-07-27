@@ -62,6 +62,15 @@ const PATHS = {
   trash2: "M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14zM10 11v6M14 11v6",
   "chevron-left": "M15 18l-6-6 6-6",
   "chevron-right": "M9 18l6-6-6-6",
+  "git-branch": "M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM15 6a9 9 0 0 1-9 9",
+  "git-pull-request": "M18 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 9v6M13 6h3a2 2 0 0 1 2 2v7",
+  "git-commit": "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM3 12h6M15 12h6",
+  "git-action": "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM10 8l6 4-6 4V8z",
+  link: "M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1.5 1.5M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1.5-1.5",
+  send: "M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z",
+  circle: "M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z",
+  activity: "M22 12h-4l-3 9L9 3l-3 9H2",
+  flag: "M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1zM4 22v-7",
 };
 
 export function Icon({ name, size = 20, className = "", strokeWidth = 1.75, style, fill = "none" }) {
