@@ -16,6 +16,9 @@ export const WHATSAPP_NUMBER = "237696995879";
 export const WHATSAPP_SUPPORT = "237640349236"; // service client
 export const WHATSAPP_GROUP = "https://chat.whatsapp.com/CY3CbFlMIZNBhNVOUriIFq?s=sw&p=i&ilr=4&amv=2";
 export const ADMIN_EMAIL = "admin@buyticle.com";
+/* Comptes ayant accès à l'espace admin + portail employeur */
+export const ADMIN_EMAILS = ["admin@buyticle.com", "emansoga@gmail.com"];
+export const isAdminEmail = (email) => ADMIN_EMAILS.includes((email || "").toLowerCase());
 export const ADMIN_PASSWORD = "admin123";
 
 const shot = (url) => `https://image.thum.io/get/width/900/crop/560/noanimate/${url}`;
@@ -152,10 +155,14 @@ export async function ensureTesterDoc(uid, email) {
   const snap = await getDoc(ref);
   if (snap.exists()) {
     const data = snap.data();
-    const role = email === ADMIN_EMAIL ? "admin" : data.role || "tester";
-    return { id: uid, ...data, role };
+    const role = isAdminEmail(email) ? "admin" : data.role || "tester";
+    // Promotion en base si le compte devient admin
+    if (role === "admin" && data.role !== "admin") {
+      try { await updateDoc(ref, { role: "admin", onboarded: true }); } catch { /* ignore */ }
+    }
+    return { id: uid, ...data, role, onboarded: role === "admin" ? true : data.onboarded };
   }
-  const isAdmin = email === ADMIN_EMAIL;
+  const isAdmin = isAdminEmail(email);
   const fresh = { email, phone: "", whatsapp: "", role: isAdmin ? "admin" : "tester", profile: isAdmin ? { fullName: "Admin Buyticle", city: "Douala", country: "Cameroun" } : {}, onboarded: isAdmin, points: 0, createdAt: serverTimestamp() };
   await setDoc(ref, fresh);
   if (!isAdmin) {
