@@ -31,7 +31,8 @@ export default function Admin() {
 
   return (
     <DashboardShell>
-      <div className="mb-5 flex justify-end">
+      <div className="mb-5 flex justify-between items-center gap-3 flex-wrap">
+        <Btn to="/employer" variant="primary" className="!py-2"><Icon name="briefcase" size={16} /> Portail employeur</Btn>
         <div className="flex items-center gap-1 bg-[#0A0A0A]/[0.04] rounded-full p-1">
           {TABS.map((t) => (
             <button key={t.key} onClick={() => { setTab(t.key); setEditing(null); }}

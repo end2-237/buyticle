@@ -19,6 +19,14 @@ const Community = lazy(() => import("./testers/pages/Community.jsx"));
 const Admin = lazy(() => import("./testers/pages/Admin.jsx"));
 const Profile = lazy(() => import("./testers/pages/Profile.jsx"));
 
+/* Portail Employeur — gestion des employés + tâches */
+const EmpDashboard = lazy(() => import("./employer/pages/EmpDashboard.jsx"));
+const EmpCalendar = lazy(() => import("./employer/pages/Calendar.jsx"));
+const EmpTasks = lazy(() => import("./employer/pages/Tasks.jsx"));
+const EmpEmployees = lazy(() => import("./employer/pages/Employees.jsx"));
+const EmpIntegrations = lazy(() => import("./employer/pages/Integrations.jsx"));
+const EmpSettings = lazy(() => import("./employer/pages/Settings.jsx"));
+
 function Loading() {
   return (
     <div className="min-h-screen grid place-items-center bg-[#EDECEA]">
@@ -49,6 +57,14 @@ root.render(
             <Route path="/testers/profile" element={<Protected requireOnboarded={false}><Profile /></Protected>} />
             <Route path="/testers/tests" element={<Protected><Community /></Protected>} />
             <Route path="/testers/admin" element={<Protected admin><Admin /></Protected>} />
+
+            {/* ── Portail Employeur (réservé aux admins) ── */}
+            <Route path="/employer" element={<Protected admin><EmpDashboard /></Protected>} />
+            <Route path="/employer/calendar" element={<Protected admin><EmpCalendar /></Protected>} />
+            <Route path="/employer/tasks" element={<Protected admin><EmpTasks /></Protected>} />
+            <Route path="/employer/employees" element={<Protected admin><EmpEmployees /></Protected>} />
+            <Route path="/employer/integrations" element={<Protected admin><EmpIntegrations /></Protected>} />
+            <Route path="/employer/settings" element={<Protected admin><EmpSettings /></Protected>} />
 
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
