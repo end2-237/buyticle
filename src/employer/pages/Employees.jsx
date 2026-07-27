@@ -26,7 +26,7 @@ function EmployeeModal({ open, onClose, initial, editingId }) {
   return (
     <>
       <div className="fixed inset-0 bg-slate-900/20 z-40" onClick={onClose} />
-      <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] bg-white rounded-2xl shadow-2xl border border-slate-200 p-5">
+      <div className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,440px)] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl border border-slate-200 p-5">
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 rounded-xl grid place-items-center bg-[#2C87F2]/10 text-[#2C87F2] shrink-0"><Icon name="user-plus" size={20} /></span>
           <div className="flex-1">

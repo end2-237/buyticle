@@ -192,6 +192,8 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
   const [tab, setTab] = useState("details");
   const [text, setText] = useState("");
   const [newItem, setNewItem] = useState("");
+  const [editing, setEditing] = useState(false);
+  const [ef, setEf] = useState({});
 
   useEffect(() => taskId ? store.subscribeTask(taskId, setTask) : undefined, [taskId]);
   useEffect(() => taskId ? store.subscribeTaskComments(taskId, setComments) : undefined, [taskId]);
@@ -202,6 +204,10 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
   const tabs = [...TABS_BASE];
   if (task && task.kind !== "standard") tabs.splice(2, 0, { key: "actions", label: "Actions", icon: k.icon });
 
+  const startEdit = () => { setEf({ title: task.title, description: task.description || "", kind: task.kind, mark: task.mark, color: task.color, date: task.date || "", start: task.start || "09:00", end: task.end || "10:00", assigneeIds: [...(task.assigneeIds || [])] }); setEditing(true); };
+  const setE = (key, v) => setEf((p) => ({ ...p, [key]: v }));
+  const toggleAssignee = (id) => setEf((p) => ({ ...p, assigneeIds: p.assigneeIds.includes(id) ? p.assigneeIds.filter((x) => x !== id) : [...p.assigneeIds, id] }));
+  const saveEdit = async () => { await store.updateTask(taskId, ef); setEditing(false); };
   const send = async (e) => { e.preventDefault(); if (!text.trim()) return; await store.addTaskComment(taskId, { userId: actor.id, userName: actor.name, body: text }); setText(""); };
   const toggleItem = (i) => store.setChecklist(taskId, task.checklist.map((c, idx) => idx === i ? { ...c, done: !c.done } : c));
   const addItem = () => { if (!newItem.trim()) return; store.setChecklist(taskId, [...(task.checklist || []), { text: newItem.trim(), done: false }]); setNewItem(""); };
@@ -246,8 +252,13 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
 
             {/* Body */}
             <div className="flex-1 overflow-y-auto p-5">
-              {tab === "details" && (
+              {tab === "details" && !editing && (
                 <div className="space-y-4">
+                  {canManage && (
+                    <div className="flex justify-end -mb-2">
+                      <button onClick={startEdit} className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#2C87F2] hover:underline"><Icon name="edit" size={13} /> Modifier la tâche</button>
+                    </div>
+                  )}
                   <div>
                     <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide mb-1">Description</div>
                     <p className="text-[14px] text-slate-600 leading-relaxed whitespace-pre-wrap">{task.description || "Aucune description."}</p>
@@ -268,13 +279,75 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
                     ) : <p className="text-[13px] text-slate-400">Non assignée.</p>}
                   </div>
                   {canManage && (
-                    <div className="flex items-center gap-1.5 pt-2">
+                    <div className="flex items-center gap-1.5 pt-2 flex-wrap">
                       <span className="text-[12px] text-slate-400 mr-1">Statut :</span>
                       {store.TASK_STATUS.map((s) => (
                         <button key={s.key} onClick={() => store.setTaskStatus(taskId, s.key)} className={`text-[11px] font-semibold px-2.5 py-1 rounded-full border transition ${task.status === s.key ? "text-white" : "text-slate-500 border-slate-200"}`} style={task.status === s.key ? { background: s.color, borderColor: s.color } : {}}>{s.label}</button>
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {tab === "details" && editing && (
+                <div className="space-y-3.5">
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Titre</label>
+                    <input value={ef.title} onChange={(e) => setE("title", e.target.value)} className={`${inp} mt-1`} />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Description</label>
+                    <textarea value={ef.description} onChange={(e) => setE("description", e.target.value)} className={`${inp} mt-1 min-h-[80px] resize-y`} />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Type</label>
+                    <div className="grid grid-cols-2 gap-1.5 mt-1">
+                      {store.TASK_KINDS.map((kd) => (
+                        <button key={kd.key} type="button" onClick={() => setE("kind", kd.key)} className={`flex items-center gap-2 rounded-lg border px-2.5 py-2 text-left transition ${ef.kind === kd.key ? "border-[#2C87F2] bg-[#2C87F2]/[0.06]" : "border-slate-200"}`}>
+                          <span className="w-5 h-5 rounded-md grid place-items-center shrink-0" style={{ background: `${kd.color}18`, color: kd.color }}><Icon name={kd.icon} size={12} /></span>
+                          <span className="text-[12px] font-semibold truncate">{kd.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Marqueur</label>
+                    <select value={ef.mark} onChange={(e) => setE("mark", e.target.value)} className={`${inp} mt-1`}>
+                      {store.MARKS.map((m) => <option key={m.key} value={m.key}>{m.label}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Couleur</label>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {store.TASK_COLORS.map((c) => <button key={c} onClick={() => setE("color", c)} className={`w-6 h-6 rounded-full transition ${ef.color === c ? "ring-2 ring-offset-2 ring-slate-300" : ""}`} style={{ background: c }} />)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Date &amp; heure</label>
+                    <input type="date" value={ef.date} onChange={(e) => setE("date", e.target.value)} className={`${inp} mt-1`} />
+                    <div className="grid grid-cols-2 gap-2 mt-2">
+                      <input type="time" value={ef.start} onChange={(e) => setE("start", e.target.value)} className={inp} />
+                      <input type="time" value={ef.end} onChange={(e) => setE("end", e.target.value)} className={inp} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-semibold text-slate-500">Assignés</label>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {employees.map((e) => {
+                        const on = ef.assigneeIds.includes(e.id);
+                        return (
+                          <button key={e.id} onClick={() => toggleAssignee(e.id)} className={`inline-flex items-center gap-1.5 rounded-full pl-1 pr-2.5 py-1 text-[12px] font-medium border transition ${on ? "border-[#2C87F2] bg-[#2C87F2]/10 text-[#2C87F2]" : "border-slate-200 text-slate-500"}`}>
+                            <Assignee id={e.id} employees={employees} size={20} /> {e.name.split(" ")[0]}
+                          </button>
+                        );
+                      })}
+                      {employees.length === 0 && <span className="text-[12px] text-slate-400">Aucun employé.</span>}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button onClick={() => setEditing(false)} className="rounded-lg border border-slate-200 px-4 py-2 text-[13px] font-semibold text-slate-600 hover:bg-slate-50">Annuler</button>
+                    <button onClick={saveEdit} disabled={!ef.title?.trim()} className="rounded-lg bg-[#2C87F2] px-5 py-2 text-[13px] font-semibold text-white hover:bg-[#1e6fd0] disabled:opacity-40">Enregistrer</button>
+                  </div>
                 </div>
               )}
 
