@@ -26,6 +26,8 @@ export default function MyTasks() {
 
   // Rappels : échéance aujourd'hui/demain + tâches en retard (délivrés via FCM)
   useEffect(() => { if (me && mine.length) store.runTaskReminders(user.id, mine); /* eslint-disable-next-line */ }, [me, tasks.length]);
+  // Rappel à l'heure exacte de chaque tâche du jour (tant que le portail est ouvert)
+  useEffect(() => { if (me && mine.length) return store.scheduleDayReminders(user.id, mine); /* eslint-disable-next-line */ }, [me, tasks.length]);
   const shown = mine.filter((t) => filter === "all" ? true : filter === "done" ? t.status === "done" : t.status !== "done")
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 

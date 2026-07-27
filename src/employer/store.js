@@ -30,6 +30,10 @@ export const MARKS = [
   { key: "personnel", label: "Personnel", icon: "briefcase" },
   { key: "reunion", label: "Réunion", icon: "message-square" },
   { key: "echeance", label: "Échéance", icon: "clock" },
+  { key: "deploiement", label: "Déploiement", icon: "rocket" },
+  { key: "incident", label: "Incident", icon: "alert-triangle" },
+  { key: "maintenance", label: "Maintenance", icon: "settings" },
+  { key: "release", label: "Release", icon: "git-commit" },
 ];
 export const TASK_STATUS = [
   { key: "todo", label: "À faire", color: "#64748B" },
@@ -317,4 +321,35 @@ export async function runTaskReminders(uid, myTasks) {
     try { await pushNotif({ audience: uid, type: "reminder", icon: "clock", title, body }); } catch { /* ignore */ }
   }
   try { localStorage.setItem("bt_emp_reminders", JSON.stringify({ day: key, sent: [...sent] })); } catch { /* ignore */ }
+}
+
+/* Planifie une notification à l'heure exacte de chaque tâche d'aujourd'hui (tant que le portail est ouvert).
+   Retourne une fonction de nettoyage. Déduplique via localStorage. */
+export function scheduleDayReminders(uid, myTasks) {
+  const timers = [];
+  if (!uid || !myTasks?.length) return () => {};
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const key = ymd(today);
+  let s;
+  try { s = JSON.parse(localStorage.getItem("bt_emp_time_reminders") || "{}"); } catch { s = {}; }
+  if (s.day !== key) s = { day: key, sent: [] };
+  const sent = new Set(s.sent);
+  const persist = () => { try { localStorage.setItem("bt_emp_time_reminders", JSON.stringify({ day: key, sent: [...sent] })); } catch { /* ignore */ } };
+
+  for (const t of myTasks) {
+    if (t.status === "done" || t.date !== key || !t.start) continue;
+    if (sent.has(t.id)) continue;
+    const [h, m] = t.start.split(":").map(Number);
+    const when = new Date(); when.setHours(h || 0, m || 0, 0, 0);
+    const delay = when.getTime() - Date.now();
+    if (delay < -60000) continue;               // trop en retard, ignore
+    const fire = async () => {
+      if (sent.has(t.id)) return;
+      sent.add(t.id); persist();
+      try { await pushNotif({ audience: uid, type: "reminder", icon: "clock", title: "C'est l'heure ⏰", body: `« ${t.title} » commence maintenant (${fmtTime(t.start)}).` }); } catch { /* ignore */ }
+    };
+    if (delay <= 0) fire();
+    else timers.push(setTimeout(fire, Math.min(delay, 2 ** 31 - 1)));
+  }
+  return () => timers.forEach(clearTimeout);
 }
