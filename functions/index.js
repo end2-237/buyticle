@@ -481,6 +481,15 @@ exports.githubCallback = functionsV1.https.onRequest(async (req, res) => {
       expires_at: tok.expires_in ? Date.now() + tok.expires_in * 1000 : null,
       login, avatar, connectedAt: Date.now(),
     }, { merge: true });
+    // Relier le login GitHub à la fiche employé (par email) pour l'ajout auto en collaborateur
+    try {
+      const tSnap = await db.doc(`testers/${state}`).get();
+      const email = tSnap.exists ? (tSnap.data().email || "").toLowerCase() : "";
+      if (email && login) {
+        const q = await db.collection("employees").where("email", "==", email).get();
+        for (const d of q.docs) await d.ref.set({ githubLogin: login }, { merge: true });
+      }
+    } catch (e) { /* ignore */ }
     return back("connected");
   } catch (e) {
     console.error("githubCallback:", e.message);
@@ -523,14 +532,22 @@ exports.githubListRepos = functionsV1.https.onCall(async (data, context) => {
 exports.githubCreateBranch = functionsV1.https.onCall(async (data, context) => {
   const uid = context.auth && context.auth.uid;
   if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
-  const { repo, base = "main", name } = data || {};
+  const { repo, base = "main", name, collaborators = [] } = data || {};
   if (!repo || !name) throw new functions.https.HttpsError("invalid-argument", "repo et name requis");
   try {
     const token = await tokenForUid(uid);
     const ref = await ghApi(token, `/repos/${repo}/git/ref/heads/${encodeURIComponent(base)}`);
     const sha = ref.object.sha;
     await ghApi(token, `/repos/${repo}/git/refs`, { method: "POST", body: JSON.stringify({ ref: `refs/heads/${name}`, sha }) });
-    return { ok: true, name, base, url: `https://github.com/${repo}/tree/${name}` };
+    // Ajout automatique des assignés en collaborateurs (droit push) — sans invitation manuelle
+    const added = [], failed = [];
+    for (const login of collaborators.filter(Boolean)) {
+      try {
+        await ghApi(token, `/repos/${repo}/collaborators/${encodeURIComponent(login)}`, { method: "PUT", body: JSON.stringify({ permission: "push" }) });
+        added.push(login);
+      } catch (ce) { failed.push({ login, error: ce.message }); }
+    }
+    return { ok: true, name, base, url: `https://github.com/${repo}/tree/${name}`, added, failed };
   } catch (e) {
     if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
     throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
@@ -579,6 +596,72 @@ exports.githubRerun = functionsV1.https.onCall(async (data, context) => {
     const token = await tokenForUid(uid);
     await ghApi(token, `/repos/${repo}/actions/runs/${runId}/rerun`, { method: "POST" });
     return { ok: true };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Ajout manuel d'un collaborateur (droit push) */
+exports.githubAddCollaborator = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, username, permission = "push" } = data || {};
+  if (!repo || !username) throw new functions.https.HttpsError("invalid-argument", "repo et username requis");
+  try {
+    const token = await tokenForUid(uid);
+    await ghApi(token, `/repos/${repo}/collaborators/${encodeURIComponent(username)}`, { method: "PUT", body: JSON.stringify({ permission }) });
+    return { ok: true };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Commits d'une branche (optionnellement filtrés par période de la tâche) */
+exports.githubListCommits = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, branch, since, until } = data || {};
+  if (!repo || !branch) throw new functions.https.HttpsError("invalid-argument", "repo et branch requis");
+  try {
+    const token = await tokenForUid(uid);
+    let path = `/repos/${repo}/commits?sha=${encodeURIComponent(branch)}&per_page=50`;
+    if (since) path += `&since=${encodeURIComponent(since)}`;
+    if (until) path += `&until=${encodeURIComponent(until)}`;
+    const list = await ghApi(token, path);
+    return { commits: (Array.isArray(list) ? list : []).map((c) => ({
+      sha: c.sha, short: (c.sha || "").slice(0, 7),
+      message: (c.commit && c.commit.message ? c.commit.message.split("\n")[0] : ""),
+      author: (c.author && c.author.login) || (c.commit && c.commit.author && c.commit.author.name) || "?",
+      avatar: c.author && c.author.avatar_url,
+      date: c.commit && c.commit.author && c.commit.author.date,
+      url: c.html_url,
+    })) };
+  } catch (e) {
+    if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
+    throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");
+  }
+});
+
+/* Déploiements liés à une branche */
+exports.githubListDeployments = functionsV1.https.onCall(async (data, context) => {
+  const uid = context.auth && context.auth.uid;
+  if (!uid) throw new functions.https.HttpsError("unauthenticated", "Connexion requise");
+  const { repo, ref } = data || {};
+  if (!repo) throw new functions.https.HttpsError("invalid-argument", "repo requis");
+  try {
+    const token = await tokenForUid(uid);
+    let path = `/repos/${repo}/deployments?per_page=20`;
+    if (ref) path += `&ref=${encodeURIComponent(ref)}`;
+    const list = await ghApi(token, path);
+    const deps = [];
+    for (const d of (Array.isArray(list) ? list : []).slice(0, 10)) {
+      let state = "unknown";
+      try { const st = await ghApi(token, `/repos/${repo}/deployments/${d.id}/statuses?per_page=1`); if (st[0]) state = st[0].state; } catch { /* ignore */ }
+      deps.push({ id: d.id, environment: d.environment, ref: d.ref, creator: d.creator && d.creator.login, at: d.created_at, state });
+    }
+    return { deployments: deps };
   } catch (e) {
     if (e.code === "unauth") throw new functions.https.HttpsError("failed-precondition", "GitHub non connecté");
     throw new functions.https.HttpsError("internal", e.message || "Erreur GitHub");

@@ -21,6 +21,11 @@ function useTasks() {
   useEffect(() => store.subscribeTasks(setList), []);
   return list;
 }
+function useTeams() {
+  const [list, setList] = useState([]);
+  useEffect(() => store.subscribeTeams(setList), []);
+  return list;
+}
 
 const hourLabel = (h) => `${((h + 11) % 12) + 1} ${h >= 12 ? "PM" : "AM"}`;
 
@@ -69,9 +74,9 @@ function TaskCard({ t, employees, onClick }) {
   );
 }
 
-const EMPTY = { title: "", kind: "standard", mark: "audience", color: store.TASK_COLORS[0], opacity: 100, date: "", start: "08:00", end: "09:00", assigneeIds: [], description: "" };
+const EMPTY = { title: "", kind: "standard", mark: "audience", color: store.TASK_COLORS[0], opacity: 100, date: "", start: "08:00", end: "09:00", assigneeIds: [], teamId: "", finalizeBy: "anyone", description: "" };
 
-function ScheduleModal({ open, onClose, employees, initial, editingId }) {
+function ScheduleModal({ open, onClose, employees, teams = [], initial, editingId }) {
   const [f, setF] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (open) setF({ ...EMPTY, ...initial }); }, [open, initial]);
@@ -182,6 +187,32 @@ function ScheduleModal({ open, onClose, employees, initial, editingId }) {
               </div>
             )}
           </div>
+
+          {teams.length > 0 && (
+            <div>
+              <label className="text-[12px] font-semibold text-slate-500">Ou assigner à une équipe (tâche collective)</label>
+              <select value={f.teamId} onChange={(e) => {
+                const tid = e.target.value; const team = teams.find((t) => t.id === tid);
+                set("teamId", tid);
+                if (team) set("assigneeIds", [...new Set([...(f.assigneeIds || []), ...(team.memberIds || [])])]);
+              }} className="w-full mt-1.5 rounded-lg border border-slate-200 px-3 py-2.5 text-[13px] focus:border-[#2C87F2] outline-none">
+                <option value="">— Aucune équipe —</option>
+                {teams.map((t) => <option key={t.id} value={t.id}>{t.name} ({t.memberIds?.length || 0})</option>)}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="text-[12px] font-semibold text-slate-500">Qui peut déclarer la tâche terminée ?</label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
+              {[{ k: "anyone", l: "L'assigné aussi", d: "L'employé peut finaliser" }, { k: "admin", l: "Admin seulement", d: "Validation par vous" }].map((o) => (
+                <button key={o.k} type="button" onClick={() => set("finalizeBy", o.k)} className={`rounded-lg border px-3 py-2 text-left transition ${f.finalizeBy === o.k ? "border-[#2C87F2] bg-[#2C87F2]/[0.06]" : "border-slate-200"}`}>
+                  <div className="text-[12px] font-semibold">{o.l}</div>
+                  <div className="text-[10px] text-slate-400">{o.d}</div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-between mt-5">
@@ -203,6 +234,7 @@ export default function Calendar() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
   const employees = useEmployees();
+  const teams = useTeams();
   const allTasks = useTasks();
   const [me, setMe] = useState(null);
   const [anchor, setAnchor] = useState(() => new Date());
@@ -313,7 +345,7 @@ export default function Calendar() {
         </div>
       </div>
 
-      {isAdmin && <ScheduleModal open={!!modal} onClose={() => setModal(null)} employees={employees}
+      {isAdmin && <ScheduleModal open={!!modal} onClose={() => setModal(null)} employees={employees} teams={teams}
         initial={modal?.initial || {}} editingId={modal?.editingId} />}
       {openId && <TaskDetail taskId={openId} onClose={() => setOpenId(null)} employees={employees} actor={actor} canManage={isAdmin} />}
     </EmployerShell>

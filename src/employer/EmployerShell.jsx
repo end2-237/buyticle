@@ -9,6 +9,7 @@ const MAIN_ADMIN = [
   { to: "/employer/tasks", icon: "list-checks", label: "Tâches" },
   { to: "/employer/brainstorm", icon: "lightbulb", label: "Brainstorm" },
   { to: "/employer/employees", icon: "users", label: "Employés" },
+  { to: "/employer/teams", icon: "briefcase", label: "Équipes" },
   { to: "/employer/integrations", icon: "puzzle", label: "Intégrations" },
 ];
 const MAIN_EMP = [

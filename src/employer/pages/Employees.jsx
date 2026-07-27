@@ -3,9 +3,9 @@ import { EmployerShell } from "../EmployerShell";
 import { Icon } from "../../testers/icons";
 import * as store from "../store";
 
-const EMPTY = { name: "", email: "", poste: "", department: store.DEPARTMENTS[0], phone: "", color: store.TASK_COLORS[0] };
+const EMPTY = { name: "", email: "", poste: "", department: store.DEPARTMENTS[0], phone: "", color: store.TASK_COLORS[0], managerId: "" };
 
-function EmployeeModal({ open, onClose, initial, editingId }) {
+function EmployeeModal({ open, onClose, initial, editingId, allEmployees = [] }) {
   const [f, setF] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
   useEffect(() => { if (open) setF({ ...EMPTY, ...initial }); }, [open, initial]);
@@ -62,6 +62,13 @@ function EmployeeModal({ open, onClose, initial, editingId }) {
               <label className="text-[12px] font-semibold text-slate-500">Téléphone</label>
               <input value={f.phone} onChange={(e) => set("phone", e.target.value)} placeholder="6XX XXX XXX" className={`${field} mt-1.5`} />
             </div>
+          </div>
+          <div>
+            <label className="text-[12px] font-semibold text-slate-500">Manager (hiérarchie)</label>
+            <select value={f.managerId} onChange={(e) => set("managerId", e.target.value)} className={`${field} mt-1.5`}>
+              <option value="">Aucun — rattaché à l'administrateur</option>
+              {allEmployees.filter((e) => e.id !== editingId).map((e) => <option key={e.id} value={e.id}>{e.name}{e.poste ? ` · ${e.poste}` : ""}</option>)}
+            </select>
           </div>
           <div>
             <label className="text-[12px] font-semibold text-slate-500">Couleur</label>
@@ -134,7 +141,7 @@ export default function Employees() {
                   <span className="w-10 h-10 rounded-full grid place-items-center text-white text-[13px] font-bold shrink-0" style={{ background: e.color || store.colorFor(e.id) }}>{store.initials(e.name)}</span>
                   <div className="min-w-0">
                     <div className="font-semibold text-[14px] truncate">{e.name}</div>
-                    <div className="text-[12px] text-slate-400 truncate">{e.poste || "—"}</div>
+                    <div className="text-[12px] text-slate-400 truncate">{e.poste || "—"}{e.managerId ? ` · ↳ ${list.find((m) => m.id === e.managerId)?.name?.split(" ")[0] || "manager"}` : ""}</div>
                   </div>
                 </div>
                 <div className="col-span-6 md:col-span-3">
@@ -155,7 +162,7 @@ export default function Employees() {
         </div>
       )}
 
-      <EmployeeModal open={!!modal} onClose={() => setModal(null)} initial={modal?.initial || {}} editingId={modal?.editingId} />
+      <EmployeeModal open={!!modal} onClose={() => setModal(null)} initial={modal?.initial || {}} editingId={modal?.editingId} allEmployees={list} />
     </EmployerShell>
   );
 }

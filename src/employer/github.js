@@ -25,9 +25,21 @@ export async function githubListRepos() {
   const { data } = await call("githubListRepos")();
   return data.repos || [];
 }
-export async function githubCreateBranch(repo, name, base = "main") {
-  const { data } = await call("githubCreateBranch")({ repo, name, base });
+export async function githubCreateBranch(repo, name, base = "main", collaborators = []) {
+  const { data } = await call("githubCreateBranch")({ repo, name, base, collaborators });
   return data;
+}
+export async function githubAddCollaborator(repo, username, permission = "push") {
+  const { data } = await call("githubAddCollaborator")({ repo, username, permission });
+  return data;
+}
+export async function githubListCommits(repo, branch, since, until) {
+  const { data } = await call("githubListCommits")({ repo, branch, since, until });
+  return data.commits || [];
+}
+export async function githubListDeployments(repo, ref) {
+  const { data } = await call("githubListDeployments")({ repo, ref });
+  return data.deployments || [];
 }
 export async function githubCreatePR(repo, head, base, title, body) {
   const { data } = await call("githubCreatePR")({ repo, head, base, title, body });

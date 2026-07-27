@@ -34,6 +34,9 @@ export const MARKS = [
   { key: "incident", label: "Incident", icon: "alert-triangle" },
   { key: "maintenance", label: "Maintenance", icon: "settings" },
   { key: "release", label: "Release", icon: "git-commit" },
+  { key: "management", label: "Management", icon: "trending-up" },
+  { key: "support", label: "Support", icon: "help-circle" },
+  { key: "service", label: "Service client", icon: "message-circle" },
 ];
 export const TASK_STATUS = [
   { key: "todo", label: "À faire", color: "#64748B" },
@@ -77,6 +80,21 @@ export async function deleteEmployee(id) {
   return deleteDoc(doc(db, "employees", id));
 }
 
+/* ─── Équipes (tâches collectives) ─── */
+export function subscribeTeams(cb) {
+  return onSnapshot(
+    query(collection(db, "teams"), orderBy("createdAt", "desc")),
+    (s) => cb(map(s)),
+    (e) => console.warn("teams sub:", e.code)
+  );
+}
+export async function addTeam({ name, memberIds = [], color = TASK_COLORS[0], lead = "" }) {
+  if (!name?.trim()) return;
+  return addDoc(collection(db, "teams"), { name: name.trim(), memberIds, color, lead, createdAt: serverTimestamp() });
+}
+export async function updateTeam(id, patch) { return updateDoc(doc(db, "teams", id), patch); }
+export async function deleteTeam(id) { return deleteDoc(doc(db, "teams", id)); }
+
 /* ─── Tâches ─── */
 export function subscribeTasks(cb) {
   return onSnapshot(
@@ -97,10 +115,12 @@ export async function addTask(data) {
     color: data.color || TASK_COLORS[0],
     opacity: data.opacity ?? 100,
     assigneeIds: data.assigneeIds || [],
+    teamId: data.teamId || null,      // tâche collective liée à une équipe
     date: data.date || "",            // "YYYY-MM-DD"
     start: data.start || "09:00",     // "HH:MM"
     end: data.end || "10:00",
     status: data.status || "todo",
+    finalizeBy: data.finalizeBy || "anyone",   // "anyone" | "admin"
     progress: data.progress ?? 0,
     checklist: data.checklist || [],  // [{ text, done }]
     project: data.project || "",

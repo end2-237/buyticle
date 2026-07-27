@@ -26,6 +26,7 @@ const EmpTasks = lazy(() => import("./employer/pages/Tasks.jsx"));
 const EmpEmployees = lazy(() => import("./employer/pages/Employees.jsx"));
 const EmpMyTasks = lazy(() => import("./employer/pages/MyTasks.jsx"));
 const EmpBrainstorm = lazy(() => import("./employer/pages/Brainstorm.jsx"));
+const EmpTeams = lazy(() => import("./employer/pages/Teams.jsx"));
 const EmpIntegrations = lazy(() => import("./employer/pages/Integrations.jsx"));
 const EmpSettings = lazy(() => import("./employer/pages/Settings.jsx"));
 
@@ -67,6 +68,7 @@ root.render(
             <Route path="/employer/brainstorm" element={<Protected requireOnboarded={false}><EmpBrainstorm /></Protected>} />
             <Route path="/employer/tasks" element={<Protected admin><EmpTasks /></Protected>} />
             <Route path="/employer/employees" element={<Protected admin><EmpEmployees /></Protected>} />
+            <Route path="/employer/teams" element={<Protected admin><EmpTeams /></Protected>} />
             <Route path="/employer/integrations" element={<Protected requireOnboarded={false}><EmpIntegrations /></Protected>} />
             <Route path="/employer/settings" element={<Protected requireOnboarded={false}><EmpSettings /></Protected>} />
 

@@ -25,15 +25,22 @@ function RepoPicker({ repo, setRepo, repos }) {
   );
 }
 
-function GitActions({ task, actor }) {
+function GitActions({ task, actor, employees = [] }) {
   const [gitHub, setGitHub] = useState({ connected: false, login: "" });
   const [repos, setRepos] = useState([]);
   const [branch, setBranch] = useState({ name: "", base: "main", repo: task.project || "" });
   const [pr, setPr] = useState({ title: task.title, head: task.branch?.name || "", base: "main", repo: task.project || "" });
   const [runs, setRuns] = useState(null);
+  const [commits, setCommits] = useState(null);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const kind = task.kind;
+
+  // logins GitHub des assignés (pour ajout auto en collaborateur)
+  const assigneeLogins = (task.assigneeIds || []).map((id) => employees.find((e) => e.id === id)?.githubLogin).filter(Boolean);
+  // fenêtre temporelle de la tâche (pour filtrer commits/déploiements)
+  const since = task.date ? new Date(`${task.date}T${task.start || "00:00"}:00`).toISOString() : undefined;
+  const until = task.date ? new Date(`${task.date}T${task.end || "23:59"}:00`).toISOString() : undefined;
 
   useEffect(() => {
     gh.githubStatus().then((s) => {
@@ -54,10 +61,32 @@ function GitActions({ task, actor }) {
         <Banner />
         {err && <div className="text-[12px] text-red-500 mb-2">{err}</div>}
         {task.branch ? (
-          <div className="rounded-xl border border-slate-200 p-4">
-            <div className="flex items-center gap-2 text-[#8B5CF6] font-bold text-[14px]"><Icon name="git-branch" size={17} /> {task.branch.name} {task.branch.real && <span className="text-[10px] bg-green-500/10 text-green-600 rounded-full px-2 py-0.5">réelle</span>}</div>
-            <div className="text-[12px] text-slate-400 mt-1">basée sur <code className="bg-slate-100 px-1.5 py-0.5 rounded">{task.branch.base}</code>{task.branch.project && <> · <b>{task.branch.project}</b></>}</div>
-            {task.branch.url && <a href={task.branch.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-[#2C87F2] mt-2 hover:underline"><Icon name="link" size={12} /> Voir sur GitHub</a>}
+          <div className="space-y-3">
+            <div className="rounded-xl border border-slate-200 p-4">
+              <div className="flex items-center gap-2 text-[#8B5CF6] font-bold text-[14px]"><Icon name="git-branch" size={17} /> {task.branch.name} {task.branch.real && <span className="text-[10px] bg-green-500/10 text-green-600 rounded-full px-2 py-0.5">réelle</span>}</div>
+              <div className="text-[12px] text-slate-400 mt-1">basée sur <code className="bg-slate-100 px-1.5 py-0.5 rounded">{task.branch.base}</code>{task.branch.project && <> · <b>{task.branch.project}</b></>}</div>
+              {task.branch.url && <a href={task.branch.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] text-[#2C87F2] mt-2 hover:underline"><Icon name="link" size={12} /> Voir sur GitHub</a>}
+              {assigneeLogins.length > 0 && <div className="text-[11px] text-slate-400 mt-2">Collaborateurs : {assigneeLogins.map((l) => `@${l}`).join(", ")}</div>}
+            </div>
+            {/* Commits de l'assigné sur la branche, dans le délai de la tâche */}
+            {gitHub.connected && task.branch.real && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Commits (dans le délai)</span>
+                  <button disabled={busy} onClick={() => wrap(async () => setCommits(await gh.githubListCommits(task.branch.project, task.branch.name, since, until)))} className="text-[12px] font-semibold text-[#2C87F2] hover:underline">Charger</button>
+                </div>
+                {commits === null && <p className="text-[12px] text-slate-400">Cliquez sur « Charger » pour voir les commits poussés par l'assigné.</p>}
+                {commits && commits.length === 0 && <p className="text-[12px] text-slate-400">Aucun commit dans la fenêtre de la tâche.</p>}
+                <div className="space-y-1.5">
+                  {(commits || []).map((c) => (
+                    <a key={c.sha} href={c.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-lg border border-slate-100 p-2 hover:border-[#2C87F2]/40">
+                      <Icon name="git-commit" size={14} className="text-slate-400 shrink-0" />
+                      <span className="flex-1 min-w-0"><span className="text-[12.5px] text-slate-600 truncate block">{c.message}</span><span className="text-[10px] text-slate-400">@{c.author} · {c.short} · {c.date ? timeAgo(new Date(c.date)) : ""}</span></span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="space-y-2.5">
@@ -66,9 +95,10 @@ function GitActions({ task, actor }) {
               <input value={branch.name} onChange={(e) => setBranch({ ...branch, name: e.target.value })} placeholder="feat/ma-branche" className={inp} />
               <input value={branch.base} onChange={(e) => setBranch({ ...branch, base: e.target.value })} placeholder="main" className={inp} />
             </div>
+            {gitHub.connected && assigneeLogins.length > 0 && <p className="text-[11px] text-slate-400">Seront ajoutés en collaborateurs (push) : {assigneeLogins.map((l) => `@${l}`).join(", ")}</p>}
             <button disabled={busy || !branch.name.trim()} className={btnPrimary} onClick={() => wrap(async () => {
               if (gitHub.connected && branch.repo) {
-                const r = await gh.githubCreateBranch(branch.repo, branch.name, branch.base);
+                const r = await gh.githubCreateBranch(branch.repo, branch.name, branch.base, assigneeLogins);
                 await store.createBranch(task, actor, { name: branch.name, base: branch.base, project: branch.repo, url: r.url, real: true });
               } else {
                 await store.createBranch(task, actor, { name: branch.name, base: branch.base, project: branch.repo });
@@ -377,7 +407,7 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
                 </div>
               )}
 
-              {tab === "actions" && <GitActions task={task} actor={actor} />}
+              {tab === "actions" && <GitActions task={task} actor={actor} employees={employees} />}
 
               {tab === "comments" && (
                 <div className="space-y-3">
@@ -409,11 +439,12 @@ export default function TaskDetail({ taskId, onClose, employees, actor, canManag
                 </form>
               ) : (
                 <div className="flex items-center gap-2">
-                  {task.status !== "done" ? (
-                    <button onClick={() => store.finalizeTask(task, actor)} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#1ba550]"><Icon name="check-circle" size={16} /> Finaliser la tâche</button>
-                  ) : (
-                    <span className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#22C55E]/10 text-[#22C55E] px-4 py-2.5 text-[13px] font-semibold"><Icon name="check-circle" size={16} /> Tâche terminée</span>
-                  )}
+                  {(() => {
+                    const canFinalize = canManage || (task.finalizeBy || "anyone") === "anyone";
+                    if (task.status === "done") return <span className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#22C55E]/10 text-[#22C55E] px-4 py-2.5 text-[13px] font-semibold"><Icon name="check-circle" size={16} /> Tâche terminée</span>;
+                    if (canFinalize) return <button onClick={() => store.finalizeTask(task, actor)} className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-[#22C55E] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#1ba550]"><Icon name="check-circle" size={16} /> Finaliser la tâche</button>;
+                    return <span className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-slate-100 text-slate-400 px-4 py-2.5 text-[13px] font-semibold"><Icon name="lock" size={15} /> Finalisation réservée à l'admin</span>;
+                  })()}
                   {canManage && <button onClick={() => { if (confirm("Supprimer cette tâche ?")) { store.deleteTask(taskId); onClose(); } }} className="grid place-items-center w-11 h-11 rounded-lg border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200"><Icon name="trash2" size={16} /></button>}
                 </div>
               )}
