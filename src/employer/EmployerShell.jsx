@@ -8,6 +8,7 @@ const MAIN_ADMIN = [
   { to: "/employer/calendar", icon: "calendar", label: "Calendrier" },
   { to: "/employer/tasks", icon: "list-checks", label: "Tâches" },
   { to: "/employer/brainstorm", icon: "lightbulb", label: "Brainstorm" },
+  { to: "/employer/resources", icon: "share", label: "Ressources" },
   { to: "/employer/employees", icon: "users", label: "Employés" },
   { to: "/employer/teams", icon: "briefcase", label: "Équipes" },
   { to: "/employer/integrations", icon: "puzzle", label: "Intégrations" },
@@ -16,6 +17,7 @@ const MAIN_EMP = [
   { to: "/employer/my", icon: "list-checks", label: "Mes tâches", end: true },
   { to: "/employer/calendar", icon: "calendar", label: "Mon calendrier" },
   { to: "/employer/brainstorm", icon: "lightbulb", label: "Brainstorm" },
+  { to: "/employer/resources", icon: "share", label: "Ressources" },
 ];
 const OTHERS_ADMIN = [
   { to: "/employer/settings", icon: "settings", label: "Paramètres" },

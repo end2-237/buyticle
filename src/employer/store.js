@@ -2,11 +2,12 @@
    Buyticle — Portail Employeur (gestion des employés + tâches)
    Backend réel Firestore. Collections : employees, emp_tasks.
 ──────────────────────────────────────────────────────────── */
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import {
   collection, doc, addDoc, updateDoc, deleteDoc, getDoc, getDocs, where,
   onSnapshot, query, orderBy, serverTimestamp, arrayUnion,
 } from "firebase/firestore";
+import { ref as sRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { pushNotif } from "../testers/store";
 
 const map = (snap) => snap.docs.map((d) => ({ id: d.id, ...d.data() }));
@@ -258,6 +259,39 @@ export function fmtTime(hhmm = "") {
   return `${pad(h12)}:${pad(m || 0)} ${ap}`;
 }
 export const daysBetween = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+
+/* ─── Ressources partagées (documents, liens, repos, maquettes…) ─── */
+export const RESOURCE_TYPES = [
+  { key: "link", label: "Lien", icon: "link", color: "#2C87F2" },
+  { key: "doc", label: "Document", icon: "scroll", color: "#F97316" },
+  { key: "repo", label: "Dépôt", icon: "git-branch", color: "#8B5CF6" },
+  { key: "design", label: "Maquette", icon: "layers", color: "#EC4899" },
+  { key: "file", label: "Fichier", icon: "upload", color: "#22C55E" },
+];
+export function subscribeResources(cb) {
+  return onSnapshot(
+    query(collection(db, "emp_resources"), orderBy("createdAt", "desc")),
+    (s) => cb(map(s)),
+    (e) => console.warn("resources sub:", e.code)
+  );
+}
+export async function uploadResourceFile(file, uid) {
+  const path = `resources/${uid}/${Date.now()}_${file.name.replace(/[^\w.-]/g, "_")}`;
+  const r = sRef(storage, path);
+  await uploadBytes(r, file);
+  return { url: await getDownloadURL(r), name: file.name, size: file.size, path };
+}
+export async function addResource({ user, title, url, type = "link", description = "", tag = "général", fileName = "", teamId = "" }) {
+  if (!title?.trim() || !url?.trim()) return;
+  const ownerName = user.profile?.fullName || user.email.split("@")[0];
+  const ref = await addDoc(collection(db, "emp_resources"), {
+    title: title.trim(), url: url.trim(), type, description: description.trim(), tag,
+    fileName, teamId: teamId || null, ownerId: user.id, ownerName, createdAt: serverTimestamp(),
+  });
+  await pushNotif({ audience: "all", type: "resource", icon: "share", title: "Nouvelle ressource partagée 📎", body: `${ownerName} a partagé « ${title.trim()} ».` });
+  return ref;
+}
+export async function deleteResource(id) { return deleteDoc(doc(db, "emp_resources", id)); }
 
 /* ─── Brainstorm / Idées (collaboration d'équipe) ─── */
 export const IDEA_STATUS = [
